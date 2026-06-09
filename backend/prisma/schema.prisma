@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -10,4 +8,44 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// กำหนด Enum สำหรับผลลัพธ์ (result) ของฝั่งส่งกลับ (สามารถปรับแก้ค่าด้านในได้ตามต้องการ)
+enum DeportedResult {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+// ตาราง แอบเข้า (Illegal Immigrants)
+model illegal_immigrants {
+  id                String   @id @default(uuid())
+  first_name_th     String
+  middle_name_th    String?  // ใส่ ? เพราะบางคนอาจไม่มีชื่อกลาง
+  last_name_th      String
+  first_name_en     String?  
+  middle_name_en    String?  
+  last_name_en      String?  
+  passport_id       String?  @unique
+  detected_location String
+  is_victim         Boolean?
+}
+
+// ตาราง ส่งกลับ (Deported Persons)
+model deported_persons {
+  id                String         @id @default(uuid())
+  first_name_th     String
+  middle_name_th    String?
+  last_name_th      String
+  first_name_en     String?
+  middle_name_en    String?
+  last_name_en      String?
+  date_of_birth     String
+  national_id       String         @unique
+  passport_id       String?        @unique
+  number_of_case    Int
+  number_of_warrant Int
+  address           String
+  result            DeportedResult
 }

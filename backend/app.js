@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const immigrantRoutes = require("./routes/immigrants");
 const dashboardRoutes = require("./routes/dashboard");
@@ -12,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // เสิร์ฟไฟล์รูปภาพ/ไฟล์แนบแบบ Public
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/immigrants", immigrantRoutes);
