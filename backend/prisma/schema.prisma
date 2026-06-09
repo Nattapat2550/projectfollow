@@ -2,13 +2,11 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // กำหนด Enum สำหรับผลลัพธ์ (result) ของฝั่งส่งกลับ (สามารถปรับแก้ค่าด้านในได้ตามต้องการ)
@@ -27,12 +25,14 @@ model illegal_immigrants {
   first_name_en     String?
   middle_name_en    String?  
   last_name_en      String?  
-  nationality       String?   // สัญชาติ
   passport_id       String?   @unique
+  gender            String?   
+  nationality       String?   
+  detected_date     DateTime? 
   detected_location String
   is_victim         Boolean?
-  gender            String?   // เพศ
-  detected_date     DateTime? // วันที่ตรวจเจอ
+  warrant           String?   
+  workplace         String?   // <--- เพิ่มฟิลด์นี้ (สถานที่ทำงาน)
 }
 
 // ตาราง ส่งกลับ (Deported Persons)

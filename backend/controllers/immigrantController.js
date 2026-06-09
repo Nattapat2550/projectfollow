@@ -1,16 +1,41 @@
-const pool = require("../config/db");
-const { v4: uuidv4 } = require("uuid"); 
+const { PrismaClient } = require("@prisma/client");
+const { Pool } = require("pg");
+const { PrismaPg } = require("@prisma/adapter-pg");
+const xlsx = require("xlsx");
 
+// ดึง DATABASE_URL จากไฟล์ .env
+const connectionString = process.env.DATABASE_URL;
+
+// เช็คว่าถ้าไม่ใช่ Localhost ให้บังคับใช้ SSL (สำหรับ Render)
+const isLocalhost = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+
+// สร้าง Pool การเชื่อมต่อ พร้อมตั้งค่า SSL
+const pool = new Pool({ 
+  connectionString: connectionString,
+  ssl: isLocalhost ? false : { rejectUnauthorized: false } 
+});
+
+// สร้าง Adapter ของ Prisma
+const adapter = new PrismaPg(pool);
+
+// เรียกใช้ Prisma โดยบังคับให้มันใช้ Adapter ตัวนี้
+const prisma = new PrismaClient({ adapter });
+
+// 1. ดึงข้อมูลทั้งหมด
 exports.getAllData = async (req, res) => {
   try {
-    const illegals = await pool.query(`SELECT * FROM illegal_immigrants ORDER BY id DESC`);
-    const deporteds = await pool.query(`SELECT * FROM deported_persons ORDER BY id DESC`);
+    const illegals = await prisma.illegal_immigrants.findMany({
+      orderBy: { id: "desc" },
+    });
+    const deporteds = await prisma.deported_persons.findMany({
+      orderBy: { id: "desc" },
+    });
 
     res.status(200).json({
       success: true,
       data: {
-        illegals: illegals.rows,
-        deporteds: deporteds.rows,
+        illegals,
+        deporteds,
       },
     });
   } catch (err) {
@@ -19,86 +44,132 @@ exports.getAllData = async (req, res) => {
   }
 };
 
+// 2. สร้างข้อมูลแอบเข้า (เพิ่มรายบุคคล)
 exports.createIllegal = async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
-    const id = uuidv4();
-    
-    // รับฟิลด์ตามเอกสาร
-    const {
-      first_name_th, middle_name_th, last_name_th,
-      first_name_en, middle_name_en, last_name_en,
-      nationality, passport_id, detected_location, 
-      is_victim, gender, detected_date
-    } = req.body;
+    const data = req.body;
 
-    const query = `
-      INSERT INTO illegal_immigrants 
-      (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       nationality, passport_id, detected_location, is_victim, gender, detected_date) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *
-    `;
-    const values = [
-      id, first_name_th, middle_name_th || null, last_name_th,
-      first_name_en || null, middle_name_en || null, last_name_en || null,
-      nationality || null, passport_id || null, detected_location, 
-      is_victim || false, gender || null, detected_date || null
-    ];
+    const result = await prisma.illegal_immigrants.create({
+      data: {
+        first_name_th: data.first_name_th,
+        middle_name_th: data.middle_name_th || null,
+        last_name_th: data.last_name_th,
+        first_name_en: data.first_name_en || null,
+        middle_name_en: data.middle_name_en || null,
+        last_name_en: data.last_name_en || null,
+        nationality: data.nationality || null,
+        passport_id: data.passport_id || null,
+        detected_location: data.detected_location,
+        is_victim: data.is_victim === "true" || data.is_victim === true,
+        gender: data.gender || null,
+        detected_date: data.detected_date ? new Date(data.detected_date) : null,
+        warrant: data.warrant || null,
+        workplace: data.workplace || null,
+      },
+    });
 
-    const result = await client.query(query, values);
-    await client.query("COMMIT");
-
-    res.status(201).json({ success: true, data: result.rows[0], message: "บันทึกข้อมูลแอบเข้าสำเร็จ" });
+    res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลแอบเข้าสำเร็จ" });
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Create Illegal Error:", err.message);
+    console.error("Create Illegal Error:", err);
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
-  } finally {
-    client.release();
   }
 };
 
+// 3. สร้างข้อมูลส่งกลับ (เพิ่มรายบุคคล พร้อมรูปถ่าย)
 exports.createDeported = async (req, res) => {
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
-    const id = uuidv4();
-
-    // รับฟิลด์ตามเอกสาร (ช่องทางมา, อายุคำนวณมา, etc.)
-    const {
-      first_name_th, middle_name_th, last_name_th,
-      first_name_en, middle_name_en, last_name_en,
-      date_of_birth, national_id, passport_id,
-      address, number_of_case, number_of_warrant,
-      return_date, channel, age
-    } = req.body;
-    
+    const data = req.body;
     const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    const query = `
-      INSERT INTO deported_persons 
-      (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       date_of_birth, national_id, passport_id, address, number_of_case, number_of_warrant, photo_url, return_date, channel, age) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *
-    `;
-    const values = [
-      id, first_name_th, middle_name_th || null, last_name_th,
-      first_name_en || null, middle_name_en || null, last_name_en || null,
-      date_of_birth, national_id, passport_id || null, address, 
-      number_of_case || 0, number_of_warrant || 0, photoUrl, 
-      return_date || null, channel || null, age || null
-    ];
+    const result = await prisma.deported_persons.create({
+      data: {
+        first_name_th: data.first_name_th,
+        middle_name_th: data.middle_name_th || null,
+        last_name_th: data.last_name_th,
+        first_name_en: data.first_name_en || null,
+        middle_name_en: data.middle_name_en || null,
+        last_name_en: data.last_name_en || null,
+        date_of_birth: data.date_of_birth,
+        national_id: data.national_id,
+        passport_id: data.passport_id || null,
+        address: data.address,
+        number_of_case: parseInt(data.number_of_case) || 0,
+        number_of_warrant: parseInt(data.number_of_warrant) || 0,
+        photo_url: photoUrl,
+        age: parseInt(data.age) || null,
+        return_date: data.return_date ? new Date(data.return_date) : null,
+        channel: data.channel || null,
+      },
+    });
 
-    const result = await client.query(query, values);
-    await client.query("COMMIT");
-
-    res.status(201).json({ success: true, data: result.rows[0], message: "บันทึกข้อมูลส่งกลับสำเร็จ" });
+    res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลส่งกลับสำเร็จ" });
   } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Create Deported Error:", err.message);
+    console.error("Create Deported Error:", err);
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
-  } finally {
-    client.release();
+  }
+};
+
+// 4. นำเข้าข้อมูลแอบเข้า ผ่านไฟล์ Excel
+exports.uploadExcelIllegal = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
+    }
+
+    // อ่านไฟล์ Excel จาก Memory Buffer
+    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const jsonData = xlsx.utils.sheet_to_json(worksheet);
+
+    if (jsonData.length === 0) {
+      return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
+    }
+
+    // Map ข้อมูลให้ตรงกับหัวคอลัมน์ภาษาไทยใน Excel
+    const formattedData = jsonData.map((row) => {
+      // 1. จัดการแยก ชื่อ-สกุล (สมมติว่าใน Excel พิมพ์มาเป็น "สมชาย รักดี" เว้นวรรคตรงกลาง)
+      const fullName = row["ชื่อ-สกุล"] || "";
+      const nameParts = fullName.trim().split(/\s+/); // แยกคำด้วยช่องว่าง
+      const firstName = nameParts[0] || "ไม่ระบุ";
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "ไม่ระบุ";
+
+      // 2. จัดการเรื่อง ผลการคัดกรอง
+      // ถ้ามีข้อมูลในคอลัมน์ "เป็นผู้เสียหาย" (เช่น พิมพ์ /, ใช่, 1) จะถือว่าเป็น true
+      const isVictim = !!row["เป็นผู้เสียหาย"];
+
+      return {
+        first_name_th: firstName,
+        middle_name_th: null,
+        last_name_th: lastName,
+        first_name_en: null,
+        middle_name_en: null,
+        last_name_en: null,
+        nationality: row["สัญชาติ (เรียงตามสัญชาติ)"] ? String(row["สัญชาติ (เรียงตามสัญชาติ)"]) : null,
+        passport_id: row["เลขหนังสือเดินทาง : Passport No. "] ? String(row["เลขหนังสือเดินทาง : Passport No. "]) : null,
+        detected_location: row["สถานที่ตรวจพบ"] || "ไม่ระบุ",
+        workplace: row["สถานที่ทำงาน"] || null,
+        is_victim: isVictim,
+        
+        // คอลัมน์อื่นๆ ที่ไม่ได้มีในไฟล์ Excel รอบนี้ ให้มีค่าเป็น null ไปก่อน
+        gender: null,
+        detected_date: null,
+        warrant: null,
+      };
+    });
+
+    // บันทึกลงฐานข้อมูลรวดเดียวด้วย createMany (ข้ามข้อมูลที่ passport ซ้ำ)
+    const result = await prisma.illegal_immigrants.createMany({
+      data: formattedData,
+      skipDuplicates: true,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `นำเข้าข้อมูลสำเร็จ จำนวน ${result.count} รายการ`,
+    });
+  } catch (err) {
+    console.error("Upload Excel Error:", err);
+    res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการอ่านไฟล์" });
   }
 };
