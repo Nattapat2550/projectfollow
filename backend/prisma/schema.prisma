@@ -20,16 +20,19 @@ enum DeportedResult {
 
 // ตาราง แอบเข้า (Illegal Immigrants)
 model illegal_immigrants {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   first_name_th     String
-  middle_name_th    String?  // ใส่ ? เพราะบางคนอาจไม่มีชื่อกลาง
+  middle_name_th    String?
   last_name_th      String
-  first_name_en     String?  
+  first_name_en     String?
   middle_name_en    String?  
   last_name_en      String?  
-  passport_id       String?  @unique
+  nationality       String?   // สัญชาติ
+  passport_id       String?   @unique
   detected_location String
   is_victim         Boolean?
+  gender            String?   // เพศ
+  detected_date     DateTime? // วันที่ตรวจเจอ
 }
 
 // ตาราง ส่งกลับ (Deported Persons)
@@ -44,8 +47,12 @@ model deported_persons {
   date_of_birth     String
   national_id       String         @unique
   passport_id       String?        @unique
-  number_of_case    Int
-  number_of_warrant Int
+  number_of_case    Int            @default(0)
+  number_of_warrant Int            @default(0)
   address           String
-  result            DeportedResult
+  photo_url         String?        // รูปจาก ทร.14
+  age               Int?           // อายุ ณ วันที่ส่งกลับ
+  return_date       DateTime?      // วันที่ส่งกลับมา
+  channel           String?        // ช่องทางที่ส่งกลับมา
+  result            DeportedResult @default(PENDING) // กำหนดค่าเริ่มต้นเป็น PENDING ให้รองรับตอน insert
 }

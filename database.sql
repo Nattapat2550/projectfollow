@@ -10,9 +10,12 @@ CREATE TABLE illegal_immigrants (
     first_name_en VARCHAR(255),
     middle_name_en VARCHAR(255),
     last_name_en VARCHAR(255),
+    nationality VARCHAR(255),
     passport_id VARCHAR(255) UNIQUE,
     detected_location TEXT NOT NULL,
-    is_victim BOOLEAN
+    is_victim BOOLEAN,
+    gender VARCHAR(50),
+    detected_date DATE
 );
 
 -- ตาราง ส่งกลับ (Deported Persons)
@@ -30,5 +33,9 @@ CREATE TABLE deported_persons (
     number_of_case INT NOT NULL DEFAULT 0,
     number_of_warrant INT NOT NULL DEFAULT 0,
     address TEXT NOT NULL,
-    result deported_result_enum NOT NULL
+    photo_url TEXT,
+    age INT,
+    return_date DATE,
+    channel VARCHAR(255),
+    result deported_result_enum NOT NULL DEFAULT 'PENDING'
 );
