@@ -174,6 +174,14 @@ export default function TestUpload2Page() {
                             <div className="text-sm"><span className="text-zinc-500 mr-1">[DB: id_card]</span> <span className="font-mono">{row.id_card || renderNull()}</span></div>
                             <div className="text-sm"><span className="text-zinc-500 mr-1">[DB: passport]</span> <span className="font-mono">{row.passport || renderNull()}</span></div>
                             <div className="text-sm"><span className="text-zinc-500 mr-1">[DB: address]</span> <span className="font-medium truncate block" title={row.address}>{row.address || renderNull()}</span></div>
+                            <div className="text-sm">
+                              <span className="text-zinc-500 block mb-1">[DB: photo_url]</span> 
+                              {row.photo_url && row.photo_url.startsWith('data:image') ? (
+                                <img src={row.photo_url} alt="รูปโปรไฟล์" className="w-16 h-20 object-cover rounded-md border border-zinc-200 shadow-sm" />
+                              ) : (
+                                <span className="font-medium truncate block" title={row.photo_url}>{row.photo_url || renderNull()}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
 

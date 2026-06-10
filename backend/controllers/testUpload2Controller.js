@@ -1,64 +1,74 @@
 const xlsx = require("xlsx");
+const ExcelJS = require("exceljs"); // นำเข้าไลบรารีใหม่สำหรับดึงรูป
 const fs = require("fs");
 
-// ฟังก์ชันลบคำนำหน้าชื่อ (เพิ่มคำที่ต้องการในวงเล็บได้เลย โดยต้องเอาคำที่ "ยาวกว่า" ขึ้นก่อนเสมอ เช่น เอา นางสาว ไว้หน้า นาง)
+// ฟังก์ชันลบคำนำหน้าชื่อ
 const removePrefix = (fullName) => {
 	if (!fullName || typeof fullName !== "string") return fullName;
-	
 	const prefixRegex = /^(พล\.ต\.อ\.|พล\.ต\.ท\.|พล\.ต\.ต\.|พ\.ต\.อ\.|พ\.ต\.ท\.|พ\.ต\.ต\.|ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|ด\.ต\.|จ\.ส\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ว่าที่ ร\.ต\.|นางสาว|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|Mr\.|Mrs\.|Ms\.|Miss\s*)/i;
-	
-	// ลบคำนำหน้าออกและตัดช่องว่างหัวท้ายทิ้ง
 	return fullName.replace(prefixRegex, '').trim();
 };
 
-// ฟังก์ชันสำหรับแยก ชื่อแรก ชื่อกลาง นามสกุล จากข้อความก้อนเดียว
+// ฟังก์ชันสำหรับแยก ชื่อแรก ชื่อกลาง นามสกุล 
 const splitName = (fullName) => {
 	if (!fullName || typeof fullName !== "string") {
 		return { first: null, middle: null, last: null };
 	}
-	
-	// 1. นำข้อความไปตัดคำนำหน้าชื่อออกก่อน
 	const nameWithoutPrefix = removePrefix(fullName);
-	
-	// 2. แยกคำด้วยช่องว่าง (สเปซบาร์)
 	const parts = nameWithoutPrefix.split(/\s+/);
 	
-	if (parts.length === 1) {
-		// มีแค่ชื่อ
-		return { first: parts[0], middle: null, last: null };
-	} else if (parts.length === 2) {
-		// มีแค่ชื่อ กับ นามสกุล
-		return { first: parts[0], middle: null, last: parts[1] };
-	} else if (parts.length >= 3) {
-		// มีชื่อ ชื่อกลาง นามสกุล
+	if (parts.length === 1) return { first: parts[0], middle: null, last: null };
+	if (parts.length === 2) return { first: parts[0], middle: null, last: parts[1] };
+	if (parts.length >= 3) {
 		const first = parts[0];
-		const last = parts[parts.length - 1]; // เอาคำสุดท้ายเป็นนามสกุล
-		const middle = parts.slice(1, parts.length - 1).join(" "); // ที่เหลือตรงกลางคือชื่อกลาง
+		const last = parts[parts.length - 1]; 
+		const middle = parts.slice(1, parts.length - 1).join(" "); 
 		return { first, middle, last };
 	}
-	
 	return { first: null, middle: null, last: null };
 };
 
-exports.uploadExcel = (req, res) => {
+// เปลี่ยนเป็น async function เพื่อให้ใช้กับ ExcelJS ได้
+exports.uploadExcel = async (req, res) => {
 	try {
-		// เช็คว่ามีไฟล์ส่งมาหรือไม่
 		if (!req.file) {
 			return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel" });
 		}
 
-		// อ่านไฟล์ Excel
-		const workbook = xlsx.readFile(req.file.path);
-		const sheetName = workbook.SheetNames[0]; // อ่านจาก Sheet แรก
-		const sheet = workbook.Sheets[sheetName];
-		const rawData = xlsx.utils.sheet_to_json(sheet);
+		// 1. อ่านข้อมูล Text ด้วย xlsx (เพื่อความง่ายและแม่นยำของ Text)
+		const workbookXlsx = xlsx.readFile(req.file.path);
+		const sheetName = workbookXlsx.SheetNames[0];
+		const rawData = xlsx.utils.sheet_to_json(workbookXlsx.Sheets[sheetName]);
 
-		// Map ข้อมูล Excel เข้ากับโครงสร้างจำลอง DB
+		// 2. ดึงข้อมูลรูปภาพที่ฝังในเซลล์ ด้วย ExcelJS
+		const workbookExt = new ExcelJS.Workbook();
+		await workbookExt.xlsx.readFile(req.file.path);
+		const worksheetExt = workbookExt.worksheets[0];
+
+		const imagesMap = {};
+		// วนลูปรูปภาพทั้งหมดที่พบใน Sheet
+		for (const image of worksheetExt.getImages()) {
+			// image.range.tl.nativeRow คือตำแหน่งแถวใน Excel (0 คือบรรทัดที่ 1/Header, 1 คือบรรทัดที่ 2)
+			const rowIdx = image.range.tl.nativeRow; 
+			const imgInfo = workbookExt.getImage(image.imageId);
+			
+			if (imgInfo && imgInfo.buffer) {
+				// แปลงรูปภาพเป็น Base64 String เพื่อให้ส่งผ่าน JSON ไปโชว์ Preview ได้ทันที
+				const base64Str = `data:image/${imgInfo.extension || 'jpeg'};base64,${imgInfo.buffer.toString("base64")}`;
+				imagesMap[rowIdx] = base64Str;
+			}
+		}
+
+		// 3. Map ข้อมูล Excel เข้ากับโครงสร้างจำลอง DB
 		const preview_data = rawData.map((row, index) => {
 			
-			// เรียกใช้ฟังก์ชันแยกชื่อ-นามสกุล (ซึ่งมันจะไปตัดคำนำหน้าให้อัตโนมัติด้วย)
 			const thName = splitName(row["ชื่อ สกุล (ไทย)"]);
 			const enName = splitName(row["ชื่อ สกุล (อังกฤษ)"]);
+
+			// rawData (ข้อมูลเริ่ม index 0) ตรงกับแถวที่ 2 ใน Excel ซึ่งเท่ากับ nativeRow = 1 ใน ExcelJS
+			const excelRowIndex = index + 1; 
+			// ดึงรูป Base64 จากแถวที่ตรงกัน (ถ้าไม่มีให้เป็น null)
+			const photoBase64 = imagesMap[excelRowIndex] || row["รูปจาก ทร.14"] || null; 
 
 			return {
 				ลำดับที่อ่านได้: index + 1,
@@ -76,6 +86,10 @@ exports.uploadExcel = (req, res) => {
 				passport: row["เลขพาสปอร์ต"] || null,
 				dob: row["วัน/เดือน/ปี เกิด"] || null,
 				address: row["ที่อยู่"] || null,
+				
+				// ช่องรูปภาพ จะได้เป็นก้อน Base64 แทน
+				photo_url: photoBase64, 
+				
 				case_id_count: row["จำนวน Case ID"] || null,
 				warrant: row["หมายจับ"] || null,
 				building: row["ตึก ที่ทำงาน"] || null,
@@ -90,27 +104,21 @@ exports.uploadExcel = (req, res) => {
 				responsible_agency: row["หน่วยงานที่รับผิดชอบ"] || null,
 				note: row["หมายเหตุ"] || null,
 				
-				// เก็บข้อมูลดิบไว้แสดงฝั่งขวา
 				raw_data_from_excel: row
 			};
 		});
 
-		// ลบไฟล์ชั่วคราวออกเมื่อประมวลผลเสร็จ
 		fs.unlinkSync(req.file.path);
 
-		// ส่งข้อมูลกลับไปแสดงพรีวิว
 		res.status(200).json({
 			success: true,
-			message: "อ่านแยกข้อมูล และตัดคำนำหน้าชื่อสำเร็จ",
+			message: "อ่านแยกข้อมูล ดึงรูปภาพ และตัดคำนำหน้าสำเร็จ",
 			total_rows: rawData.length,
 			preview_data: preview_data
 		});
 
 	} catch (error) {
-		// เคลียร์ไฟล์ขยะกรณีเกิด Error
-		if (req.file && fs.existsSync(req.file.path)) {
-			fs.unlinkSync(req.file.path);
-		}
+		if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 		console.error("Error reading excel:", error);
 		res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการประมวลผล Excel: " + error.message });
 	}
