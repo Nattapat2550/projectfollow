@@ -25,7 +25,7 @@ model illegal_immigrants {
   first_name_en     String?
   middle_name_en    String?  
   last_name_en      String?  
-  passport_id       String?   @unique
+  passport_id       String?   
   gender            String?   
   nationality       String?   
   detected_date     DateTime? 

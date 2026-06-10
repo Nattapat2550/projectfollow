@@ -109,65 +109,93 @@ exports.createDeported = async (req, res) => {
   }
 };
 
-// 4. นำเข้าข้อมูลแอบเข้า ผ่านไฟล์ Excel
+// 4. นำเข้าข้อมูลแอบเข้า ผ่านไฟล์ Excel (ทดสอบอ่านไฟล์และหัวคอลัมน์ ยังไม่ลง DB)
 exports.uploadExcelIllegal = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
     }
 
-    // อ่านไฟล์ Excel จาก Memory Buffer
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const jsonData = xlsx.utils.sheet_to_json(worksheet);
+    
+    let allJsonData = [];
+    let allHeaders = new Set(); 
+    
+    // วนลูปอ่านข้อมูลจาก "ทุก Sheet"
+    workbook.SheetNames.forEach(sheetName => {
+      const worksheet = workbook.Sheets[sheetName];
+      const sheetData = xlsx.utils.sheet_to_json(worksheet, { defval: null });
+      
+      if (sheetData.length > 0) {
+        Object.keys(sheetData[0]).forEach(k => allHeaders.add(k));
+        const dataWithSheetName = sheetData.map(row => ({
+          ...row,
+          _sheetName: sheetName
+        }));
+        allJsonData = allJsonData.concat(dataWithSheetName);
+      }
+    });
 
-    if (jsonData.length === 0) {
+    if (allJsonData.length === 0) {
       return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
     }
 
-    // Map ข้อมูลให้ตรงกับหัวคอลัมน์ภาษาไทยใน Excel
-    const formattedData = jsonData.map((row) => {
-      // 1. จัดการแยก ชื่อ-สกุล (สมมติว่าใน Excel พิมพ์มาเป็น "สมชาย รักดี" เว้นวรรคตรงกลาง)
-      const fullName = row["ชื่อ-สกุล"] || "";
-      const nameParts = fullName.trim().split(/\s+/); // แยกคำด้วยช่องว่าง
-      const firstName = nameParts[0] || "ไม่ระบุ";
+    // ---------------------------------------------------------
+    // แก้บัค: ฟังก์ชันค้นหาหัวคอลัมน์ (ลบช่องว่าง และ ขีด ทุกชนิด)
+    // ---------------------------------------------------------
+    const findValue = (rowObj, keyword) => {
+      // ใช้ Regex ตัดช่องว่าง (\s) และเครื่องหมายขีดทุกประเภท (-, –, —, _) ออกไปให้หมด
+      const cleanStr = (str) => str.replace(/[\s\-\–\—\_]+/g, ''); 
+      const cleanKeyword = cleanStr(keyword); // ตัวค้นหาก็ต้องถูกตัดขีดออกด้วย
+      
+      const matchedKey = Object.keys(rowObj).find(k => {
+        return cleanStr(k).includes(cleanKeyword); // เทียบคำที่ถูกจับติดกันแล้ว
+      });
+      return matchedKey ? rowObj[matchedKey] : null;
+    };
+
+    // Map ข้อมูลตามหัวคอลัมน์
+    const formattedData = allJsonData.map((row, index) => {
+      // 1. จัดการแยก ชื่อ-สกุล (หาคำว่า "ชื่อสกุล" โดยไม่ต้องสนว่า Excel จะพิมพ์ขีดมาแบบไหน)
+      const fullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
+      const nameParts = String(fullName).trim().split(/\s+/);
+      
+      // ถ้ามีข้อมูล fullName ค่อยดึงช่องแรกเป็นชื่อ ถ้าไม่มีให้เป็น "ไม่ระบุ"
+      const firstName = fullName ? (nameParts[0] || "ไม่ระบุ") : "ไม่ระบุ";
       const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "ไม่ระบุ";
 
       // 2. จัดการเรื่อง ผลการคัดกรอง
-      // ถ้ามีข้อมูลในคอลัมน์ "เป็นผู้เสียหาย" (เช่น พิมพ์ /, ใช่, 1) จะถือว่าเป็น true
-      const isVictim = !!row["เป็นผู้เสียหาย"];
+      const isVictim = findValue(row, "เป็นผู้เสียหาย") ? true : false;
+
+      // 3. ค้นหาข้อมูลอื่นๆ 
+      const nationality = findValue(row, "สัญชาติ");
+      const passportId = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
+      const detectedLocation = findValue(row, "สถานที่ตรวจพบ");
+      const workplace = findValue(row, "สถานที่ทำงาน");
 
       return {
+        ลำดับที่อ่านได้: index + 1,
+        ชื่อชีต: row._sheetName,
         first_name_th: firstName,
-        middle_name_th: null,
         last_name_th: lastName,
-        first_name_en: null,
-        middle_name_en: null,
-        last_name_en: null,
-        nationality: row["สัญชาติ (เรียงตามสัญชาติ)"] ? String(row["สัญชาติ (เรียงตามสัญชาติ)"]) : null,
-        passport_id: row["เลขหนังสือเดินทาง : Passport No. "] ? String(row["เลขหนังสือเดินทาง : Passport No. "]) : null,
-        detected_location: row["สถานที่ตรวจพบ"] || "ไม่ระบุ",
-        workplace: row["สถานที่ทำงาน"] || null,
+        nationality: nationality ? String(nationality) : null,
+        passport_id: passportId ? String(passportId) : null,
+        detected_location: detectedLocation || "ไม่ระบุ",
+        workplace: workplace || null,
         is_victim: isVictim,
         
-        // คอลัมน์อื่นๆ ที่ไม่ได้มีในไฟล์ Excel รอบนี้ ให้มีค่าเป็น null ไปก่อน
-        gender: null,
-        detected_date: null,
-        warrant: null,
+        raw_data_from_excel: row
       };
     });
 
-    // บันทึกลงฐานข้อมูลรวดเดียวด้วย createMany (ข้ามข้อมูลที่ passport ซ้ำ)
-    const result = await prisma.illegal_immigrants.createMany({
-      data: formattedData,
-      skipDuplicates: true,
-    });
-
-    res.status(201).json({
+    res.status(200).json({
       success: true,
-      message: `นำเข้าข้อมูลสำเร็จ จำนวน ${result.count} รายการ`,
+      message: "อ่านไฟล์จากทุก Sheet และจัดรูปแบบข้อมูลสำเร็จ",
+      total_rows: formattedData.length,
+      headers_found: Array.from(allHeaders),
+      preview_data: formattedData
     });
+    
   } catch (err) {
     console.error("Upload Excel Error:", err);
     res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการอ่านไฟล์" });
