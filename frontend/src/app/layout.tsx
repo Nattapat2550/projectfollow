@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { Sarabun } from "next/font/google";
 
-import { Navbar1 } from "@/components/navigation";
+import { Navigation } from "@/components/navigation";
 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -37,7 +37,7 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
-					<Navbar1 />
+					<Navigation />
 					{children}
 				</ThemeProvider>
 			</body>

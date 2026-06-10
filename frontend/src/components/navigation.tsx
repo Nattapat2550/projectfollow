@@ -1,6 +1,6 @@
 "use client";
 
-import { Book, Menu, Sunset, Trees, Zap } from "lucide-react";
+import { Book, Menu } from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -29,127 +29,87 @@ import { cn } from "@/lib/utils";
 
 import { ModeSelect } from "./theme-switcher";
 
-interface MenuItem {
+type MenuItem =
+	| {
+			title: string;
+			url?: string;
+			icon?: React.ReactNode;
+			items: SubMenuItem[];
+	  }
+	| {
+			title: string;
+			url: string;
+			icon?: React.ReactNode;
+			items?: SubMenuItem[];
+	  };
+
+type SubMenuItem = {
 	title: string;
 	url: string;
 	description?: string;
 	icon?: React.ReactNode;
-	items?: MenuItem[];
-}
+};
 
-interface Navbar1Props {
-	className?: string;
-	logo?: {
-		url: string;
-		src: string;
-		alt: string;
-		title: string;
-		className?: string;
-	};
-	menu?: MenuItem[];
-	auth?: {
-		login: {
-			title: string;
-			url: string;
-		};
-		signup: {
-			title: string;
-			url: string;
-		};
-	};
-}
-
-export function Navbar1({
-	menu = [
-		{ title: "Home", url: "#" },
-		{
-			title: "Products",
-			url: "#",
-			items: [
-				{
-					title: "Blog",
-					description: "The latest industry news, updates, and info",
-					icon: <Book className="size-5 shrink-0" />,
-					url: "#",
-				},
-				{
-					title: "Company",
-					description: "Our mission is to innovate and empower the world",
-					icon: <Trees className="size-5 shrink-0" />,
-					url: "#",
-				},
-				{
-					title: "Careers",
-					description: "Browse job listing and discover our workspace",
-					icon: <Sunset className="size-5 shrink-0" />,
-					url: "#",
-				},
-				{
-					title: "Support",
-					description:
-						"Get in touch with our support team or visit our community forums",
-					icon: <Zap className="size-5 shrink-0" />,
-					url: "#",
-				},
-			],
-		},
-		{
-			title: "Resources",
-			url: "#",
-			items: [
-				{
-					title: "Help Center",
-					description: "Get all the answers you need right here",
-					icon: <Zap className="size-5 shrink-0" />,
-					url: "#",
-				},
-				{
-					title: "Contact Us",
-					description: "We are here to help you with any questions you have",
-					icon: <Sunset className="size-5 shrink-0" />,
-					url: "#",
-				},
-				{
-					title: "Status",
-					description: "Check the current status of our services and APIs",
-					icon: <Trees className="size-5 shrink-0" />,
-					url: "#",
-				},
-				{
-					title: "Terms of Service",
-					description: "Our terms and conditions for using our services",
-					icon: <Book className="size-5 shrink-0" />,
-					url: "#",
-				},
-			],
-		},
-		{
-			title: "Pricing",
-			url: "#",
-		},
-		{
-			title: "Blog",
-			url: "#",
-		},
-	],
-	auth = {
-		login: { title: "Login", url: "#" },
-		signup: { title: "Sign up", url: "#" },
+const menu: MenuItem[] = [
+	{ title: "หน้าหลัก", url: "/" },
+	{
+		title: "แอบเข้า",
+		items: [
+			{
+				title: "ข้อมูลทั้งหมด",
+				icon: <Book className="size-5 shrink-0" />,
+				url: "/immigrant",
+			},
+			{
+				title: "เพิ่มข้อมูล",
+				icon: <Book className="size-5 shrink-0" />,
+				url: "/immigrant/create",
+			},
+		],
 	},
-	className,
-}: Navbar1Props) {
+	{
+		title: "ส่งกลับ",
+		url: "/deport",
+		items: [
+			{
+				title: "ข้อมูลทั้งหมด",
+				icon: <Book className="size-5 shrink-0" />,
+				url: "/deport",
+			},
+			{
+				title: "เพิ่มข้อมูล",
+				icon: <Book className="size-5 shrink-0" />,
+				url: "/immigrant/create",
+			},
+		],
+	},
+	{
+		title: "แดชบอร์ด",
+		icon: <Book className="size-5 shrink-0" />,
+		url: "/dashboard",
+	},
+];
+
+const auth = {
+	login: { title: "เข้าสู่ระบบ", url: "/login" },
+};
+
+function Title() {
+	return (
+		<Link href="" className="flex items-center gap-2">
+			<span className="text-lg font-semibold tracking-tighter">Title</span>
+		</Link>
+	);
+}
+
+export function Navigation({ className = "" }) {
 	return (
 		<section className={cn("p-4", className)}>
 			<div className="container">
 				{/* Desktop Menu */}
 				<nav className="hidden items-center justify-between lg:flex">
 					<div className="flex items-center gap-6">
-						{/* Logo */}
-						<Link href="/" className="flex items-center gap-2">
-							<span className="text-lg font-semibold tracking-tighter">
-								Title
-							</span>
-						</Link>
+						<Title />
 						<div className="flex items-center">
 							<NavigationMenu>
 								<NavigationMenuList>
@@ -160,11 +120,8 @@ export function Navbar1({
 					</div>
 					<div className="flex gap-2">
 						<ModeSelect />
-						<Button asChild variant="outline" size="sm">
-							<a href={auth.login.url}>{auth.login.title}</a>
-						</Button>
 						<Button asChild size="sm">
-							<a href={auth.signup.url}>{auth.signup.title}</a>
+							<a href={auth.login.url}>{auth.login.title}</a>
 						</Button>
 					</div>
 				</nav>
@@ -172,12 +129,7 @@ export function Navbar1({
 				{/* Mobile Menu */}
 				<div className="block lg:hidden">
 					<div className="flex items-center justify-between">
-						{/* Logo */}
-						<Link href="/" className="flex items-center gap-2">
-							<span className="text-lg font-semibold tracking-tighter">
-								Title
-							</span>
-						</Link>
+						<Title />
 						<Sheet>
 							<SheetTrigger asChild>
 								<Button variant="outline" size="icon">
@@ -187,11 +139,7 @@ export function Navbar1({
 							<SheetContent className="overflow-y-auto">
 								<SheetHeader>
 									<SheetTitle>
-										<Link href="/" className="flex items-center gap-2">
-											<span className="text-lg font-semibold tracking-tighter">
-												Title
-											</span>
-										</Link>
+										<Title />
 									</SheetTitle>
 								</SheetHeader>
 								<div className="flex flex-col gap-6 p-4">
@@ -205,11 +153,8 @@ export function Navbar1({
 
 									<div className="flex flex-col gap-3">
 										<ModeSelect />
-										<Button asChild variant="outline">
-											<a href={auth.login.url}>{auth.login.title}</a>
-										</Button>
 										<Button asChild>
-											<a href={auth.signup.url}>{auth.signup.title}</a>
+											<a href={auth.login.url}>{auth.login.title}</a>
 										</Button>
 									</div>
 								</div>
@@ -222,7 +167,7 @@ export function Navbar1({
 	);
 }
 
-const renderMenuItem = (item: MenuItem) => {
+function renderMenuItem(item: MenuItem) {
 	if (item.items) {
 		return (
 			<NavigationMenuItem key={item.title}>
@@ -248,9 +193,9 @@ const renderMenuItem = (item: MenuItem) => {
 			</NavigationMenuLink>
 		</NavigationMenuItem>
 	);
-};
+}
 
-const renderMobileMenuItem = (item: MenuItem) => {
+function renderMobileMenuItem(item: MenuItem) {
 	if (item.items) {
 		return (
 			<AccordionItem key={item.title} value={item.title} className="border-b-0">
@@ -271,9 +216,9 @@ const renderMobileMenuItem = (item: MenuItem) => {
 			{item.title}
 		</a>
 	);
-};
+}
 
-const SubMenuLink = ({ item }: { item: MenuItem }) => {
+function SubMenuLink({ item }: { item: SubMenuItem }) {
 	return (
 		<a
 			className="hover:bg-muted hover:text-accent-foreground flex min-w-80 flex-row gap-4 rounded-md p-3 leading-none no-underline transition-colors outline-none select-none"
@@ -290,4 +235,4 @@ const SubMenuLink = ({ item }: { item: MenuItem }) => {
 			</div>
 		</a>
 	);
-};
+}
