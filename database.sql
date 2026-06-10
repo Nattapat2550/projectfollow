@@ -35,7 +35,6 @@ CREATE TABLE deported_persons (
     number_of_case INT NOT NULL DEFAULT 0,
     number_of_warrant INT NOT NULL DEFAULT 0,
     address TEXT NOT NULL,
-    photo_url TEXT,
     age INT,
     return_date DATE,
     channel VARCHAR(255),
