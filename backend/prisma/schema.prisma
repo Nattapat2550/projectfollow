@@ -32,7 +32,8 @@ model illegal_immigrants {
   detected_location String
   is_victim         Boolean?
   warrant           String?   
-  workplace         String?   // <--- เพิ่มฟิลด์นี้ (สถานที่ทำงาน)
+  workplace         String?
+  screening_details String?
 }
 
 // ตาราง ส่งกลับ (Deported Persons)

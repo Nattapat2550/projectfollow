@@ -3,199 +3,164 @@ const { Pool } = require("pg");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const xlsx = require("xlsx");
 
-// ดึง DATABASE_URL จากไฟล์ .env
 const connectionString = process.env.DATABASE_URL;
-
-// เช็คว่าถ้าไม่ใช่ Localhost ให้บังคับใช้ SSL (สำหรับ Render)
 const isLocalhost = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
 
-// สร้าง Pool การเชื่อมต่อ พร้อมตั้งค่า SSL
-const pool = new Pool({ 
-  connectionString: connectionString,
-  ssl: isLocalhost ? false : { rejectUnauthorized: false } 
-});
+const pool = new Pool({ connectionString, ssl: isLocalhost ? false : { rejectUnauthorized: false } });
+const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
-// สร้าง Adapter ของ Prisma
-const adapter = new PrismaPg(pool);
+// ================= ฟังก์ชันช่วยเหลือ (Helpers) เพื่อให้โค้ดสั้นลง =================
 
-// เรียกใช้ Prisma โดยบังคับให้มันใช้ Adapter ตัวนี้
-const prisma = new PrismaClient({ adapter });
+const parseThaiDateToDate = (text) => {
+  if (!text) return null;
+  const thaiMonths = { "ม.ค.": "01", "ก.พ.": "02", "มี.ค.": "03", "เม.ย.": "04", "พ.ค.": "05", "มิ.ย.": "06", "ก.ค.": "07", "ส.ค.": "08", "ก.ย.": "09", "ต.ค.": "10", "พ.ย.": "11", "ธ.ค.": "12" };
+  const match = String(text).match(/(ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|ต\.ค\.|พ\.ย\.|ธ\.ค\.)\s*(\d{2})/);
+  if (!match) return null;
+  const year = parseInt(match[2]) + 2500 - 543;
+  return new Date(`${year}-${thaiMonths[match[1]]}-01T00:00:00Z`);
+};
 
-// 1. ดึงข้อมูลทั้งหมด
+const findValue = (rowObj, keyword) => {
+  const cleanStr = (str) => str.replace(/[\s\-\–\—\_]+/g, '');
+  const cleanKeyword = cleanStr(keyword);
+  let matchedKey = Object.keys(rowObj).find(k => cleanStr(k) === cleanKeyword) || Object.keys(rowObj).find(k => cleanStr(k).includes(cleanKeyword));
+  return matchedKey ? rowObj[matchedKey] : null;
+};
+
+const processName = (rawFullName) => {
+  let cleanFullName = String(rawFullName).trim();
+  const prefixRegex = /^(นาย|นางสาว|นาง|น\.ส\.|น\.ส|ด\.ช\.|ด\.ญ\.|ด\.ช|ด\.ญ|Mr\.|Mrs\.|Ms\.|Miss\.|Master\.|Mr|Mrs|Ms|Miss|Master)\s*/i;
+  const matchPrefix = cleanFullName.match(prefixRegex);
+  
+  const prefix = matchPrefix ? matchPrefix[1].trim() : "";
+  if (matchPrefix) cleanFullName = cleanFullName.substring(matchPrefix[0].length).trim();
+
+  const parts = cleanFullName.split(/\s+/).filter(p => p !== "");
+  const fname = parts[0] || "";
+  const mname = parts.length >= 3 ? parts[1] : null;
+  const lname = parts.length === 2 ? parts[1] : parts.length >= 3 ? parts.slice(2).join(" ") : "";
+  const isThai = /[ก-๙]/.test(cleanFullName);
+
+  return { prefix, fname, mname, lname, isThai, hasName: !!(fname || lname) };
+};
+
+const processVictimStatus = (row) => {
+  const rawScreening = findValue(row, "ผลการคัดกรอง") || findValue(row, "เป็นผู้เสียหาย");
+  const screeningStr = rawScreening != null ? String(rawScreening).trim() : "";
+  const isNotEmpty = screeningStr !== "" && !["-", "–", "—"].includes(screeningStr);
+
+  if (isNotEmpty) return { isVictim: true, details: screeningStr };
+
+  const emptyKey = Object.keys(row).find(k => k.startsWith("__EMPTY") && row[k] != null && String(row[k]).trim() !== "" && !["-", "–", "—"].includes(String(row[k]).trim()));
+  return { isVictim: false, details: emptyKey ? String(row[emptyKey]).trim() : "ไม่เป็นผู้เสียหาย (ไม่มีข้อความอธิบายในไฟล์)" };
+};
+
+const determineGender = (row, prefix) => {
+  let gender = findValue(row, "เพศ") || findValue(row, "Gender");
+  if (!gender && prefix) {
+    const p = prefix.toLowerCase();
+    if (["นาย", "ด.ช.", "ด.ช", "mr", "mr.", "master", "master.", "boy", "mister"].includes(p)) return "ชาย";
+    if (["นาง", "นางสาว", "น.ส.", "น.ส", "ด.ญ.", "ด.ญ", "miss", "miss.", "mrs", "mrs.", "ms", "ms.", "girl"].includes(p)) return "หญิง";
+  }
+  return gender || null;
+};
+
+// ================= คอนโทรลเลอร์ (Controllers) หลัก =================
+
 exports.getAllData = async (req, res) => {
   try {
-    const illegals = await prisma.illegal_immigrants.findMany({
-      orderBy: { id: "desc" },
-    });
-    const deporteds = await prisma.deported_persons.findMany({
-      orderBy: { id: "desc" },
-    });
-
-    res.status(200).json({
-      success: true,
-      data: {
-        illegals,
-        deporteds,
-      },
-    });
+    const [illegals, deporteds] = await Promise.all([
+      prisma.illegal_immigrants.findMany({ orderBy: { id: "desc" } }),
+      prisma.deported_persons.findMany({ orderBy: { id: "desc" } })
+    ]);
+    res.status(200).json({ success: true, data: { illegals, deporteds } });
   } catch (err) {
-    console.error("Get All Data Error:", err.message);
     res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-// 2. สร้างข้อมูลแอบเข้า (เพิ่มรายบุคคล)
 exports.createIllegal = async (req, res) => {
   try {
     const data = req.body;
-
     const result = await prisma.illegal_immigrants.create({
       data: {
-        first_name_th: data.first_name_th,
-        middle_name_th: data.middle_name_th || null,
-        last_name_th: data.last_name_th,
-        first_name_en: data.first_name_en || null,
-        middle_name_en: data.middle_name_en || null,
-        last_name_en: data.last_name_en || null,
-        nationality: data.nationality || null,
-        passport_id: data.passport_id || null,
-        detected_location: data.detected_location,
+        ...data,
         is_victim: data.is_victim === "true" || data.is_victim === true,
-        gender: data.gender || null,
-        detected_date: data.detected_date ? new Date(data.detected_date) : null,
-        warrant: data.warrant || null,
-        workplace: data.workplace || null,
-      },
+        detected_date: data.detected_date ? new Date(data.detected_date) : null
+      }
     });
-
     res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลแอบเข้าสำเร็จ" });
   } catch (err) {
-    console.error("Create Illegal Error:", err);
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
 };
 
-// 3. สร้างข้อมูลส่งกลับ (เพิ่มรายบุคคล พร้อมรูปถ่าย)
 exports.createDeported = async (req, res) => {
   try {
     const data = req.body;
-    const photoUrl = req.file ? `/uploads/${req.file.filename}` : null;
-
     const result = await prisma.deported_persons.create({
       data: {
-        first_name_th: data.first_name_th,
-        middle_name_th: data.middle_name_th || null,
-        last_name_th: data.last_name_th,
-        first_name_en: data.first_name_en || null,
-        middle_name_en: data.middle_name_en || null,
-        last_name_en: data.last_name_en || null,
-        date_of_birth: data.date_of_birth,
-        national_id: data.national_id,
-        passport_id: data.passport_id || null,
-        address: data.address,
+        ...data,
         number_of_case: parseInt(data.number_of_case) || 0,
         number_of_warrant: parseInt(data.number_of_warrant) || 0,
-        photo_url: photoUrl,
         age: parseInt(data.age) || null,
         return_date: data.return_date ? new Date(data.return_date) : null,
-        channel: data.channel || null,
-      },
+        photo_url: req.file ? `/uploads/${req.file.filename}` : null,
+      }
     });
-
     res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลส่งกลับสำเร็จ" });
   } catch (err) {
-    console.error("Create Deported Error:", err);
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
 };
 
-// 4. นำเข้าข้อมูลแอบเข้า ผ่านไฟล์ Excel (ทดสอบอ่านไฟล์และหัวคอลัมน์ ยังไม่ลง DB)
 exports.uploadExcelIllegal = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
-    }
+    if (!req.file) return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
 
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
-    
     let allJsonData = [];
     let allHeaders = new Set(); 
     
-    // วนลูปอ่านข้อมูลจาก "ทุก Sheet"
     workbook.SheetNames.forEach(sheetName => {
-      const worksheet = workbook.Sheets[sheetName];
-      const sheetData = xlsx.utils.sheet_to_json(worksheet, { defval: null });
-      
+      const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null });
       if (sheetData.length > 0) {
         Object.keys(sheetData[0]).forEach(k => allHeaders.add(k));
-        const dataWithSheetName = sheetData.map(row => ({
-          ...row,
-          _sheetName: sheetName
-        }));
-        allJsonData = allJsonData.concat(dataWithSheetName);
+        allJsonData.push(...sheetData.map(row => ({ ...row, _sheetName: sheetName })));
       }
     });
 
-    if (allJsonData.length === 0) {
-      return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
-    }
+    if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
 
-    // ---------------------------------------------------------
-    // แก้บัค: ฟังก์ชันค้นหาหัวคอลัมน์ (ลบช่องว่าง และ ขีด ทุกชนิด)
-    // ---------------------------------------------------------
-    const findValue = (rowObj, keyword) => {
-      // ใช้ Regex ตัดช่องว่าง (\s) และเครื่องหมายขีดทุกประเภท (-, –, —, _) ออกไปให้หมด
-      const cleanStr = (str) => str.replace(/[\s\-\–\—\_]+/g, ''); 
-      const cleanKeyword = cleanStr(keyword); // ตัวค้นหาก็ต้องถูกตัดขีดออกด้วย
-      
-      const matchedKey = Object.keys(rowObj).find(k => {
-        return cleanStr(k).includes(cleanKeyword); // เทียบคำที่ถูกจับติดกันแล้ว
-      });
-      return matchedKey ? rowObj[matchedKey] : null;
-    };
-
-    // Map ข้อมูลตามหัวคอลัมน์
     const formattedData = allJsonData.map((row, index) => {
-      // 1. จัดการแยก ชื่อ-สกุล (หาคำว่า "ชื่อสกุล" โดยไม่ต้องสนว่า Excel จะพิมพ์ขีดมาแบบไหน)
-      const fullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
-      const nameParts = String(fullName).trim().split(/\s+/);
-      
-      // ถ้ามีข้อมูล fullName ค่อยดึงช่องแรกเป็นชื่อ ถ้าไม่มีให้เป็น "ไม่ระบุ"
-      const firstName = fullName ? (nameParts[0] || "ไม่ระบุ") : "ไม่ระบุ";
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "ไม่ระบุ";
-
-      // 2. จัดการเรื่อง ผลการคัดกรอง
-      const isVictim = findValue(row, "เป็นผู้เสียหาย") ? true : false;
-
-      // 3. ค้นหาข้อมูลอื่นๆ 
-      const nationality = findValue(row, "สัญชาติ");
-      const passportId = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
-      const detectedLocation = findValue(row, "สถานที่ตรวจพบ");
-      const workplace = findValue(row, "สถานที่ทำงาน");
+      // เรียกใช้ Helper ฟังก์ชันที่แยกไว้ด้านบน ทำให้โค้ดตรงนี้คลีนและอ่านง่ายมาก
+      const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
+      const { prefix, fname, mname, lname, isThai, hasName } = processName(rawFullName);
+      const { isVictim, details } = processVictimStatus(row);
 
       return {
         ลำดับที่อ่านได้: index + 1,
         ชื่อชีต: row._sheetName,
-        first_name_th: firstName,
-        last_name_th: lastName,
-        nationality: nationality ? String(nationality) : null,
-        passport_id: passportId ? String(passportId) : null,
-        detected_location: detectedLocation || "ไม่ระบุ",
-        workplace: workplace || null,
+        id: `TEMP_ID_${index + 1}`,
+        first_name_th: hasName && isThai ? fname || "ไม่ระบุ" : hasName ? "-" : "ไม่ระบุ",
+        middle_name_th: isThai ? mname : null,
+        last_name_th: hasName && isThai ? lname || "ไม่ระบุ" : hasName ? "-" : "ไม่ระบุ",
+        first_name_en: hasName && !isThai ? fname || null : null,
+        middle_name_en: !isThai ? mname : null,
+        last_name_en: hasName && !isThai ? lname || null : null,
+        nationality: findValue(row, "สัญชาติ") ? String(findValue(row, "สัญชาติ")) : null,
+        passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
+        detected_location: findValue(row, "สถานที่ตรวจพบ") || "ไม่ระบุ",
+        workplace: findValue(row, "สถานที่ทำงาน") || null,
+        gender: determineGender(row, prefix),
+        detected_date: parseThaiDateToDate(row._sheetName),
         is_victim: isVictim,
-        
+        screening_details: details,
         raw_data_from_excel: row
       };
     });
 
-    res.status(200).json({
-      success: true,
-      message: "อ่านไฟล์จากทุก Sheet และจัดรูปแบบข้อมูลสำเร็จ",
-      total_rows: formattedData.length,
-      headers_found: Array.from(allHeaders),
-      preview_data: formattedData
-    });
-    
+    res.status(200).json({ success: true, message: "ตรวจสอบข้อมูลสำเร็จ!", total_rows: formattedData.length, headers_found: Array.from(allHeaders), preview_data: formattedData });
   } catch (err) {
     console.error("Upload Excel Error:", err);
     res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการอ่านไฟล์" });

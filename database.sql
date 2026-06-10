@@ -15,7 +15,9 @@ CREATE TABLE illegal_immigrants (
     detected_location TEXT NOT NULL,
     is_victim BOOLEAN,
     gender VARCHAR(50),
-    detected_date DATE
+    detected_date DATE,
+    workplace VARCHAR(255),
+    screening_details TEXT
 );
 
 -- ตาราง ส่งกลับ (Deported Persons)
