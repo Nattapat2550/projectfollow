@@ -2,11 +2,14 @@ import type { Metadata } from "next";
 
 import { Sarabun } from "next/font/google";
 
-import { Navigation } from "@/components/navigation";
+// import { Navbar1 } from "@/components/navigation";
+
+
 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
+import TopBar from "@/components/TopBar";
 
 const sarabun = Sarabun({
 	variable: "--font-sarabun",
@@ -30,6 +33,8 @@ export default function RootLayout({
 			className={cn("h-full", "antialiased", "font-sans", sarabun.variable)}
 			suppressHydrationWarning
 		>
+
+			
 			<body className="flex min-h-full flex-col">
 				<ThemeProvider
 					attribute="class"
@@ -37,7 +42,9 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
-					<Navigation />
+				<header>
+					<TopBar></TopBar>
+				</header>
 					{children}
 				</ThemeProvider>
 			</body>
