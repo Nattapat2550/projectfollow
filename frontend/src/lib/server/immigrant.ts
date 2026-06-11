@@ -1,5 +1,7 @@
 import { faker } from "@faker-js/faker";
 
+faker.seed(123);
+
 const mockData: ImmigrantData[] = [...Array(100)].map(() => ({
 	id: faker.string.uuid(),
 	first_name: faker.person.firstName(),
