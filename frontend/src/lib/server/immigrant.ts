@@ -43,3 +43,9 @@ export async function getImmigrantData(
 		total: mockData.length,
 	};
 }
+
+export async function getSingleImmigrantData(
+	id: string
+): Promise<ImmigrantData | null> {
+	return mockData.find((immigrant) => immigrant.id === id) ?? null;
+}

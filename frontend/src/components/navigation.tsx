@@ -79,7 +79,7 @@ const menu: MenuItem[] = [
 			{
 				title: "เพิ่มข้อมูล",
 				icon: <Book className="size-5 shrink-0" />,
-				url: "/immigrant/create",
+				url: "/deport/create",
 			},
 		],
 	},

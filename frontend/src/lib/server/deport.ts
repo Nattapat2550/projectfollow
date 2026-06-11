@@ -56,3 +56,9 @@ export async function getDeportData(
 		total: mockData.length,
 	};
 }
+
+export async function getSingleDeportData(
+	id: string
+): Promise<DeportData | null> {
+	return mockData.find((deport) => deport.id === id) ?? null;
+}
