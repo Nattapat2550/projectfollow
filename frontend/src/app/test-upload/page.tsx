@@ -29,8 +29,10 @@ export default function TestUploadPage() {
     formData.append('file', file);
 
     try {
-      // หมายเหตุ: ปรับเปลี่ยน URL ตรงนี้ให้ตรงกับ Port Backend ของคุณ
-      const response = await fetch('http://localhost:8000/api/immigrants/upload-excel-illegal', {
+      // ดึง URL จาก Environment Variable ของ Next.js (ถ้าไม่มีจะ fallback ไปที่ localhost:8000)
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${backendUrl}/api/immigrants/upload-excel-illegal`, {
         method: 'POST',
         body: formData,
       });
@@ -179,8 +181,7 @@ export default function TestUploadPage() {
                             <span className="font-medium">{row.gender || renderNull()}</span>
                           </div>
                           <div>
-                            {/* ดึงวันที่จาก Sheet Name ตามที่ขอ */}
-                            <span className="text-zinc-500 text-xs block">[DB: detected_date] วันที่ตรวจพบ:</span>
+                            <span className="text regular text-zinc-500 text-xs block">[DB: detected_date] วันที่ตรวจพบ:</span>
                             <span className="font-medium bg-amber-100 dark:bg-amber-900/50 px-1.5 rounded text-amber-800 dark:text-amber-200">
                               {row.detected_date || renderNull()}
                             </span>
@@ -197,7 +198,6 @@ export default function TestUploadPage() {
                             <span className="text-blue-600 dark:text-blue-400 text-xs font-semibold block">[DB: workplace] สถานที่ทำงาน:</span>
                             <span className="font-medium">{row.workplace || renderNull()}</span>
                           </div>
-                          {/* นำช่อง Warrant ออกแล้วตามที่ต้องการ */}
                         </div>
 
                         {/* หมวดผลคัดกรอง */}
@@ -205,7 +205,7 @@ export default function TestUploadPage() {
                           <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider block mb-2">หมวดหมู่ผลการคัดกรอง</span>
                           
                           <div className="mb-2">
-                            <span className="text-zinc-500 text-xs mr-2">[DB: is_victim] สถานะ:</span>
+                            <span className="text-zinc-500 text-xs mr-2">[DB: is_victim] Status:</span>
                             {row.is_victim ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-500 text-white">
                                 TRUE (เป็นผู้เสียหาย)

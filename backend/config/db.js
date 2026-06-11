@@ -1,7 +1,6 @@
 const { Pool } = require("pg");
-require("dotenv").config(); // โหลดไฟล์ .env
 
-// ดึง Connection String จาก DATABASE_URL ใน .env
+// ดึง Connection String จาก DATABASE_URL ที่โหลดมาจากเซิร์ฟเวอร์หลัก
 const connectionString = process.env.DATABASE_URL;
 
 // เช็คว่าถ้าต่อ Localhost ไม่ต้องใช้ SSL แต่ถ้าต่อ Cloud (เช่น Render) ต้องใช้ SSL
@@ -15,7 +14,7 @@ const pool = new Pool({
 // รับ client มาเพื่อเช็คสถานะ จากนั้นทำการ release ทันทีเพื่อป้องกัน Connection Leak
 pool.connect()
   .then((client) => {
-    console.log("✅ PostgreSQL (Render) Connected Successfully");
+    console.log("✅ PostgreSQL Connected Successfully");
     client.release();
   })
   .catch((err) => {
