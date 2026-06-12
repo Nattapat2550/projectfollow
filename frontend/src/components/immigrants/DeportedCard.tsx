@@ -17,7 +17,7 @@ const getDirectImageUrl = (url: string) => {
 };
 
 export default function DeportedCard({ data }: DeportedCardProps) {
-  const fullNameTh = `นาย ${data.first_name_th}${data.middle_name_th ? " " + data.middle_name_th : ""} ${data.last_name_th}`;
+  const fullNameTh = `${data.first_name_th}${data.middle_name_th ? " " + data.middle_name_th : ""} ${data.last_name_th}`;
   const fullNameEn = data.first_name_en
     ? `${data.first_name_en}${data.middle_name_en ? " " + data.middle_name_en : ""} ${data.last_name_en ?? ""}`.trim()
     : "";
