@@ -1,13 +1,11 @@
-// src/components/immigrants/ImmigrantsTable.tsx
 "use client";
 
 import { useState, useMemo } from "react";
-import { DeportedPerson } from "./mockData";
 import TableHeader, { SortField } from "./TableHeader";
 import TableRow from "./TableRow";
 
 interface ImmigrantsTableProps {
-  data: DeportedPerson[];
+  data: any[]; // <--- แก้เป็น any[] เพื่อให้ยืดหยุ่นรับข้อมูลได้ทั้ง 2 ตาราง
   isMock: boolean;
   type: "deported" | "illegal";
 }
@@ -25,19 +23,17 @@ export default function ImmigrantsTable({ data, isMock, type }: ImmigrantsTableP
     }
   };
 
-  // ประมวลผลเรียงลำดับข้อมูล
   const sortedData = useMemo(() => {
     if (!sortField) return data;
 
-    return [...data].sort((a, b) => {
-      // 🎯 เคสพิเศษ: การจัดเรียง วัน/เดือน/ปี เกิด (เช่น "12/05/2535")
+    // เติม any เข้าไปในพารามิเตอร์ของ sort เพื่อไม่ให้เกิด Type Error
+    return [...data].sort((a: any, b: any) => {
       if (sortField === "date_of_birth") {
         const parseDate = (dateStr: string) => {
           if (!dateStr) return "";
           const parts = dateStr.split("/");
           if (parts.length !== 3) return dateStr;
           const [day, month, year] = parts;
-          // แปลงกลับเป็น ปี-เดือน-วัน เพื่อให้สามารถเรียงลำดับอักษร/ตัวเลขได้ถูกต้องตามหลักสากล
           return `${year}-${month}-${day}`;
         };
 
@@ -49,7 +45,6 @@ export default function ImmigrantsTable({ data, isMock, type }: ImmigrantsTableP
           : bDate.localeCompare(aDate);
       }
 
-      // เคสปกติ: ข้อความทั่วไป
       let aValue = "";
       let bValue = "";
 

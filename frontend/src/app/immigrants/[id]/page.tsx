@@ -4,24 +4,16 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 
-import { 
-  MOCK_DEPORTED_DATA, 
-  MOCK_ILLEGAL_DATA, 
-  DeportedPerson, 
-  IllegalImmigrant 
-} from "@/components/immigrants/mockData";
 import DeportedCard from "@/components/immigrants/DeportedCard";
 import IllegalCard from "@/components/immigrants/IllegalCard";
 import RightPanel from "@/components/immigrants/RightPanel";
-
-type PersonData = DeportedPerson | IllegalImmigrant;
 
 export default function ImmigrantDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
 
-  const [person, setPerson] = useState<PersonData | null>(null);
+  const [person, setPerson] = useState<any | null>(null);
   const [personType, setPersonType] = useState<"deported" | "illegal" | null>(null);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
@@ -29,41 +21,57 @@ export default function ImmigrantDetailPage() {
   useEffect(() => {
     if (!id) return;
 
-    setLoading(true);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+        const res = await fetch(`${backendUrl}/api/v1/immigrants`);
+        if (!res.ok) throw new Error("Failed to fetch");
+        const json = await res.json();
 
-    // ค้นหาในกลุ่ม Deported ก่อน
-    const foundDep = MOCK_DEPORTED_DATA.find((p) => p.id === id);
-    if (foundDep) {
-      setPerson(foundDep);
-      setPersonType("deported");
-    } else {
-      // ถ้าไม่เจอ ค่อยไปหาในกลุ่ม Illegal
-      const foundIll = MOCK_ILLEGAL_DATA.find((p) => p.id === id);
-      if (foundIll) {
-        setPerson(foundIll);
-        setPersonType("illegal");
-      } else {
-        // หาไม่เจอทั้ง 2 กลุ่ม
-        setPerson(null);
-        setPersonType(null);
+        const deporteds = json.data?.deporteds || [];
+        const illegals = json.data?.illegals || [];
+
+        // 1. หาในฝั่งส่งกลับก่อน
+        const foundDep = deporteds.find((p: any) => p.id === id);
+        if (foundDep) {
+          setPerson(foundDep);
+          setPersonType("deported");
+          setNote(foundDep.note || "");
+        } else {
+          // 2. ถ้าไม่เจอ ไปหาในฝั่งลอบเข้า
+          const foundIll = illegals.find((p: any) => p.id === id);
+          if (foundIll) {
+            setPerson(foundIll);
+            setPersonType("illegal");
+            setNote(foundIll.note || "");
+          } else {
+            setPerson(null);
+            setPersonType(null);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching details:", error);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    fetchData();
   }, [id]);
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--background)] text-[var(--foreground)]">
+      <div className="flex h-screen items-center justify-center bg-background text-foreground">
         กำลังโหลดข้อมูล...
       </div>
     );
   }
 
-  // แสดงหน้า Not Found หากค้นหาข้อมูลไม่พบ
   if (!person || !personType) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-[var(--background)] text-[var(--foreground)] gap-4">
-        <p className="text-xl font-bold text-red-500">ไม่พบข้อมูล ID: "{id}" ในสารบบ Mock Data</p>
+      <div className="flex h-screen flex-col items-center justify-center bg-background text-foreground gap-4">
+        <p className="text-xl font-bold text-red-500">ไม่พบข้อมูล ID: "{id}" ในฐานข้อมูล</p>
         <button 
           onClick={() => router.back()}
           className="px-4 py-2 bg-slate-200 text-slate-800 border border-slate-300 rounded-md hover:opacity-80 cursor-pointer"
@@ -75,30 +83,26 @@ export default function ImmigrantDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-6 text-[var(--foreground)] transition-colors duration-200">
-      {/* ปุ่มย้อนกลับด้านบน */}
+    <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-200">
       <div className="max-w-7xl mx-auto mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-1 text-2xl font-bold text-[var(--header)] hover:opacity-80 transition cursor-pointer"
+          className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer"
         >
           <ChevronLeft size={32} />
           <span>รายละเอียด ({personType === "deported" ? "ผู้ถูกส่งตัวกลับ" : "ผู้แอบเข้าประเทศ"})</span>
         </button>
       </div>
 
-      {/* Grid Layout สลับ Component การ์ดตามรูปภาพและประเภทข้อมูล */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto items-start">
-        {/* ฝั่งซ้าย: แสดงข้อมูลหน้าบัตร */}
         <div className="lg:col-span-7 xl:col-span-8 w-full">
           {personType === "deported" ? (
-            <DeportedCard data={person as DeportedPerson} />
+            <DeportedCard data={person} />
           ) : (
-            <IllegalCard data={person as IllegalImmigrant} />
+            <IllegalCard data={person} />
           )}
         </div>
 
-        {/* ฝั่งขวา: แสดงข้อมูลสถานะ/คัดกรอง + หมายเหตุ + ปุ่มคำสั่ง */}
         <div className="lg:col-span-5 xl:col-span-4 w-full">
           <RightPanel type={personType} data={person} note={note} setNote={setNote} />
         </div>

@@ -23,21 +23,45 @@ CREATE TABLE illegal_immigrants (
 -- ตาราง ส่งกลับ (Deported Persons)
 CREATE TABLE deported_persons (
     id VARCHAR(255) PRIMARY KEY,
+    
+    -- ข้อมูลชื่อ-นามสกุล
     first_name_th VARCHAR(255) NOT NULL,
     middle_name_th VARCHAR(255),
     last_name_th VARCHAR(255) NOT NULL,
     first_name_en VARCHAR(255),
     middle_name_en VARCHAR(255),
     last_name_en VARCHAR(255),
+    
+    -- ข้อมูลส่วนตัว
     date_of_birth VARCHAR(50) NOT NULL,
-    national_id VARCHAR(50) UNIQUE NOT NULL,
-    passport_id VARCHAR(255) UNIQUE,
-    number_of_case INT NOT NULL DEFAULT 0,
-    number_of_warrant INT NOT NULL DEFAULT 0,
-    address TEXT NOT NULL,
     age INT,
+    national_id VARCHAR(50) UNIQUE NOT NULL,  -- ตรงกับ id_card
+    passport_id VARCHAR(255) UNIQUE,          -- ตรงกับ passport
+    address TEXT NOT NULL,
+    photo_url TEXT,                           -- เพิ่มใหม่: เก็บ URL รูปภาพ หรือ Base64 string ยาวๆ
+    
+    -- ข้อมูลสถานที่และรูปแบบงาน (เพิ่มใหม่)
+    building VARCHAR(255),
+    floor VARCHAR(100),
+    room VARCHAR(100),
+    job_type VARCHAR(255),
+    role VARCHAR(255),
+    
+    -- ข้อมูลการเงิน (เพิ่มใหม่)
+    salary VARCHAR(100),                      -- ใช้ VARCHAR เผื่อข้อมูลใน Excel ใส่คอมม่ามาเช่น "15,000"
+    paid_by VARCHAR(255),
+    payment_method VARCHAR(255),
+    
+    -- ข้อมูลทางคดีและหน่วยงาน
+    number_of_case INT NOT NULL DEFAULT 0,    -- ตรงกับ case_id_count (ควรแปลงให้เป็นตัวเลขก่อนลง DB)
+    number_of_warrant INT NOT NULL DEFAULT 0, -- ตรงกับ warrant (ควรแปลงให้เป็นตัวเลขก่อนลง DB)
+    victim_indicator VARCHAR(255),            -- เพิ่มใหม่: มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้
+    responsible_agency VARCHAR(255),          -- เพิ่มใหม่: หน่วยงานที่รับผิดชอบ
+    
+    -- ข้อมูลการส่งกลับและอื่นๆ
     return_date DATE,
     channel VARCHAR(255),
+    note TEXT,                                -- เพิ่มใหม่: หมายเหตุ
     result deported_result_enum NOT NULL DEFAULT 'PENDING'
 );
 

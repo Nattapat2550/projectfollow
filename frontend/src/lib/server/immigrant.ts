@@ -1,51 +1,59 @@
-import { faker } from "@faker-js/faker";
-
-faker.seed(123);
-
-const mockData: ImmigrantData[] = [...Array(100)].map(() => ({
-	id: faker.string.uuid(),
-	first_name: faker.person.firstName(),
-	middle_name:
-		faker.datatype.boolean({ probability: 0.2 }) ?
-			faker.person.middleName()
-		:	null,
-	last_name: faker.person.lastName(),
-
-	gender: faker.person.sexType({ includeGeneric: false }) as "male" | "female",
-	nationality: faker.location.country(),
-	passport_id:
-		faker.datatype.boolean({ probability: 0.5 }) ?
-			faker.helpers.fromRegExp("[A-Z]{1,3}[0-9]{6,8}")
-		:	null,
-
-	detected_location: faker.location.streetAddress({ useFullAddress: true }),
-	detected_date:
-		faker.datatype.boolean({ probability: 0.5 }) ?
-			faker.date.anytime().toISOString()
-		:	null,
-
-	is_victim:
-		faker.datatype.boolean({ probability: 0.7 }) ?
-			faker.datatype.boolean({ probability: 0.3 })
-		:	null,
-}));
 
 export async function getImmigrantData(
 	page: number = 0,
 	limit: number = 25
 ): Promise<{
-	data: ImmigrantData[];
+	data: any[]; // หรือใส่เป็น ImmigrantData[]
 	total: number;
 }> {
-	const offset = page * limit;
-	return {
-		data: mockData.slice(offset, offset + limit),
-		total: mockData.length,
-	};
+	try {
+		// ดึง URL Backend จาก Env ถ้าไม่มีให้ใช้ localhost:8000
+		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+		
+		// เรียก API ดึงข้อมูล
+		const response = await fetch(`${backendUrl}/api/v1/immigrants`, {
+			cache: 'no-store' // ไม่ทำ Cache เพื่อให้ดึงข้อมูลอัปเดตใหม่เสมอ
+		});
+
+		if (!response.ok) {
+			throw new Error("Failed to fetch immigrant data");
+		}
+
+		const result = await response.json();
+		const rawData = result.data?.illegals || [];
+
+		// Map ข้อมูลจาก Database ให้ตรงกับคอลัมน์ของ Frontend
+		const mappedData = rawData.map((item: any) => ({
+			id: item.id,
+			first_name: item.first_name_th || item.first_name_en || "ไม่ระบุ",
+			middle_name: item.middle_name_th || item.middle_name_en || null,
+			last_name: item.last_name_th || item.last_name_en || "ไม่ระบุ",
+			
+			// แปลงเพศกลับเป็น male/female ตามที่ UI ต้องการ
+			gender: item.gender === "หญิง" ? "female" : "male", 
+			
+			nationality: item.nationality || "ไม่ระบุ",
+			passport_id: item.passport_id || null,
+			detected_location: item.detected_location || "ไม่ระบุสถานที่",
+			detected_date: item.detected_date ? new Date(item.detected_date).toISOString() : null,
+			is_victim: item.is_victim ?? null,
+		}));
+
+		const offset = page * limit;
+		return {
+			data: mappedData.slice(offset, offset + limit),
+			total: mappedData.length,
+		};
+	} catch (error) {
+		console.error("Error fetching immigrant data:", error);
+		return { data: [], total: 0 };
+	}
 }
 
 export async function getSingleImmigrantData(
 	id: string
-): Promise<ImmigrantData | null> {
-	return mockData.find((immigrant) => immigrant.id === id) ?? null;
+): Promise<any | null> {
+	// ดึงข้อมูลทั้งหมดมาแล้วหา id ที่ตรงกัน (หรือถ้าใน Backend มี API /:id ก็สามารถยิงตรงได้เลย)
+	const { data } = await getImmigrantData(0, 10000);
+	return data.find((immigrant: any) => immigrant.id === id) ?? null;
 }

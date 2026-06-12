@@ -170,52 +170,63 @@ exports.uploadExcelIllegal = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
 
+    // อ่านข้อมูลจาก Memory Buffer
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     let allJsonData = [];
-    let allHeaders = new Set(); 
     
     workbook.SheetNames.forEach(sheetName => {
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null });
       if (sheetData.length > 0) {
-        Object.keys(sheetData[0]).forEach(k => allHeaders.add(k));
         allJsonData.push(...sheetData.map(row => ({ ...row, _sheetName: sheetName })));
       }
     });
 
     if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
 
-    const formattedData = allJsonData.map((row, index) => {
+    let successCount = 0;
+    let errors = [];
+
+    // ลูปบันทึกข้อมูลเข้าฐานข้อมูล
+    for (let i = 0; i < allJsonData.length; i++) {
+      const row = allJsonData[i];
       const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
       const { prefix, fname, mname, lname, isThai, hasName } = processName(rawFullName);
       const { isVictim, details } = processVictimStatus(row);
 
-      // แก้ไข Fallback ของชื่อ-นามสกุลไทย ให้เป็นค่า String เสมอเพื่อป้องกัน Required Field Error
-      return {
-        ลำดับที่อ่านได้: index + 1,
-        ชื่อชีต: row._sheetName,
-        id: `TEMP_ID_${index + 1}`,
-        first_name_th: hasName && isThai ? fname || "ไม่ระบุ" : "ไม่ระบุ",
-        middle_name_th: isThai ? mname : null,
-        last_name_th: hasName && isThai ? lname || "ไม่ระบุ" : "ไม่ระบุ",
-        first_name_en: hasName && !isThai ? fname || null : null,
-        middle_name_en: !isThai ? mname : null,
-        last_name_en: hasName && !isThai ? lname || null : null,
-        nationality: findValue(row, "สัญชาติ") ? String(findValue(row, "สัญชาติ")) : null,
-        passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
-        detected_location: findValue(row, "สถานที่ตรวจพบ") || "ไม่ระบุ",
-        workplace: findValue(row, "สถานที่ทำงาน") || null,
-        warrant: findValue(row, "หมายจับ") || null,
-        gender: determineGender(row, prefix),
-        detected_date: parseThaiDateToDate(row._sheetName),
-        is_victim: isVictim,
-        screening_details: details,
-        raw_data_from_excel: row
-      };
-    });
+      try {
+         await prisma.illegal_immigrants.create({
+            data: {
+                first_name_th: hasName && isThai && fname ? fname : "ไม่ระบุ",
+                middle_name_th: isThai ? mname : null,
+                last_name_th: hasName && isThai && lname ? lname : "ไม่ระบุ",
+                first_name_en: hasName && !isThai ? fname || null : null,
+                middle_name_en: !isThai ? mname : null,
+                last_name_en: hasName && !isThai ? lname || null : null,
+                nationality: findValue(row, "สัญชาติ") ? String(findValue(row, "สัญชาติ")) : null,
+                passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
+                detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
+                workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,
+                warrant: findValue(row, "หมายจับ") ? String(findValue(row, "หมายจับ")) : null,
+                gender: determineGender(row, prefix),
+                detected_date: parseThaiDateToDate(row._sheetName),
+                is_victim: isVictim,
+                screening_details: details,
+            }
+         });
+         successCount++;
+      } catch (dbErr) {
+         console.error("DB Insert Error:", dbErr.message);
+         errors.push(`แถวที่ ${i+1}: ${dbErr.message}`);
+      }
+    }
 
-    res.status(200).json({ success: true, message: "ตรวจสอบข้อมูลสำเร็จ!", total_rows: formattedData.length, headers_found: Array.from(allHeaders), preview_data: formattedData });
+    res.status(200).json({ 
+        success: true, 
+        message: `บันทึกข้อมูลแอบเข้าสำเร็จ ${successCount} จาก ${allJsonData.length} รายการ`,
+        errors: errors.length > 0 ? errors : undefined 
+    });
   } catch (err) {
     console.error("Upload Excel Error:", err);
-    res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการอ่านไฟล์" });
+    res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการอ่านไฟล์และบันทึกข้อมูล" });
   }
 };

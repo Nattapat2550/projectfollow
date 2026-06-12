@@ -27,7 +27,7 @@ export default function TableRow({ person, isMock, type }: TableRowProps) {
   return (
     <tr 
       onClick={() => router.push(detailUrl)}
-      className="transition-colors hover:bg-[var(--row-hover)] cursor-pointer"
+      className="transition-colors hover:bg-(--row-hover) cursor-pointer"
       style={{ borderBottomColor: "var(--foreground)" }}
     >
       <td className="py-3 px-4 text-sm border-r font-medium" style={{ borderColor: "var(--foreground)" }}>
