@@ -9,7 +9,7 @@ const isLocalhost = !connectionString || connectionString.includes("localhost") 
 const pool = new Pool({ connectionString, ssl: isLocalhost ? false : { rejectUnauthorized: false } });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
-// ================= ฟังก์ชันช่วยเหลือ (Helpers) เพื่อให้โค้ดสั้นลง =================
+// ================= ฟังก์ชันช่วยเหลือ (Helpers) =================
 
 const parseThaiDateToDate = (text) => {
   if (!text) return null;
@@ -83,7 +83,6 @@ exports.createIllegal = async (req, res) => {
   try {
     const data = req.body;
 
-    // ตรวจสอบฟิลด์ที่จำเป็น (Required) ตามเงื่อนไขของ Prisma Schema
     if (!data.first_name_th || !data.last_name_th) {
       return res.status(400).json({ 
         success: false, 
@@ -120,15 +119,13 @@ exports.createDeported = async (req, res) => {
   try {
     const data = req.body;
 
-    // ตรวจสอบฟิลด์ที่จำเป็น (Required) ตามเงื่อนไขของ Prisma Schema
     if (!data.first_name_th || !data.last_name_th || !data.date_of_birth || !data.national_id) {
       return res.status(400).json({ 
         success: false, 
-        message: "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (ชื่อไทย, นามสกุลไทย, วันเกิด, เลขบัตรประชาชน/เลขควบคุม)" 
+        message: "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน" 
       });
     }
 
-    // ตรวจสอบว่า national_id หรือ passport_id ซ้ำหรือไม่เพื่อป้องกัน Prisma Unique Constraints Error
     if (data.national_id) {
       const existingNational = await prisma.deported_persons.findUnique({ where: { national_id: data.national_id } });
       if (existingNational) return res.status(400).json({ success: false, message: "เลขประจำตัว (national_id) นี้มีอยู่ในระบบแล้ว" });
@@ -166,11 +163,24 @@ exports.createDeported = async (req, res) => {
   }
 };
 
+// จัดการ Global state สำหรับ Progress Bar
+if (!global.uploadProgress) {
+  global.uploadProgress = {};
+}
+
+exports.getUploadProgress = (req, res) => {
+  const jobId = req.params.jobId;
+  const progress = global.uploadProgress[jobId] || { current: 0, total: 0, status: 'pending' };
+  res.json(progress);
+};
+
 exports.uploadExcelIllegal = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
 
-    // อ่านข้อมูลจาก Memory Buffer
+    const action = req.query.action || "upload";
+    const jobId = req.query.jobId;
+
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     let allJsonData = [];
     
@@ -183,10 +193,48 @@ exports.uploadExcelIllegal = async (req, res) => {
 
     if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
 
+    // ================= โหมดพรีวิว =================
+    if (action === "preview") {
+      const preview_data = [];
+      for (let i = 0; i < allJsonData.length; i++) {
+        const row = allJsonData[i];
+        const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
+        const { prefix, fname, mname, lname, isThai, hasName } = processName(rawFullName);
+        const { isVictim, details } = processVictimStatus(row);
+        
+        let dateObj = parseThaiDateToDate(row._sheetName);
+
+        preview_data.push({
+          ลำดับที่อ่านได้: i + 1,
+          first_name_th: hasName && isThai && fname ? fname : "ไม่ระบุ",
+          middle_name_th: isThai ? mname : null,
+          last_name_th: hasName && isThai && lname ? lname : "ไม่ระบุ",
+          first_name_en: hasName && !isThai ? fname || null : null,
+          middle_name_en: !isThai ? mname : null,
+          last_name_en: hasName && !isThai ? lname || null : null,
+          nationality: findValue(row, "สัญชาติ") ? String(findValue(row, "สัญชาติ")) : null,
+          passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
+          detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
+          workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,
+          warrant: findValue(row, "หมายจับ") ? String(findValue(row, "หมายจับ")) : null,
+          gender: determineGender(row, prefix),
+          detected_date: dateObj ? dateObj.toISOString().split('T')[0] : null,
+          is_victim: isVictim,
+          screening_details: details,
+          raw_data_from_excel: row
+        });
+      }
+      return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวสำเร็จ (ยังไม่ได้บันทึก)", total_rows: preview_data.length, preview_data });
+    }
+
+    // ================= โหมดอัปโหลด =================
+    if (jobId) {
+       global.uploadProgress[jobId] = { current: 0, total: allJsonData.length, status: 'processing' };
+    }
+
     let successCount = 0;
     let errors = [];
 
-    // ลูปบันทึกข้อมูลเข้าฐานข้อมูล
     for (let i = 0; i < allJsonData.length; i++) {
       const row = allJsonData[i];
       const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
@@ -215,10 +263,15 @@ exports.uploadExcelIllegal = async (req, res) => {
          });
          successCount++;
       } catch (dbErr) {
-         console.error("DB Insert Error:", dbErr.message);
          errors.push(`แถวที่ ${i+1}: ${dbErr.message}`);
       }
+
+      if (jobId && global.uploadProgress[jobId]) {
+         global.uploadProgress[jobId].current = i + 1;
+      }
     }
+
+    if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
 
     res.status(200).json({ 
         success: true, 
@@ -226,7 +279,6 @@ exports.uploadExcelIllegal = async (req, res) => {
         errors: errors.length > 0 ? errors : undefined 
     });
   } catch (err) {
-    console.error("Upload Excel Error:", err);
     res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการอ่านไฟล์และบันทึกข้อมูล" });
   }
 };

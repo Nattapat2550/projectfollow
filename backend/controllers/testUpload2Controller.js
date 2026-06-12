@@ -3,7 +3,6 @@ const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
 
-// 1. นำเข้า Prisma และ Adapter
 const { PrismaClient } = require("@prisma/client");
 const { Pool } = require("pg");
 const { PrismaPg } = require("@prisma/adapter-pg");
@@ -14,17 +13,14 @@ const isLocalhost = !connectionString || connectionString.includes("localhost") 
 const pool = new Pool({ connectionString, ssl: isLocalhost ? false : { rejectUnauthorized: false } });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
-// 2. นำเข้า Service สำหรับอัปโหลดขึ้น Google Drive 
 const { uploadToDrive } = require("../services/googleDriveService"); 
 
-// ฟังก์ชันลบคำนำหน้าชื่อ
 const removePrefix = (fullName) => {
     if (!fullName || typeof fullName !== "string") return fullName;
     const prefixRegex = /^(พล\.ต\.อ\.|พล\.ต\.ท\.|พล\.ต\.ต\.|พ\.ต\.อ\.|พ\.ต\.ท\.|พ\.ต\.ต\.|ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|ด\.ต\.|จ\.ส\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ว่าที่ ร\.ต\.|นางสาว|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|Mr\.|Mrs\.|Ms\.|Miss\s*)/i;
     return fullName.replace(prefixRegex, '').trim();
 };
 
-// ฟังก์ชันสำหรับแยก ชื่อแรก ชื่อกลาง นามสกุล 
 const splitName = (fullName) => {
     if (!fullName || typeof fullName !== "string") {
         return { first: null, middle: null, last: null };
@@ -43,24 +39,35 @@ const splitName = (fullName) => {
     return { first: null, middle: null, last: null };
 };
 
+// จัดการ Global state สำหรับ Progress Bar
+if (!global.uploadProgress) {
+    global.uploadProgress = {};
+}
+  
+exports.getUploadProgress = (req, res) => {
+    const jobId = req.params.jobId;
+    const progress = global.uploadProgress[jobId] || { current: 0, total: 0, status: 'pending' };
+    res.json(progress);
+};
+
 exports.uploadExcel = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel" });
         }
 
-        // ตรวจสอบและสร้างโฟลเดอร์ uploads ชั่วคราว (ถ้ายังไม่มี)
+        const action = req.query.action || "upload";
+        const jobId = req.query.jobId;
+
         const uploadsDir = path.join(__dirname, "../uploads");
         if (!fs.existsSync(uploadsDir)) {
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
 
-        // 1. อ่านข้อมูล Text ด้วย xlsx
         const workbookXlsx = xlsx.readFile(req.file.path);
         const sheetName = workbookXlsx.SheetNames[0];
         const rawData = xlsx.utils.sheet_to_json(workbookXlsx.Sheets[sheetName], { defval: null });
 
-        // 2. ดึงข้อมูลรูปภาพที่ฝังในเซลล์ ด้วย ExcelJS
         const workbookExt = new ExcelJS.Workbook();
         await workbookExt.xlsx.readFile(req.file.path);
         const worksheetExt = workbookExt.worksheets[0];
@@ -71,7 +78,6 @@ exports.uploadExcel = async (req, res) => {
             const imgInfo = workbookExt.getImage(image.imageId);
             
             if (imgInfo && imgInfo.buffer) {
-                // เก็บ buffer เอาไว้เขียนเป็นไฟล์ชั่วคราวเพื่ออัปโหลด
                 imagesMap[rowIdx] = {
                     buffer: imgInfo.buffer,
                     extension: imgInfo.extension || 'jpeg'
@@ -79,17 +85,60 @@ exports.uploadExcel = async (req, res) => {
             }
         }
 
+        // ================= โหมดพรีวิว =================
+        if (action === "preview") {
+            const preview_data = [];
+            for (let i = 0; i < rawData.length; i++) {
+                const row = rawData[i];
+                const thName = splitName(row["ชื่อ สกุล (ไทย)"]);
+                const enName = splitName(row["ชื่อ สกุล (อังกฤษ)"]);
+                const id_card = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"] || `NO_ID_${i}`;
+                const dob = row["วัน/เดือน/ปี เกิด"] ? String(row["วัน/เดือน/ปี เกิด"]) : "ไม่ระบุ";
+                
+                let photo_url_preview = null;
+                if (imagesMap[i + 1]) {
+                    // แปลง Buffer ภาพเป็น Base64 เพื่อส่งไปพรีวิวแสดงหน้าจอทันที
+                    const base64Data = imagesMap[i + 1].buffer.toString('base64');
+                    const mimeType = imagesMap[i + 1].extension === 'png' ? 'image/png' : 'image/jpeg';
+                    photo_url_preview = `data:${mimeType};base64,${base64Data}`;
+                } else if (row["รูปจาก ทร.14"]) {
+                    photo_url_preview = String(row["รูปจาก ทร.14"]);
+                }
+
+                preview_data.push({
+                    ลำดับที่อ่านได้: i + 1,
+                    first_name_th: thName.first || "ไม่ระบุ",
+                    last_name_th: thName.last || "ไม่ระบุ",
+                    first_name_en: enName.first || null,
+                    last_name_en: enName.last || null,
+                    age: parseInt(row["อายุ(ปี)"]) || null,
+                    dob: dob,
+                    id_card: id_card,
+                    passport: row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]) : null,
+                    photo_url: photo_url_preview,
+                    case_id_count: parseInt(row["จำนวน Case ID"]) || 0,
+                    warrant: parseInt(row["หมายจับ"]) || 0,
+                    raw_data_from_excel: row
+                });
+            }
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); // ลบทิ้งเลยไม่ต้องอัพรูป
+            return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวและรูปภาพสำเร็จ", total_rows: preview_data.length, preview_data });
+        }
+
+        // ================= โหมดอัปโหลด =================
         let successCount = 0;
         let errors = [];
 
-        // 3. วนลูปอ่านข้อมูล Map เข้า Database และอัปโหลดรูป
+        if (jobId) {
+            global.uploadProgress[jobId] = { current: 0, total: rawData.length, status: 'processing' };
+        }
+
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
             const thName = splitName(row["ชื่อ สกุล (ไทย)"]);
             const enName = splitName(row["ชื่อ สกุล (อังกฤษ)"]);
             const excelRowIndex = i + 1; 
 
-            // 3.1 จัดการอัปโหลดรูปลง Google Drive
             let drivePhotoUrl = null;
             const imgData = imagesMap[excelRowIndex];
 
@@ -117,7 +166,6 @@ exports.uploadExcel = async (req, res) => {
                 drivePhotoUrl = String(row["รูปจาก ทร.14"]);
             }
 
-            // 3.2 แปลงค่าตัวเลขและป้องกันค่าว่าง
             const id_card = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"] || `NO_ID_${Date.now()}_${i}`;
             const dob = row["วัน/เดือน/ปี เกิด"] ? String(row["วัน/เดือน/ปี เกิด"]) : "ไม่ระบุ";
             const passport = row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).trim() : null;
@@ -126,7 +174,6 @@ exports.uploadExcel = async (req, res) => {
             const warrantCount = parseInt(row["หมายจับ"]);
             const parsedAge = parseInt(row["อายุ(ปี)"]);
 
-            // 3.3 บันทึกข้อมูลลงฐานข้อมูล
             try {
                 await prisma.deported_persons.create({
                     data: {
@@ -163,12 +210,16 @@ exports.uploadExcel = async (req, res) => {
                 });
                 successCount++;
             } catch (dbErr) {
-                console.error(`DB Insert Error row ${i}:`, dbErr.message);
                 errors.push(`แถวที่ ${i + 1}: ${dbErr.message}`);
+            }
+
+            if (jobId && global.uploadProgress[jobId]) {
+                global.uploadProgress[jobId].current = i + 1;
             }
         }
 
-        // ลบไฟล์ Excel ทิ้งหลังประมวลผลเสร็จสิ้น
+        if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
+
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
         res.status(200).json({
@@ -179,7 +230,6 @@ exports.uploadExcel = async (req, res) => {
 
     } catch (error) {
         if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-        console.error("Error processing excel:", error);
         res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการประมวลผลระบบ: " + error.message });
     }
 };
