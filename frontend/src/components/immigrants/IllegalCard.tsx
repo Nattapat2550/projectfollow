@@ -148,9 +148,9 @@ export default function IllegalCard({ data }: IllegalCardProps) {
         <div className="flex flex-col items-center shrink-0" style={{ width: "30%" }}>
           <p className="font-bold text-emerald-900 text-center leading-tight mb-[3%]" style={{ fontSize: "clamp(8px, 2.4vw, 20px)" }}>ผู้แอบเข้าประเทศ</p>
           
-          <span className="text-red-500 font-bold bg-red-50 border border-red-200 rounded-full flex items-center justify-center gap-[4px] mb-[5%]" style={{ fontSize: "clamp(5px, 1.2vw, 11px)", padding: "1% 8%" }}>
+          <span className="text-red-500 font-bold bg-red-50 border border-red-200 rounded-full flex items-center justify-center gap-1 mb-[5%]" style={{ fontSize: "clamp(5px, 1.2vw, 11px)", padding: "1% 8%" }}>
             สัญชาติ: 
-            {flagUrl && <img src={flagUrl} alt="flag" className="w-[14px] h-[10px] object-cover rounded-[1px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />}
+            {flagUrl && <img src={flagUrl} alt="flag" className="w-3.5 h-2.5 object-cover rounded-[1px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />}
             {data.nationality || "ไม่ระบุ"}
           </span>
 
@@ -177,8 +177,8 @@ export default function IllegalCard({ data }: IllegalCardProps) {
             <div className="flex flex-col gap-[6%] flex-1">
               <ILabel>จากประเทศ</ILabel>
               <IBox>
-                <div className="flex items-center gap-[6px]">
-                  {flagUrl && <img src={flagUrl} alt="flag" className="w-[18px] h-[13px] object-cover rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />}
+                <div className="flex items-center gap-1.5">
+                  {flagUrl && <img src={flagUrl} alt="flag" className="w-4.5 h-3.25 object-cover rounded-xs shadow-[0_0_2px_rgba(0,0,0,0.2)]" />}
                   <span>{data.nationality || "-"}</span>
                 </div>
               </IBox>
@@ -201,8 +201,8 @@ export default function IllegalCard({ data }: IllegalCardProps) {
             <div className="flex flex-col gap-[6%]" style={{ width: "55%" }}>
               <ILabel>สัญชาติ</ILabel>
               <IBox>
-                <div className="flex items-center gap-[6px]">
-                  {flagUrl && <img src={flagUrl} alt="flag" className="w-[18px] h-[13px] object-cover rounded-[2px] shadow-[0_0_2px_rgba(0,0,0,0.2)]" />}
+                <div className="flex items-center gap-1.5">
+                  {flagUrl && <img src={flagUrl} alt="flag" className="w-4.5 h-3.25 object-cover rounded-xs shadow-[0_0_2px_rgba(0,0,0,0.2)]" />}
                   <span>{data.nationality || "-"}</span>
                 </div>
               </IBox>
