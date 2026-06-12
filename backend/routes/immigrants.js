@@ -21,6 +21,18 @@ router.post("/illegal", immigrantController.createIllegal);
 // POST: เพิ่มข้อมูลส่งกลับ (รายคน พร้อมรูปภาพ)
 router.post("/deported", uploadMiddleware.single("photo"), immigrantController.createDeported);
 
+// PUT: แก้ไขข้อมูลแอบเข้า (รายคน)
+router.put("/illegal/:id", immigrantController.updateIllegal);
+
+// PUT: แก้ไขข้อมูลส่งกลับ (รายคน พร้อมอัปเดตรูปภาพได้)
+router.put("/deported/:id", uploadMiddleware.single("photo"), immigrantController.updateDeported);
+
+// DELETE: ลบข้อมูลแอบเข้า
+router.delete("/illegal/:id", immigrantController.deleteIllegal);
+
+// DELETE: ลบข้อมูลส่งกลับ
+router.delete("/deported/:id", immigrantController.deleteDeported);
+
 // POST: อัปโหลดข้อมูลผ่านไฟล์ Excel (แอบเข้า)
 router.post("/upload-excel-illegal", uploadExcel.single("file"), immigrantController.uploadExcelIllegal);
 

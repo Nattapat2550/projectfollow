@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Save, X } from "lucide-react";
 
 import DeportedCard from "@/components/immigrants/DeportedCard";
 import IllegalCard from "@/components/immigrants/IllegalCard";
@@ -18,47 +18,110 @@ export default function ImmigrantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
 
-  useEffect(() => {
-    if (!id) return;
+  // States สำหรับโหมดแก้ไขข้อมูล
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
 
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-        const res = await fetch(`${backendUrl}/api/v1/immigrants`);
-        if (!res.ok) throw new Error("Failed to fetch");
-        const json = await res.json();
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const res = await fetch(`${backendUrl}/api/v1/immigrants`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      const json = await res.json();
 
-        const deporteds = json.data?.deporteds || [];
-        const illegals = json.data?.illegals || [];
+      const deporteds = json.data?.deporteds || [];
+      const illegals = json.data?.illegals || [];
 
-        // 1. หาในฝั่งส่งกลับก่อน
-        const foundDep = deporteds.find((p: any) => p.id === id);
-        if (foundDep) {
-          setPerson(foundDep);
-          setPersonType("deported");
-          setNote(foundDep.note || "");
+      // 1. หาในฝั่งส่งกลับก่อน
+      const foundDep = deporteds.find((p: any) => String(p.id) === String(id));
+      if (foundDep) {
+        setPerson(foundDep);
+        setPersonType("deported");
+        setNote(foundDep.note || "");
+        setFormData({
+          ...foundDep,
+          date_of_birth: foundDep.date_of_birth ? foundDep.date_of_birth.split("T")[0] : "",
+          return_date: foundDep.return_date ? foundDep.return_date.split("T")[0] : "",
+        });
+      } else {
+        // 2. ถ้าไม่เจอ ไปหาในฝั่งลอบเข้า
+        const foundIll = illegals.find((p: any) => String(p.id) === String(id));
+        if (foundIll) {
+          setPerson(foundIll);
+          setPersonType("illegal");
+          setNote(foundIll.note || "");
+          setFormData({
+            ...foundIll,
+            detected_date: foundIll.detected_date ? foundIll.detected_date.split("T")[0] : "",
+          });
         } else {
-          // 2. ถ้าไม่เจอ ไปหาในฝั่งลอบเข้า
-          const foundIll = illegals.find((p: any) => p.id === id);
-          if (foundIll) {
-            setPerson(foundIll);
-            setPersonType("illegal");
-            setNote(foundIll.note || "");
-          } else {
-            setPerson(null);
-            setPersonType(null);
-          }
+          setPerson(null);
+          setPersonType(null);
         }
-      } catch (error) {
-        console.error("Error fetching details:", error);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchData();
+  useEffect(() => {
+    if (id) {
+      fetchData();
+    }
   }, [id]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: checked }));
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setIsSaving(true);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const endpoint = personType === "deported" ? `deported/${id}` : `illegal/${id}`;
+
+      // เคลียร์และแปลงชนิดข้อมูลให้ถูกต้องก่อนส่งกลับไปยังฐานข้อมูล
+      const payload = { ...formData };
+      if (personType === "deported") {
+        payload.number_of_case = parseInt(payload.number_of_case) || 0;
+        payload.number_of_warrant = parseInt(payload.number_of_warrant) || 0;
+        payload.age = parseInt(payload.age) || null;
+      }
+
+      const res = await fetch(`${backendUrl}/api/v1/immigrants/${endpoint}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
+      }
+
+      alert("บันทึกการแก้ไขข้อมูลเรียบร้อยแล้ว!");
+      setIsEditing(false);
+      fetchData(); // ดึงข้อมูลชุดใหม่มาแสดงผลทันที
+    } catch (error: any) {
+      console.error("Error updating data:", error);
+      alert(error.message || "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกข้อมูลได้");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -86,27 +149,357 @@ export default function ImmigrantDetailPage() {
     <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-200">
       <div className="max-w-7xl mx-auto mb-6">
         <button
-          onClick={() => router.back()}
+          onClick={() => isEditing ? setIsEditing(false) : router.back()}
           className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer"
         >
           <ChevronLeft size={32} />
-          <span>รายละเอียด ({personType === "deported" ? "ผู้ถูกส่งตัวกลับ" : "ผู้แอบเข้าประเทศ"})</span>
+          <span>
+            {isEditing 
+              ? `แก้ไขฟอร์ม (${personType === "deported" ? "ผู้ถูกส่งตัวกลับ" : "ผู้แอบเข้าประเทศ"})` 
+              : `รายละเอียด (${personType === "deported" ? "ผู้ถูกส่งตัวกลับ" : "ผู้แอบเข้าประเทศ"})`
+            }
+          </span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto items-start">
-        <div className="lg:col-span-7 xl:col-span-8 w-full">
-          {personType === "deported" ? (
-            <DeportedCard data={person} />
-          ) : (
-            <IllegalCard data={person} />
-          )}
-        </div>
+      {isEditing ? (
+        /* ==================== โหมดแบบฟอร์มการแก้ไขข้อมูลความละเอียดสูง ==================== */
+        <form onSubmit={handleSave} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
+          <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">ชื่อต้นภาษาไทย *</label>
+              <input
+                type="text"
+                name="first_name_th"
+                value={formData.first_name_th || ""}
+                onChange={handleInputChange}
+                required
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">ชื่อกลางภาษาไทย (ถ้ามี)</label>
+              <input
+                type="text"
+                name="middle_name_th"
+                value={formData.middle_name_th || ""}
+                onChange={handleInputChange}
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">นามสกุลภาษาไทย *</label>
+              <input
+                type="text"
+                name="last_name_th"
+                value={formData.last_name_th || ""}
+                onChange={handleInputChange}
+                required
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+          </div>
 
-        <div className="lg:col-span-5 xl:col-span-4 w-full">
-          <RightPanel type={personType} data={person} note={note} setNote={setNote} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">ชื่อต้นภาษาอังกฤษ (First Name)</label>
+              <input
+                type="text"
+                name="first_name_en"
+                value={formData.first_name_en || ""}
+                onChange={handleInputChange}
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">ชื่อกลางภาษาอังกฤษ (Middle Name)</label>
+              <input
+                type="text"
+                name="middle_name_en"
+                value={formData.middle_name_en || ""}
+                onChange={handleInputChange}
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">นามสกุลภาษาอังกฤษ (Last Name)</label>
+              <input
+                type="text"
+                name="last_name_en"
+                value={formData.last_name_en || ""}
+                onChange={handleInputChange}
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">เลขหนังสือเดินทาง (Passport ID)</label>
+              <input
+                type="text"
+                name="passport_id"
+                value={formData.passport_id || ""}
+                onChange={handleInputChange}
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">สัญชาติ (Nationality)</label>
+              <input
+                type="text"
+                name="nationality"
+                value={formData.nationality || ""}
+                onChange={handleInputChange}
+                className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+              />
+            </div>
+          </div>
+
+          {personType === "deported" ? (
+            /* ================= ฟิลด์เฉพาะของบุคคลส่งกลับ ================= */
+            <>
+              <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดการส่งตัวและคดีความ</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">เลขประจำตัวประชาชน (National ID) *</label>
+                  <input
+                    type="text"
+                    name="national_id"
+                    value={formData.national_id || ""}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">วันเดือนปีเกิด</label>
+                  <input
+                    type="date"
+                    name="date_of_birth"
+                    value={formData.date_of_birth || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">อายุปัจจุบัน (ปี)</label>
+                  <input
+                    type="number"
+                    name="age"
+                    value={formData.age || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">วันที่ส่งกลับประเทศ</label>
+                  <input
+                    type="date"
+                    name="return_date"
+                    value={formData.return_date || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">จำนวนเคสคดี (Case ID)</label>
+                  <input
+                    type="number"
+                    name="number_of_case"
+                    value={formData.number_of_case ?? 0}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">จำนวนหมายจับ</label>
+                  <input
+                    type="number"
+                    name="number_of_warrant"
+                    value={formData.number_of_warrant ?? 0}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">ช่องทางส่งกลับ</label>
+                  <input
+                    type="text"
+                    name="channel"
+                    value={formData.channel || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">สถานะผลลัพธ์คดี</label>
+                  <select
+                    name="result"
+                    value={formData.result || "PENDING"}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="COMPLETED">COMPLETED</option>
+                    <option value="REJECTED">REJECTED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">ภูมิลำเนา / ที่อยู่</label>
+                <textarea
+                  name="address"
+                  value={formData.address || ""}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                />
+              </div>
+            </>
+          ) : (
+            /* ================= ฟิลด์เฉพาะของบุคคลแอบเข้าเมือง ================= */
+            <>
+              <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดจุดตรวจเจอและการคัดกรอง</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">เพศ</label>
+                  <select
+                    name="gender"
+                    value={formData.gender || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  >
+                    <option value="">ไม่ระบุ</option>
+                    <option value="ชาย">ชาย</option>
+                    <option value="หญิง">หญิง</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">วันที่ตรวจพบการแอบเข้าประเทศ</label>
+                  <input
+                    type="date"
+                    name="detected_date"
+                    value={formData.detected_date || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">สถานที่ตรวจเจอพิกัด</label>
+                  <input
+                    type="text"
+                    name="detected_location"
+                    value={formData.detected_location || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">สถานที่ทำงานปลายทาง</label>
+                  <input
+                    type="text"
+                    name="workplace"
+                    value={formData.workplace || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">ข้อมูลหมายจับเคสเดิม</label>
+                  <input
+                    type="text"
+                    name="warrant"
+                    value={formData.warrant || ""}
+                    onChange={handleInputChange}
+                    className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
+                <input
+                  type="checkbox"
+                  id="is_victim"
+                  name="is_victim"
+                  checked={formData.is_victim === true || formData.is_victim === "true"}
+                  onChange={handleCheckboxChange}
+                  className="w-4 h-4 text-(--header) focus:ring-(--header) border-gray-300 rounded cursor-pointer"
+                />
+                <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer select-none">
+                  เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์
+                </label>
+              </div>
+
+              <div className="mb-5">
+                <label className="block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300">บันทึกรายละเอียดผลการคัดกรอง</label>
+                <textarea
+                  name="screening_details"
+                  value={formData.screening_details || ""}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
+                />
+              </div>
+            </>
+          )}
+
+          {/* ปุ่มควบคุมส่วนล่างของหน้าฟอร์ม */}
+          <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
+            >
+              <X size={16} />
+              <span>ยกเลิก</span>
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Save size={16} />
+              <span>{isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}</span>
+            </button>
+          </div>
+        </form>
+      ) : (
+        /* ==================== โหมดหน้าจอแดชบอร์ดแสดงผลปกติ ==================== */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto items-start">
+          <div className="lg:col-span-7 xl:col-span-8 w-full">
+            {personType === "deported" ? (
+              <DeportedCard data={person} />
+            ) : (
+              <IllegalCard data={person} />
+            )}
+          </div>
+
+          <div className="lg:col-span-5 xl:col-span-4 w-full">
+            <RightPanel 
+              type={personType} 
+              data={person} 
+              note={note} 
+              setNote={setNote} 
+              onEditClick={() => setIsEditing(true)} 
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

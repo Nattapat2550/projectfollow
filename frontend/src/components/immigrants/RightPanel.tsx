@@ -1,16 +1,49 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface RightPanelProps {
   type: "deported" | "illegal";
   data: any;
   note: string;
   setNote: (value: string) => void;
+  onEditClick: () => void; // รับฟังก์ชันเปิดโหมดแก้ไขข้อมูลจากหน้าหลัก
 }
 
-export default function RightPanel({ type, data, note, setNote }: RightPanelProps) {
+export default function RightPanel({ type, data, note, setNote, onEditClick }: RightPanelProps) {
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const handleSaveNote = () => {
     alert(`บันทึกหมายเหตุเรียบร้อยแล้ว!`);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("ยืนยันที่จะลบประวัติของบุคคลนี้ออกจากระบบอย่างถาวร?")) return;
+
+    try {
+      setIsDeleting(true);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const endpoint = type === "deported" ? "deported" : "illegal";
+      
+      const res = await fetch(`${backendUrl}/api/v1/immigrants/${endpoint}/${data.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete from database");
+      }
+
+      alert("ลบข้อมูลออกจากระบบเสร็จสิ้น");
+      router.back(); // พาย้อนกลับไปยังหน้าแสดงตารางรวมก่อนหน้านี้
+      
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      alert("เกิดข้อผิดพลาดในการส่งคำสั่งลบข้อมูลไปยังฐานข้อมูล");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -82,17 +115,18 @@ export default function RightPanel({ type, data, note, setNote }: RightPanelProp
 
       <div className="grid grid-cols-2 gap-4">
         <button
-          onClick={() => alert("กำลังเข้าสู่โหมดแก้ไขข้อมูล...")}
+          onClick={onEditClick}
           className="py-2.5 rounded-lg font-bold text-center text-sm border bg-(--yellowBG) text-(--yellowText) border-(--yellowBorder) hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer"
         >
           แก้ไขข้อมูล
         </button>
 
         <button
-          onClick={() => { if(confirm("ยืนยันที่จะลบประวัติของบุคคลนี้ออก?")) alert("ลบข้อมูลสำเร็จ"); }}
-          className="py-2.5 rounded-lg font-bold text-center text-sm border bg-(--redBG) text-(--redText) border-(--redBorder) hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer"
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className={`py-2.5 rounded-lg font-bold text-center text-sm border bg-(--redBG) text-(--redText) border-(--redBorder) hover:opacity-90 active:scale-95 transition shadow-sm ${isDeleting ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
         >
-          ลบข้อมูล
+          {isDeleting ? "กำลังลบ..." : "ลบข้อมูล"}
         </button>
       </div>
     </div>

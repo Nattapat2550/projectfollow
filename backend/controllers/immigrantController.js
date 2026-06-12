@@ -79,6 +79,8 @@ exports.getAllData = async (req, res) => {
   }
 };
 
+// -------- แอบเข้าเมือง (Illegal) --------
+
 exports.createIllegal = async (req, res) => {
   try {
     const data = req.body;
@@ -115,6 +117,51 @@ exports.createIllegal = async (req, res) => {
   }
 };
 
+exports.updateIllegal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    const result = await prisma.illegal_immigrants.update({
+      where: { id: parseInt(id) },
+      data: {
+        first_name_th: data.first_name_th,
+        middle_name_th: data.middle_name_th || null,
+        last_name_th: data.last_name_th,
+        first_name_en: data.first_name_en || null,
+        middle_name_en: data.middle_name_en || null,
+        last_name_en: data.last_name_en || null,
+        passport_id: data.passport_id || null,
+        gender: data.gender || null,
+        nationality: data.nationality || null,
+        detected_location: data.detected_location || "ไม่ระบุ",
+        workplace: data.workplace || null,
+        warrant: data.warrant || null,
+        screening_details: data.screening_details || null,
+        is_victim: data.is_victim === "true" || data.is_victim === true || false,
+        detected_date: data.detected_date ? new Date(data.detected_date) : null
+      }
+    });
+    res.status(200).json({ success: true, data: result, message: "แก้ไขข้อมูลสำเร็จ" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+};
+
+exports.deleteIllegal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.illegal_immigrants.delete({
+      where: { id: parseInt(id) }
+    });
+    res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+};
+
+// -------- ส่งกลับ (Deported) --------
+
 exports.createDeported = async (req, res) => {
   try {
     const data = req.body;
@@ -144,7 +191,7 @@ exports.createDeported = async (req, res) => {
         first_name_en: data.first_name_en || null,
         middle_name_en: data.middle_name_en || null,
         last_name_en: data.last_name_en || null,
-        date_of_birth: data.date_of_birth,
+        date_of_birth: new Date(data.date_of_birth),
         national_id: data.national_id,
         passport_id: data.passport_id || null,
         address: data.address || "ไม่ระบุ",
@@ -163,7 +210,59 @@ exports.createDeported = async (req, res) => {
   }
 };
 
-// จัดการ Global state สำหรับ Progress Bar
+exports.updateDeported = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    const updateData = {
+      first_name_th: data.first_name_th,
+      middle_name_th: data.middle_name_th || null,
+      last_name_th: data.last_name_th,
+      first_name_en: data.first_name_en || null,
+      middle_name_en: data.middle_name_en || null,
+      last_name_en: data.last_name_en || null,
+      date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : undefined,
+      national_id: data.national_id,
+      passport_id: data.passport_id || null,
+      address: data.address || "ไม่ระบุ",
+      channel: data.channel || null,
+      result: data.result || "PENDING",
+      number_of_case: parseInt(data.number_of_case) || 0,
+      number_of_warrant: parseInt(data.number_of_warrant) || 0,
+      age: parseInt(data.age) || null,
+      return_date: data.return_date ? new Date(data.return_date) : null,
+    };
+
+    if (req.file) {
+      updateData.photo_url = `/uploads/${req.file.filename}`;
+    }
+
+    const result = await prisma.deported_persons.update({
+      where: { id: parseInt(id) },
+      data: updateData
+    });
+    res.status(200).json({ success: true, data: result, message: "แก้ไขข้อมูลสำเร็จ" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+};
+
+exports.deleteDeported = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.deported_persons.delete({
+      where: { id: parseInt(id) }
+    });
+    res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+};
+
+
+// ================= อัปโหลด Excel (Upload Excel) =================
+
 if (!global.uploadProgress) {
   global.uploadProgress = {};
 }
@@ -193,7 +292,6 @@ exports.uploadExcelIllegal = async (req, res) => {
 
     if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
 
-    // ================= โหมดพรีวิว =================
     if (action === "preview") {
       const preview_data = [];
       for (let i = 0; i < allJsonData.length; i++) {
@@ -227,7 +325,6 @@ exports.uploadExcelIllegal = async (req, res) => {
       return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวสำเร็จ (ยังไม่ได้บันทึก)", total_rows: preview_data.length, preview_data });
     }
 
-    // ================= โหมดอัปโหลด =================
     if (jobId) {
        global.uploadProgress[jobId] = { current: 0, total: allJsonData.length, status: 'processing' };
     }
