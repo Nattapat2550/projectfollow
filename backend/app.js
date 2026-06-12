@@ -1,10 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const cookieParser = require("cookie-parser");
 
 const immigrantRoutes = require("./routes/immigrants");
 const dashboardRoutes = require("./routes/dashboard");
 const testUpload2Routes = require("./routes/testUpload2");
+const authRoutes = require("./routes/auth"); // นำเข้า Auth Route
 
 const app = express();
 
@@ -15,13 +17,24 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // เสิร์ฟไฟล์รูปภาพ/ไฟล์แนบแบบ Public
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Routes
-app.use("/api/immigrants", immigrantRoutes);
-app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/test-upload2", testUpload2Routes);
+// 📌 Routes: ปรับปรุงให้มี /api/v1/ นำหน้าทุกจุดให้ตรงกับหน้าบ้าน
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/immigrants", immigrantRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/test-upload2", testUpload2Routes);
+
+// ⚠️ ดักจับกรณีเรียก Route ที่ไม่มีอยู่จริง (404 handler)
+// เปลี่ยนจากการส่งหน้า HTML เป็นการส่ง JSON เพื่อไม่ให้ Frontend แครช
+app.use((req, res, next) => {
+  res.status(404).json({
+    success: false,
+    message: `ไม่พบเส้นทาง API: ${req.method} ${req.originalUrl}`
+  });
+});
 
 module.exports = app;

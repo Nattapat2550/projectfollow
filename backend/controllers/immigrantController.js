@@ -82,10 +82,31 @@ exports.getAllData = async (req, res) => {
 exports.createIllegal = async (req, res) => {
   try {
     const data = req.body;
+
+    // ตรวจสอบฟิลด์ที่จำเป็น (Required) ตามเงื่อนไขของ Prisma Schema
+    if (!data.first_name_th || !data.last_name_th) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "กรุณาระบุชื่อและนามสกุลภาษาไทย (first_name_th, last_name_th)" 
+      });
+    }
+
     const result = await prisma.illegal_immigrants.create({
       data: {
-        ...data,
-        is_victim: data.is_victim === "true" || data.is_victim === true,
+        first_name_th: data.first_name_th,
+        middle_name_th: data.middle_name_th || null,
+        last_name_th: data.last_name_th,
+        first_name_en: data.first_name_en || null,
+        middle_name_en: data.middle_name_en || null,
+        last_name_en: data.last_name_en || null,
+        passport_id: data.passport_id || null,
+        gender: data.gender || null,
+        nationality: data.nationality || null,
+        detected_location: data.detected_location || "ไม่ระบุ",
+        workplace: data.workplace || null,
+        warrant: data.warrant || null,
+        screening_details: data.screening_details || null,
+        is_victim: data.is_victim === "true" || data.is_victim === true || false,
         detected_date: data.detected_date ? new Date(data.detected_date) : null
       }
     });
@@ -98,9 +119,40 @@ exports.createIllegal = async (req, res) => {
 exports.createDeported = async (req, res) => {
   try {
     const data = req.body;
+
+    // ตรวจสอบฟิลด์ที่จำเป็น (Required) ตามเงื่อนไขของ Prisma Schema
+    if (!data.first_name_th || !data.last_name_th || !data.date_of_birth || !data.national_id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (ชื่อไทย, นามสกุลไทย, วันเกิด, เลขบัตรประชาชน/เลขควบคุม)" 
+      });
+    }
+
+    // ตรวจสอบว่า national_id หรือ passport_id ซ้ำหรือไม่เพื่อป้องกัน Prisma Unique Constraints Error
+    if (data.national_id) {
+      const existingNational = await prisma.deported_persons.findUnique({ where: { national_id: data.national_id } });
+      if (existingNational) return res.status(400).json({ success: false, message: "เลขประจำตัว (national_id) นี้มีอยู่ในระบบแล้ว" });
+    }
+
+    if (data.passport_id) {
+      const existingPassport = await prisma.deported_persons.findUnique({ where: { passport_id: data.passport_id } });
+      if (existingPassport) return res.status(400).json({ success: false, message: "เลขหนังสือเดินทาง (passport_id) นี้มีอยู่ในระบบแล้ว" });
+    }
+
     const result = await prisma.deported_persons.create({
       data: {
-        ...data,
+        first_name_th: data.first_name_th,
+        middle_name_th: data.middle_name_th || null,
+        last_name_th: data.last_name_th,
+        first_name_en: data.first_name_en || null,
+        middle_name_en: data.middle_name_en || null,
+        last_name_en: data.last_name_en || null,
+        date_of_birth: data.date_of_birth,
+        national_id: data.national_id,
+        passport_id: data.passport_id || null,
+        address: data.address || "ไม่ระบุ",
+        channel: data.channel || null,
+        result: data.result || "PENDING",
         number_of_case: parseInt(data.number_of_case) || 0,
         number_of_warrant: parseInt(data.number_of_warrant) || 0,
         age: parseInt(data.age) || null,
@@ -133,18 +185,18 @@ exports.uploadExcelIllegal = async (req, res) => {
     if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
 
     const formattedData = allJsonData.map((row, index) => {
-      // เรียกใช้ Helper ฟังก์ชันที่แยกไว้ด้านบน ทำให้โค้ดตรงนี้คลีนและอ่านง่ายมาก
       const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
       const { prefix, fname, mname, lname, isThai, hasName } = processName(rawFullName);
       const { isVictim, details } = processVictimStatus(row);
 
+      // แก้ไข Fallback ของชื่อ-นามสกุลไทย ให้เป็นค่า String เสมอเพื่อป้องกัน Required Field Error
       return {
         ลำดับที่อ่านได้: index + 1,
         ชื่อชีต: row._sheetName,
         id: `TEMP_ID_${index + 1}`,
-        first_name_th: hasName && isThai ? fname || "ไม่ระบุ" : hasName ? "-" : "ไม่ระบุ",
+        first_name_th: hasName && isThai ? fname || "ไม่ระบุ" : "ไม่ระบุ",
         middle_name_th: isThai ? mname : null,
-        last_name_th: hasName && isThai ? lname || "ไม่ระบุ" : hasName ? "-" : "ไม่ระบุ",
+        last_name_th: hasName && isThai ? lname || "ไม่ระบุ" : "ไม่ระบุ",
         first_name_en: hasName && !isThai ? fname || null : null,
         middle_name_en: !isThai ? mname : null,
         last_name_en: hasName && !isThai ? lname || null : null,
@@ -152,6 +204,7 @@ exports.uploadExcelIllegal = async (req, res) => {
         passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
         detected_location: findValue(row, "สถานที่ตรวจพบ") || "ไม่ระบุ",
         workplace: findValue(row, "สถานที่ทำงาน") || null,
+        warrant: findValue(row, "หมายจับ") || null,
         gender: determineGender(row, prefix),
         detected_date: parseThaiDateToDate(row._sheetName),
         is_victim: isVictim,

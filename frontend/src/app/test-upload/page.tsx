@@ -32,7 +32,7 @@ export default function TestUploadPage() {
       // ดึง URL จาก Environment Variable ของ Next.js (ถ้าไม่มีจะ fallback ไปที่ localhost:8000)
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       
-      const response = await fetch(`${backendUrl}/api/immigrants/upload-excel-illegal`, {
+      const response = await fetch(`${backendUrl}/api/v1/immigrants/upload-excel-illegal`, {
         method: 'POST',
         body: formData,
       });

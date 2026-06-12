@@ -40,3 +40,11 @@ CREATE TABLE deported_persons (
     channel VARCHAR(255),
     result deported_result_enum NOT NULL DEFAULT 'PENDING'
 );
+
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(50) NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role VARCHAR(20) DEFAULT 'user',
+  color VARCHAR(7) DEFAULT '#3B82F6'
+);

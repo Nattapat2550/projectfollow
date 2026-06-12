@@ -9,11 +9,22 @@ datasource db {
   provider = "postgresql"
 }
 
-// กำหนด Enum สำหรับผลลัพธ์ (result) ของฝั่งส่งกลับ (สามารถปรับแก้ค่าด้านในได้ตามต้องการ)
+// กำหนด Enum สำหรับผลลัพธ์ (result) ของฝั่งส่งกลับ
 enum DeportedResult {
   SUCCESS
   FAILED
   PENDING
+}
+
+// 📌 ตารางผู้ใช้งาน (สำหรับระบบ Login)
+model User {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String @unique @db.VarChar(50)
+  password String @db.VarChar(255)
+  role     String @default("user") @db.VarChar(20)
+  color    String @default("#3B82F6") @db.VarChar(7)
+
+  @@map("users") // ผูกกับชื่อตาราง users ในฐานข้อมูล
 }
 
 // ตาราง แอบเข้า (Illegal Immigrants)
@@ -23,15 +34,15 @@ model illegal_immigrants {
   middle_name_th    String?
   last_name_th      String
   first_name_en     String?
-  middle_name_en    String?  
+  middle_name_en    String?
   last_name_en      String?  
-  passport_id       String?   
-  gender            String?   
+  passport_id       String?
+  gender            String?
   nationality       String?   
-  detected_date     DateTime? 
+  detected_date     DateTime?
   detected_location String
   is_victim         Boolean?
-  warrant           String?   
+  warrant           String?
   workplace         String?
   screening_details String?
 }
@@ -55,5 +66,5 @@ model deported_persons {
   age               Int?           // อายุ ณ วันที่ส่งกลับ
   return_date       DateTime?      // วันที่ส่งกลับมา
   channel           String?        // ช่องทางที่ส่งกลับมา
-  result            DeportedResult @default(PENDING) // กำหนดค่าเริ่มต้นเป็น PENDING ให้รองรับตอน insert
+  result            DeportedResult @default(PENDING) 
 }

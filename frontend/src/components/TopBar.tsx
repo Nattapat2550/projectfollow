@@ -4,27 +4,48 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { LogOut, Settings, LogIn } from 'lucide-react';
-import DarkModeBtn from './DarkModeBtn'
+import { useRouter } from 'next/navigation';
+import DarkModeBtn from './DarkModeBtn';
 
 export default function TopBar() {
     const [user, setUser] = useState<{ id: string; name: string; color?: string } | null>(null);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5003';
+    const router = useRouter();
+    
+    // ใช้ตัวแปรเดียวกับหน้า Login และเปลี่ยนเป็น Port 8000 ตามเซิร์ฟเวอร์หลัก
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
     // เช็คสถานะ Login
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-                if (!token) return;
+                const token = localStorage.getItem("token");
+                
+                if (!token) {
+                    const savedUser = localStorage.getItem("user");
+                    if (savedUser) {
+                        setUser(JSON.parse(savedUser));
+                    }
+                    return;
+                }
 
+                // ยิงไปที่ /api/v1/auth/me
                 const res = await fetch(`${backendUrl}/api/v1/auth/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+
                 const data = await res.json();
+                
                 if (data.success) {
                     setUser(data.data);
+                } else {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
                 }
             } catch (err) {
                 console.error("Failed to fetch user", err);
@@ -46,29 +67,31 @@ export default function TopBar() {
 
     const handleLogout = async () => {
         try {
-            const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+            const token = localStorage.getItem("token");
+            
+            // ยิงไปที่ /api/v1/auth/logout
             await fetch(`${backendUrl}/api/v1/auth/logout`, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined
             });
             
-            // 💡 ล้างข้อมูลออกจากทั้ง Cookie และ LocalStorage ให้เกลี้ยง
-            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            // ล้างข้อมูลออกจาก LocalStorage
             localStorage.removeItem("token");
+            localStorage.removeItem("user");
             localStorage.removeItem("user_id");
-            localStorage.removeItem("userId");
 
             setUser(null);
-            window.location.href = '/login';
+            router.push('/login');
+            router.refresh();
         } catch (err) {
             console.error("Logout error", err);
         }
     };
 
     return (
-       <div 
-        id="main-topbar" 
-        className="flex justify-between items-center w-full px-4 sm:px-6 py-3 sm:py-4 shadow-md z-50 relative gap-2"
-        style={{ backgroundColor: 'var(--header-bg)' }}
+        <div 
+         id="main-topbar" 
+         className="flex justify-between items-center w-full px-4 sm:px-6 py-3 sm:py-4 shadow-md z-50 relative gap-2"
+         style={{ backgroundColor: 'var(--header-bg)' }}
         >
             <Link href="/" aria-label="กลับหน้าหลัก ระบบติดตามงานมอบหมาย" className="shrink min-w-0 flex-1">
                 <div className="flex items-center gap-2 sm:gap-4 group min-w-0">
@@ -125,7 +148,7 @@ export default function TopBar() {
                                         alt="รูปโปรไฟล์ย่อ" 
                                         width={20} 
                                         height={20} 
-                                        className="rounded-full shrink-0"
+                                        className="rounded-full shrink-0 h-auto"
                                     />
                                     <span className="font-semibold text-xs text-foreground! truncate">{user.name}</span>
                                 </div>
