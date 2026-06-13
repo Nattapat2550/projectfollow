@@ -1,0 +1,137 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ChevronLeft, Save, X } from "lucide-react";
+
+export default function CreateDeportedPerson() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [formData, setFormData] = useState({
+    first_name_th: "", middle_name_th: "", last_name_th: "",
+    first_name_en: "", middle_name_en: "", last_name_en: "",
+    date_of_birth: "", age: "", national_id: "", passport_id: "",
+    gender: "", address: "", channel: "", result: "PENDING",
+    number_of_case: "0", number_of_warrant: "0", return_date: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      const payload = {
+        ...formData,
+        age: formData.age ? parseInt(formData.age) : null,
+        number_of_case: parseInt(formData.number_of_case) || 0,
+        number_of_warrant: parseInt(formData.number_of_warrant) || 0,
+      };
+
+      const res = await fetch(`${backendUrl}/api/v1/immigrants/deported`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+      alert("เพิ่มข้อมูลส่งกลับประเทศสำเร็จ!");
+      router.push("/immigrants/deported"); 
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Class ตัวแปรตามหน้า Edit
+  const inputClass = "w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40";
+  const labelClass = "block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300";
+
+  return (
+    <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-200">
+      <div className="max-w-4xl mx-auto mb-6">
+        <button onClick={() => router.push("/immigrants/deported")} className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer">
+          <ChevronLeft size={32} />
+          <span>เพิ่มข้อมูลใหม่ (ผู้ถูกส่งตัวกลับ)</span>
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
+        
+        {error && <div className="mb-6 rounded-md border border-red-500 bg-red-100 dark:bg-red-900/30 p-4 text-sm text-red-600 dark:text-red-400 font-medium">{error}</div>}
+
+        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>ชื่อต้นภาษาไทย *</label><input required type="text" name="first_name_th" value={formData.first_name_th} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>ชื่อกลางภาษาไทย</label><input type="text" name="middle_name_th" value={formData.middle_name_th} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>นามสกุลภาษาไทย *</label><input required type="text" name="last_name_th" value={formData.last_name_th} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>ชื่อต้นภาษาอังกฤษ (First Name)</label><input type="text" name="first_name_en" value={formData.first_name_en} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>ชื่อกลางภาษาอังกฤษ (Middle Name)</label><input type="text" name="middle_name_en" value={formData.middle_name_en} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>นามสกุลภาษาอังกฤษ (Last Name)</label><input type="text" name="last_name_en" value={formData.last_name_en} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div><label className={labelClass}>เลขหนังสือเดินทาง (Passport ID)</label><input type="text" name="passport_id" value={formData.passport_id} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>เพศ</label>
+            <select name="gender" value={formData.gender} onChange={handleInputChange} className={inputClass}>
+              <option value="">ไม่ระบุ</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
+            </select>
+          </div>
+        </div>
+
+        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดการส่งตัวและคดีความ</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>เลขประจำตัวประชาชน *</label><input required type="text" name="national_id" value={formData.national_id} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>วันเดือนปีเกิด *</label><input required type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>อายุปัจจุบัน (ปี)</label><input type="number" name="age" value={formData.age} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>วันที่ส่งกลับประเทศ</label><input type="date" name="return_date" value={formData.return_date} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>จำนวนเคสคดี</label><input type="number" name="number_of_case" value={formData.number_of_case} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>จำนวนหมายจับ</label><input type="number" name="number_of_warrant" value={formData.number_of_warrant} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div><label className={labelClass}>ช่องทางส่งกลับ</label><input type="text" name="channel" value={formData.channel} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>สถานะผลลัพธ์คดี</label>
+            <select name="result" value={formData.result} onChange={handleInputChange} className={inputClass}>
+              <option value="PENDING">PENDING</option><option value="SUCCESS">SUCCESS</option><option value="FAILED">FAILED</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mb-5">
+          <label className={labelClass}>ภูมิลำเนา / ที่อยู่ *</label>
+          <textarea required name="address" value={formData.address} onChange={handleInputChange} rows={3} className={inputClass} />
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">
+          <Link href="/immigrants/deported">
+            <button type="button" className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer">
+              <X size={16} /><span>ยกเลิก</span>
+            </button>
+          </Link>
+          <button type="submit" disabled={loading} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+            <Save size={16} /><span>{loading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import ImmigrantsTable from "@/components/immigrants/ImmigrantsTable";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,14 +29,16 @@ const CHART_COLORS = [
   "#8B7355",
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers สำหรับกราฟ ────────────────────────────────────────────────────────
 
 function getTopNationalities(data: any[]): ChartItem[] {
   const counts: Record<string, number> = {};
-  for (const item of data) {
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
     const nat = item.nationality || "ไม่ระบุ";
     counts[nat] = (counts[nat] || 0) + 1;
   }
+  
   return Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6)
@@ -46,32 +49,64 @@ function getTopNationalities(data: any[]): ChartItem[] {
     }));
 }
 
-function getGenderSplit(data: any[]): ChartItem[] {
-  let male = 0;
-  let female = 0;
-  let other = 0;
-  for (const item of data) {
-    const g = (item.gender || "").toLowerCase();
-    if (g === "ชาย" || g === "male") male++;
-    else if (g === "หญิง" || g === "female") female++;
-    else other++;
+function getChannelSplit(data: any[]): ChartItem[] {
+  const counts: Record<string, number> = {};
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    const c = item.channel || "ไม่ระบุช่องทาง";
+    counts[c] = (counts[c] || 0) + 1;
   }
+  
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value], i) => ({
+      name,
+      value,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    }));
+}
+
+function getVictimSplit(data: any[]): ChartItem[] {
+  let victim = 0;
+  let nonVictim = 0;
+  
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].is_victim) {
+      victim++;
+    } else {
+      nonVictim++;
+    }
+  }
+  
   const result: ChartItem[] = [];
-  if (male) result.push({ name: "ชาย", value: male, color: CHART_COLORS[0] });
-  if (female) result.push({ name: "หญิง", value: female, color: CHART_COLORS[1] });
-  if (other) result.push({ name: "อื่นๆ", value: other, color: CHART_COLORS[2] });
+  if (victim) result.push({ name: "เป็นผู้เสียหาย", value: victim, color: CHART_COLORS[0] });
+  if (nonVictim) result.push({ name: "ไม่เป็นผู้เสียหาย", value: nonVictim, color: CHART_COLORS[2] });
   return result;
 }
 
-// ─── SVG Donut Chart (ไม่ใช้ library ภายนอก) ─────────────────────────────────
+function getPassportSplit(data: any[]): ChartItem[] {
+  let hasPassport = 0;
+  let noPassport = 0;
+  const noKeywords = ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null", "ไม่มีหนังสือเดินทาง"];
 
-function DonutChart({
-  data,
-  title,
-}: {
-  data: ChartItem[];
-  title: string;
-}) {
+  for (let i = 0; i < data.length; i++) {
+    const p = data[i].passport_id ? data[i].passport_id.trim().toLowerCase() : "";
+    if (p && !noKeywords.includes(p)) {
+      hasPassport++;
+    } else {
+      noPassport++;
+    }
+  }
+  
+  const result: ChartItem[] = [];
+  if (hasPassport) result.push({ name: "มีหนังสือเดินทาง", value: hasPassport, color: CHART_COLORS[1] });
+  if (noPassport) result.push({ name: "ไม่มีข้อมูล / ไม่มี", value: noPassport, color: CHART_COLORS[3] });
+  return result;
+}
+
+// ─── SVG Donut Chart Component ──────────────────────────────────────────────
+
+function DonutChart({ data, title }: { data: ChartItem[]; title: string; }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return null;
 
@@ -81,12 +116,14 @@ function DonutChart({
   const R = 70;
   const r = 42;
 
-  // Build arc paths
   let cumulative = 0;
   const slices = data.map((d) => {
     const startAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
     cumulative += d.value;
-    const endAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
+    let endAngle = (cumulative / total) * 2 * Math.PI - Math.PI / 2;
+    if (endAngle - startAngle === 2 * Math.PI) {
+        endAngle -= 0.0001; 
+    }
     return { ...d, startAngle, endAngle };
   });
 
@@ -114,65 +151,29 @@ function DonutChart({
 
   return (
     <div className="flex flex-col items-center gap-3 flex-1 min-w-50">
-      <p
-        className="text-sm font-semibold"
-        style={{ color: "var(--header)" }}
-      >
-        {title}
-      </p>
+      <p className="text-sm font-semibold text-(--header)">{title}</p>
 
       <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
         {slices.map((s, i) => (
           <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
         ))}
-        {/* centre label */}
-        <text
-          x={cx}
-          y={cy - 6}
-          textAnchor="middle"
-          fontSize="20"
-          fontWeight="bold"
-          fill="var(--header)"
-        >
+        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="20" fontWeight="bold" fill="currentColor" className="text-(--header)">
           {total.toLocaleString("th-TH")}
         </text>
-        <text
-          x={cx}
-          y={cy + 14}
-          textAnchor="middle"
-          fontSize="10"
-          fill="var(--foreground)"
-          opacity={0.6}
-        >
+        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="currentColor" className="text-muted-foreground">
           ทั้งหมด
         </text>
       </svg>
 
-      {/* Legend */}
       <div className="flex flex-col gap-1 w-full max-w-45">
         {data.map((d, i) => {
           const pct = ((d.value / total) * 100).toFixed(1);
           return (
             <div key={i} className="flex items-center gap-2 text-xs">
-              <span
-                className="rounded-sm shrink-0"
-                style={{
-                  width: 10,
-                  height: 10,
-                  backgroundColor: d.color,
-                }}
-              />
-              <span
-                className="truncate flex-1"
-                style={{ color: "var(--foreground)" }}
-              >
-                {d.name}
-              </span>
-              <span
-                className="font-mono font-semibold shrink-0"
-                style={{ color: "var(--header)" }}
-              >
-                {pct}%
+              <span className="rounded-sm shrink-0 w-2.5 h-2.5" style={{ backgroundColor: d.color }} />
+              <span className="truncate flex-1 text-foreground">{d.name}</span>
+              <span className="font-mono font-semibold shrink-0 text-(--header)">
+                {d.value} ({pct}%)
               </span>
             </div>
           );
@@ -187,30 +188,27 @@ function DonutChart({
 function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const typeParam =
-    (searchParams.get("type") as "illegal" | "deported") || "illegal";
+  const typeParam = (searchParams.get("type") as "illegal" | "deported") || "illegal";
 
-  const [allData, setAllData] = useState<{
-    illegals: any[];
-    deporteds: any[];
-  }>({ illegals: [], deporteds: [] });
+  const [allData, setAllData] = useState<{ illegals: any[]; deporteds: any[] }>({ illegals: [], deporteds: [] });
   const [loading, setLoading] = useState(true);
 
-  const [filterType, setFilterType] = useState<"illegal" | "deported">(
-    typeParam
-  );
+  const [filterType, setFilterType] = useState<"illegal" | "deported">(typeParam);
   const [filterNat, setFilterNat] = useState<string>("ทั้งหมด");
   const [filterGender, setFilterGender] = useState<string>("ทั้งหมด");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
+  // ระบบ Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const backendUrl =
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-        const res = await fetch(`${backendUrl}/api/v1/immigrants`, {
-          cache: "no-store",
-        });
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        const res = await fetch(`${backendUrl}/api/v1/immigrants`, { cache: "no-store" });
         if (!res.ok) throw new Error("API error");
         const json = await res.json();
         setAllData({
@@ -230,106 +228,98 @@ function DashboardContent() {
     setFilterType(typeParam);
   }, [typeParam]);
 
-  const rawData =
-    filterType === "illegal" ? allData.illegals : allData.deporteds;
+  // รีเซ็ตหน้ากลับไปเป็นหน้าแรกเสมอเมื่อตัวกรองเปลี่ยน
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterType, filterNat, filterGender, startDate, endDate]);
 
+  const rawData = filterType === "illegal" ? allData.illegals : allData.deporteds;
+
+  const allNats = ["ทั้งหมด", ...Array.from(new Set(rawData.map((d: any) => d.nationality || "ไม่ระบุ"))).sort()] as string[];
+  const allGenders = ["ทั้งหมด", ...Array.from(new Set(rawData.map((d: any) => d.gender || "ไม่ระบุ"))).sort()] as string[];
+
+  // 1. กรองข้อมูลตามฟิลเตอร์
   const filteredData = rawData.filter((item) => {
-    const natMatch =
-      filterNat === "ทั้งหมด" ||
-      (item.nationality || "ไม่ระบุ") === filterNat;
-    const genderMatch =
-      filterGender === "ทั้งหมด" ||
-      (item.gender || "ไม่ระบุ") === filterGender;
-    return natMatch && genderMatch;
+    const natMatch = filterNat === "ทั้งหมด" || (item.nationality || "ไม่ระบุ") === filterNat;
+    const genderMatch = filterGender === "ทั้งหมด" || (item.gender || "ไม่ระบุ") === filterGender;
+
+    let dateMatch = true;
+    if (startDate || endDate) {
+      const dateStr = filterType === "illegal" ? item.detected_date : item.return_date;
+      if (!dateStr) {
+        dateMatch = false;
+      } else {
+        const itemDate = new Date(dateStr).getTime();
+        const start = startDate ? new Date(startDate).getTime() : 0;
+        const end = endDate ? new Date(endDate).getTime() + 86400000 - 1 : Infinity;
+        dateMatch = itemDate >= start && itemDate <= end;
+      }
+    }
+    
+    return natMatch && genderMatch && dateMatch;
   });
+
+  // 2. แมพข้อมูลให้ตรงกับ ImmigrantsTable (เฉพาะประเภทแอบเข้าเมืองที่ต้องการการแปลงชื่อฟิลด์)
+  const mappedTableData = filteredData.map((item: any) => {
+    if (filterType === "illegal") {
+      return {
+        ...item,
+        date_of_birth: item.detected_date ? new Date(item.detected_date).toLocaleDateString('th-TH') : "ไม่ระบุวันที่พบ",
+        national_id: item.passport_id || "ไม่มีพาสปอร์ต",
+        address: item.detected_location || "ไม่ระบุสถานที่",
+      };
+    }
+    return item;
+  });
+
+  // 3. หั่นข้อมูลตามหน้าปัจจุบัน
+  const totalPages = Math.ceil(mappedTableData.length / itemsPerPage);
+  const paginatedData = mappedTableData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const stats: StatItem[] = (() => {
     if (filterType === "illegal") {
       const victims = filteredData.filter((d) => d.is_victim).length;
-      const nats = new Set(
-        filteredData.map((d) => d.nationality || "ไม่ระบุ")
-      ).size;
       return [
         { label: "จำนวนทั้งหมด", value: filteredData.length },
         { label: "ผู้เสียหาย (ค้ามนุษย์)", value: victims },
-        { label: "จำนวนสัญชาติ", value: nats },
       ];
     } else {
       const success = filteredData.filter((d) => d.result === "SUCCESS").length;
-      const warranted = filteredData.filter(
-        (d) => (d.number_of_warrant || 0) > 0
-      ).length;
       return [
         { label: "จำนวนทั้งหมด", value: filteredData.length },
         { label: "ส่งกลับสำเร็จ", value: success },
-        { label: "มีหมายจับ", value: warranted },
       ];
     }
   })();
 
-  const nationalityChart = getTopNationalities(filteredData);
-  const genderChart = getGenderSplit(filteredData);
+  const victimChart = getVictimSplit(filteredData);
+  const passportChart = getPassportSplit(filteredData);
+  const channelChart = getChannelSplit(filteredData);
+  const natChart = getTopNationalities(filteredData);
 
-  const allNats = [
-    "ทั้งหมด",
-    ...Array.from(
-      new Set(rawData.map((d: any) => d.nationality || "ไม่ระบุ"))
-    ).sort(),
-  ];
-  const allGenders = [
-    "ทั้งหมด",
-    ...Array.from(
-      new Set(rawData.map((d: any) => d.gender || "ไม่ระบุ"))
-    ).sort(),
-  ];
-
-  // shared select style
-  const selectStyle: React.CSSProperties = {
-    backgroundColor: "var(--button)",
-    border: "1px solid var(--shadow)",
-    color: "var(--foreground)",
-  };
+  const inputClass = "w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40";
 
   return (
-    <div
-      className="min-h-screen px-6 py-6"
-      style={{ backgroundColor: "var(--background)" }}
-    >
+    <div className="min-h-screen p-6 bg-background text-foreground transition-colors duration-200">
+      
       {/* Header */}
       <Link
         href="/"
-        className="inline-flex items-center gap-1 font-bold mb-6 transition-opacity hover:opacity-70"
-        style={{ color: "var(--header)", fontSize: "1.6rem" }}
+        className="inline-flex items-center gap-1 font-bold mb-6 hover:opacity-80 transition text-(--header) text-2xl"
       >
         {"< แดชบอร์ด"}
       </Link>
 
-      <div className="flex gap-4 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start max-w-7xl mx-auto">
+        
         {/* ── ซ้าย: Filters ──────────────────────────── */}
-        <div
-          className="rounded-2xl p-4 shrink-0 flex flex-col gap-3"
-          style={{
-            width: 220,
-            minHeight: 480,
-            backgroundColor: "var(--container)",
-            border: "1px solid var(--shadow)",
-          }}
-        >
-          <span
-            className="font-bold text-base"
-            style={{ color: "var(--header)" }}
-          >
-            พวกฟิลเตอร์ตัวเลือก
+        <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm shrink-0 flex flex-col gap-5 w-full lg:w-72">
+          <span className="font-bold text-lg text-(--header)">
+            ฟิลเตอร์ตัวเลือก
           </span>
 
-          {/* ประเภทข้อมูล */}
-          <div className="flex flex-col gap-1">
-            <label
-              className="text-sm font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              ประเภทข้อมูล
-            </label>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ประเภทข้อมูล</label>
             <select
               value={filterType}
               onChange={(e) => {
@@ -337,29 +327,23 @@ function DashboardContent() {
                 setFilterType(val);
                 setFilterNat("ทั้งหมด");
                 setFilterGender("ทั้งหมด");
+                setStartDate("");
+                setEndDate("");
                 router.replace(`/dashboard?type=${val}`);
               }}
-              className="w-full rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer"
-              style={selectStyle}
+              className={inputClass}
             >
-              <option value="illegal">ผู้แอบเข้า</option>
-              <option value="deported">ผู้ถูกส่งกลับ</option>
+              <option value="illegal">ผู้แอบเข้า (Illegal)</option>
+              <option value="deported">ผู้ถูกส่งกลับ (Deported)</option>
             </select>
           </div>
 
-          {/* สัญชาติ */}
-          <div className="flex flex-col gap-1">
-            <label
-              className="text-sm font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              สัญชาติ
-            </label>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สัญชาติ</label>
             <select
               value={filterNat}
               onChange={(e) => setFilterNat(e.target.value)}
-              className="w-full rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer"
-              style={selectStyle}
+              className={inputClass}
             >
               {allNats.map((n) => (
                 <option key={n} value={n}>
@@ -369,19 +353,12 @@ function DashboardContent() {
             </select>
           </div>
 
-          {/* เพศ */}
-          <div className="flex flex-col gap-1">
-            <label
-              className="text-sm font-semibold"
-              style={{ color: "var(--foreground)" }}
-            >
-              เพศ
-            </label>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">เพศ</label>
             <select
               value={filterGender}
               onChange={(e) => setFilterGender(e.target.value)}
-              className="w-full rounded-lg px-3 py-1.5 text-sm font-medium outline-none cursor-pointer"
-              style={selectStyle}
+              className={inputClass}
             >
               {allGenders.map((g) => (
                 <option key={g} value={g}>
@@ -391,99 +368,127 @@ function DashboardContent() {
             </select>
           </div>
 
-          {/* Reset */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ตั้งแต่วันที่</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ถึงวันที่</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
           <button
             onClick={() => {
               setFilterNat("ทั้งหมด");
               setFilterGender("ทั้งหมด");
+              setStartDate("");
+              setEndDate("");
             }}
-            className="mt-auto w-full py-2 rounded-lg text-sm font-medium transition-opacity hover:opacity-70 cursor-pointer"
-            style={selectStyle}
+            className="mt-2 w-full py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
           >
-            รีเซ็ตฟิลเตอร์
+            รีเซ็ตทั้งหมด
           </button>
         </div>
 
-        {/* ── ขวา: Stats + Chart ──────────────────────── */}
-        <div className="flex flex-col gap-4 flex-1 min-w-0">
-          {/* Stats box */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: "var(--container)",
-              border: "1px solid var(--shadow)",
-              minHeight: 120,
-            }}
-          >
-            <span
-              className="font-bold text-base block mb-3"
-              style={{ color: "var(--header)" }}
-            >
-              ข้อมูลตัวเลขต่างๆ
-            </span>
+        {/* ── ขวา: Stats + Chart + Table ──────────────────────── */}
+        <div className="flex flex-col gap-6 flex-1 min-w-0 w-full">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-64 bg-(--container) border border-(--wrapper) rounded-2xl shadow-sm">
+               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-(--header) mb-4"></div>
+               <span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูลทั้งหมด...</span>
+            </div>
+          ) : (
+            <>
+              {/* Stats box */}
+              <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
+                <span className="font-bold text-lg block mb-4 text-(--header)">
+                  สถิติเบื้องต้น
+                </span>
+                <div className="flex gap-10 flex-wrap">
+                  {stats.map((s) => (
+                    <div key={s.label} className="flex flex-col">
+                      <span className="text-sm font-bold text-stone-600 dark:text-slate-300 mb-1">
+                        {s.label}
+                      </span>
+                      <span className="text-4xl font-black text-(--header)">
+                        {Number(s.value).toLocaleString("th-TH")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            {loading ? (
-              <div className="opacity-50 text-sm">กำลังโหลด...</div>
-            ) : (
-              <div className="flex gap-8 flex-wrap">
-                {stats.map((s) => (
-                  <div key={s.label} className="flex flex-col">
-                    <span
-                      className="text-sm font-medium"
-                      style={{ color: "var(--foreground)", opacity: 0.65 }}
-                    >
-                      {s.label}
-                    </span>
-                    <span
-                      className="text-3xl font-bold"
-                      style={{ color: "var(--header)" }}
-                    >
-                      {Number(s.value).toLocaleString("th-TH")}
-                    </span>
+              {/* Chart box */}
+              <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
+                <span className="font-bold text-lg block mb-6 text-(--header)">
+                  กราฟสรุปจำนวนคนทั้งหมด
+                </span>
+                
+                {filteredData.length === 0 ? (
+                  <div className="flex items-center justify-center h-48 text-muted-foreground font-medium text-sm">
+                    ไม่มีข้อมูลในช่วงเวลานี้
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Chart box */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              backgroundColor: "var(--container)",
-              border: "1px solid var(--shadow)",
-              minHeight: 320,
-            }}
-          >
-            <span
-              className="font-bold text-base block mb-4"
-              style={{ color: "var(--header)" }}
-            >
-              กราฟแสดงข้อมูล
-            </span>
-
-            {loading ? (
-              <div className="flex items-center justify-center h-48 opacity-50 text-sm">
-                กำลังโหลด...
-              </div>
-            ) : filteredData.length === 0 ? (
-              <div className="flex items-center justify-center h-48 opacity-40 text-sm">
-                ไม่มีข้อมูล
-              </div>
-            ) : (
-              <div className="flex gap-8 flex-wrap justify-center">
-                {nationalityChart.length > 0 && (
-                  <DonutChart
-                    data={nationalityChart}
-                    title={`สัญชาติ (Top ${nationalityChart.length})`}
-                  />
-                )}
-                {genderChart.length > 0 && (
-                  <DonutChart data={genderChart} title="เพศ" />
+                ) : (
+                  <div className="flex gap-8 flex-wrap justify-center">
+                    {filterType === "illegal" ? (
+                      <>
+                        <DonutChart data={natChart} title="สัญชาติ (Top 6)" />
+                        <DonutChart data={victimChart} title="สถานะผู้เสียหาย" />
+                        <DonutChart data={passportChart} title="สถานะหนังสือเดินทาง" />
+                      </>
+                    ) : (
+                      <DonutChart data={channelChart} title="ช่องทางการส่งกลับ" />
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+
+              {/* Data Table Area - ใช้ตารางหลักของคุณ (ImmigrantsTable) */}
+              <div className="bg-transparent mb-10">
+                 <div className="flex justify-between items-center mb-6">
+                   <span className="font-bold text-lg text-(--header)">
+                     ตารางข้อมูล ({filteredData.length.toLocaleString("th-TH")} รายการ)
+                   </span>
+                 </div>
+                 
+                 <ImmigrantsTable data={paginatedData} isMock={false} type={filterType} />
+
+                 {/* ระบบ Pagination แบบเดียวกับหน้า Illegal/Deported */}
+                 {totalPages > 1 && (
+                    <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl mt-6 shadow-sm">
+                      <button 
+                        disabled={currentPage === 1} 
+                        onClick={() => setCurrentPage(p => p - 1)} 
+                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
+                      >
+                        ก่อนหน้า
+                      </button>
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        หน้า {currentPage} จาก {totalPages} (ทั้งหมด {mappedTableData.length} รายการ)
+                      </span>
+                      <button 
+                        disabled={currentPage === totalPages} 
+                        onClick={() => setCurrentPage(p => p + 1)} 
+                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
+                      >
+                        ถัดไป
+                      </button>
+                    </div>
+                  )}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -492,13 +497,7 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-screen opacity-50">
-          กำลังโหลด...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-muted-foreground font-medium">กำลังโหลดระบบแดชบอร์ด...</div>}>
       <DashboardContent />
     </Suspense>
   );

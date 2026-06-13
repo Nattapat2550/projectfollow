@@ -46,7 +46,7 @@ export default function Home() {
         loading={loading}
         viewAllHref="/immigrants/illegal"
         dashboardHref="/dashboard?type=illegal"
-        addHref="/immigrant/create"
+        addHref="/immigrants/illegal/create"
       />
 
       {/* การ์ด ผู้ถูกส่งกลับ */}
@@ -56,7 +56,7 @@ export default function Home() {
         loading={loading}
         viewAllHref="/immigrants/deported"
         dashboardHref="/dashboard?type=deported"
-        addHref="/deport/create"
+        addHref="/immigrants/deported/create"
       />
     </div>
   );
