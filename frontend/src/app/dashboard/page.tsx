@@ -18,6 +18,29 @@ interface ChartItem {
   color: string;
 }
 
+interface DashboardData {
+  stats: {
+    total: number;
+    victims?: number;
+    hasPassport?: number;
+    success?: number;
+  };
+  charts: {
+    nationality?: { name: string; value: number }[];
+    victim?: { name: string; value: number }[];
+    passport?: { name: string; value: number }[];
+    channel?: { name: string; value: number }[];
+  };
+  meta: {
+    totalItems: number;
+    totalPages: number;
+    currentPage: number;
+    allNationalities: string[];
+    allGenders: string[];
+  };
+  tableData: any[];
+}
+
 // ─── Colours ─────────────────────────────────────────────────────────────────
 
 const CHART_COLORS = [
@@ -28,81 +51,6 @@ const CHART_COLORS = [
   "#9E7B5A",
   "#8B7355",
 ];
-
-// ─── Helpers สำหรับกราฟ ────────────────────────────────────────────────────────
-
-function getTopNationalities(data: any[]): ChartItem[] {
-  const counts: Record<string, number> = {};
-  for (let i = 0; i < data.length; i++) {
-    const item = data[i];
-    const nat = item.nationality || "ไม่ระบุ";
-    counts[nat] = (counts[nat] || 0) + 1;
-  }
-  
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6)
-    .map(([name, value], i) => ({
-      name,
-      value,
-      color: CHART_COLORS[i % CHART_COLORS.length],
-    }));
-}
-
-function getChannelSplit(data: any[]): ChartItem[] {
-  const counts: Record<string, number> = {};
-  for (let i = 0; i < data.length; i++) {
-    const item = data[i];
-    const c = item.channel || "ไม่ระบุช่องทาง";
-    counts[c] = (counts[c] || 0) + 1;
-  }
-  
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .map(([name, value], i) => ({
-      name,
-      value,
-      color: CHART_COLORS[i % CHART_COLORS.length],
-    }));
-}
-
-function getVictimSplit(data: any[]): ChartItem[] {
-  let victim = 0;
-  let nonVictim = 0;
-  
-  for (let i = 0; i < data.length; i++) {
-    if (data[i].is_victim) {
-      victim++;
-    } else {
-      nonVictim++;
-    }
-  }
-  
-  const result: ChartItem[] = [];
-  if (victim) result.push({ name: "เป็นผู้เสียหาย", value: victim, color: CHART_COLORS[0] });
-  if (nonVictim) result.push({ name: "ไม่เป็นผู้เสียหาย", value: nonVictim, color: CHART_COLORS[2] });
-  return result;
-}
-
-function getPassportSplit(data: any[]): ChartItem[] {
-  let hasPassport = 0;
-  let noPassport = 0;
-  const noKeywords = ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null", "ไม่มีหนังสือเดินทาง"];
-
-  for (let i = 0; i < data.length; i++) {
-    const p = data[i].passport_id ? data[i].passport_id.trim().toLowerCase() : "";
-    if (p && !noKeywords.includes(p)) {
-      hasPassport++;
-    } else {
-      noPassport++;
-    }
-  }
-  
-  const result: ChartItem[] = [];
-  if (hasPassport) result.push({ name: "มีหนังสือเดินทาง", value: hasPassport, color: CHART_COLORS[1] });
-  if (noPassport) result.push({ name: "ไม่มีข้อมูล / ไม่มี", value: noPassport, color: CHART_COLORS[3] });
-  return result;
-}
 
 // ─── SVG Donut Chart Component ──────────────────────────────────────────────
 
@@ -190,81 +138,76 @@ function DashboardContent() {
   const router = useRouter();
   const typeParam = (searchParams.get("type") as "illegal" | "deported") || "illegal";
 
-  const [allData, setAllData] = useState<{ illegals: any[]; deporteds: any[] }>({ illegals: [], deporteds: [] });
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // States สำหรับระบุตัวกรอง
   const [filterType, setFilterType] = useState<"illegal" | "deported">(typeParam);
   const [filterNat, setFilterNat] = useState<string>("ทั้งหมด");
   const [filterGender, setFilterGender] = useState<string>("ทั้งหมด");
+  const [filterVictim, setFilterVictim] = useState<string>("ทั้งหมด");
+  const [filterPassport, setFilterPassport] = useState<string>("ทั้งหมด");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
-
-  // ระบบ Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50;
 
+  // เรียกโหลดข้อมูลใหม่แบบ Server-side ทุกครั้งที่มีการเปลี่ยน Filters หรือหน้าเปลี่ยน
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
       try {
         setLoading(true);
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-        const res = await fetch(`${backendUrl}/api/v1/immigrants`, { cache: "no-store" });
+        
+        // ประกอบ Query Parameters
+        const params = new URLSearchParams({
+          type: filterType,
+          nationality: filterNat,
+          gender: filterGender,
+          startDate,
+          endDate,
+          isVictim: filterType === "illegal" ? filterVictim : "ทั้งหมด",
+          hasPassport: filterType === "illegal" ? filterPassport : "ทั้งหมด",
+          page: currentPage.toString(),
+          limit: "50"
+        });
+
+        const res = await fetch(`${backendUrl}/api/v1/dashboard?${params.toString()}`, { cache: "no-store" });
         if (!res.ok) throw new Error("API error");
         const json = await res.json();
-        setAllData({
-          illegals: json.data?.illegals || [],
-          deporteds: json.data?.deporteds || [],
-        });
-      } catch {
-        setAllData({ illegals: [], deporteds: [] });
+        
+        setDashboardData(json);
+      } catch (err) {
+        console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
 
+    fetchDashboardData();
+  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, currentPage]);
+
+  // ซิงค์ URL Parameter กับ State หลัก
   useEffect(() => {
     setFilterType(typeParam);
+    setCurrentPage(1);
   }, [typeParam]);
 
-  // รีเซ็ตหน้ากลับไปเป็นหน้าแรกเสมอเมื่อตัวกรองเปลี่ยน
-  useEffect(() => {
+  // รีเซ็ตกลับไปหน้าแรกเสมอเมื่อฟิลเตอร์มีการขยับเปลี่ยนแปลง
+  const handleFilterChange = (setter: Function, value: any) => {
+    setter(value);
     setCurrentPage(1);
-  }, [filterType, filterNat, filterGender, startDate, endDate]);
+  };
 
-  const rawData = filterType === "illegal" ? allData.illegals : allData.deporteds;
+  // ดึงรายการสัญชาติและเพศจาก Metadata ฝั่งฐานข้อมูล เพื่อแสดงผลใน Select Box
+  const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
+  const gendersOptions = dashboardData?.meta?.allGenders || ["ทั้งหมด"];
 
-  const allNats = ["ทั้งหมด", ...Array.from(new Set(rawData.map((d: any) => d.nationality || "ไม่ระบุ"))).sort()] as string[];
-  const allGenders = ["ทั้งหมด", ...Array.from(new Set(rawData.map((d: any) => d.gender || "ไม่ระบุ"))).sort()] as string[];
-
-  // 1. กรองข้อมูลตามฟิลเตอร์
-  const filteredData = rawData.filter((item) => {
-    const natMatch = filterNat === "ทั้งหมด" || (item.nationality || "ไม่ระบุ") === filterNat;
-    const genderMatch = filterGender === "ทั้งหมด" || (item.gender || "ไม่ระบุ") === filterGender;
-
-    let dateMatch = true;
-    if (startDate || endDate) {
-      const dateStr = filterType === "illegal" ? item.detected_date : item.return_date;
-      if (!dateStr) {
-        dateMatch = false;
-      } else {
-        const itemDate = new Date(dateStr).getTime();
-        const start = startDate ? new Date(startDate).getTime() : 0;
-        const end = endDate ? new Date(endDate).getTime() + 86400000 - 1 : Infinity;
-        dateMatch = itemDate >= start && itemDate <= end;
-      }
-    }
-    
-    return natMatch && genderMatch && dateMatch;
-  });
-
-  // 2. แมพข้อมูลให้ตรงกับ ImmigrantsTable (เฉพาะประเภทแอบเข้าเมืองที่ต้องการการแปลงชื่อฟิลด์)
-  const mappedTableData = filteredData.map((item: any) => {
+  // Mapping จัดฟอร์แมตข้อมูลส่งต่อให้ ImmigrantsTable ทำงานได้อย่างเสถียร
+  const tableRows = (dashboardData?.tableData || []).map((item: any) => {
     if (filterType === "illegal") {
       return {
         ...item,
-        date_of_birth: item.detected_date ? new Date(item.detected_date).toLocaleDateString('th-TH') : "ไม่ระบุวันที่พบ",
+        date_of_birth: item.date_of_birth ? new Date(item.date_of_birth).toLocaleDateString('th-TH') : "ไม่ระบุ",
         national_id: item.passport_id || "ไม่มีพาสปอร์ต",
         address: item.detected_location || "ไม่ระบุสถานที่",
       };
@@ -272,30 +215,35 @@ function DashboardContent() {
     return item;
   });
 
-  // 3. หั่นข้อมูลตามหน้าปัจจุบัน
-  const totalPages = Math.ceil(mappedTableData.length / itemsPerPage);
-  const paginatedData = mappedTableData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
   const stats: StatItem[] = (() => {
+    if (!dashboardData) return [];
     if (filterType === "illegal") {
-      const victims = filteredData.filter((d) => d.is_victim).length;
       return [
-        { label: "จำนวนทั้งหมด", value: filteredData.length },
-        { label: "ผู้เสียหาย (ค้ามนุษย์)", value: victims },
+        { label: "จำนวนทั้งหมดที่พบตามตัวกรอง", value: dashboardData.stats.total },
+        { label: "ผู้เสียหาย (ค้ามนุษย์)", value: dashboardData.stats.victims || 0 },
+        { label: "ผู้มีหนังสือเดินทาง", value: dashboardData.stats.hasPassport || 0 },
       ];
     } else {
-      const success = filteredData.filter((d) => d.result === "SUCCESS").length;
       return [
-        { label: "จำนวนทั้งหมด", value: filteredData.length },
-        { label: "ส่งกลับสำเร็จ", value: success },
+        { label: "จำนวนทั้งหมดที่พบตามตัวกรอง", value: dashboardData.stats.total },
+        { label: "ส่งกลับสำเร็จ", value: dashboardData.stats.success || 0 },
       ];
     }
   })();
 
-  const victimChart = getVictimSplit(filteredData);
-  const passportChart = getPassportSplit(filteredData);
-  const channelChart = getChannelSplit(filteredData);
-  const natChart = getTopNationalities(filteredData);
+  // จัดชุดข้อมูลสีกราฟวงกลม
+  const natChart = (dashboardData?.charts?.nationality || []).map((d, i) => ({
+    ...d, color: CHART_COLORS[i % CHART_COLORS.length]
+  }));
+  const victimChart = (dashboardData?.charts?.victim || []).map((d, i) => ({
+    ...d, color: d.name === "เป็นผู้เสียหาย" ? CHART_COLORS[0] : CHART_COLORS[2]
+  }));
+  const passportChart = (dashboardData?.charts?.passport || []).map((d, i) => ({
+    ...d, color: d.name === "มีหนังสือเดินทาง" ? CHART_COLORS[1] : CHART_COLORS[3]
+  }));
+  const channelChart = (dashboardData?.charts?.channel || []).map((d, i) => ({
+    ...d, color: CHART_COLORS[i % CHART_COLORS.length]
+  }));
 
   const inputClass = "w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40";
 
@@ -327,8 +275,11 @@ function DashboardContent() {
                 setFilterType(val);
                 setFilterNat("ทั้งหมด");
                 setFilterGender("ทั้งหมด");
+                setFilterVictim("ทั้งหมด");
+                setFilterPassport("ทั้งหมด");
                 setStartDate("");
                 setEndDate("");
+                setCurrentPage(1);
                 router.replace(`/dashboard?type=${val}`);
               }}
               className={inputClass}
@@ -342,10 +293,10 @@ function DashboardContent() {
             <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สัญชาติ</label>
             <select
               value={filterNat}
-              onChange={(e) => setFilterNat(e.target.value)}
+              onChange={(e) => handleFilterChange(setFilterNat, e.target.value)}
               className={inputClass}
             >
-              {allNats.map((n) => (
+              {nationalitiesOptions.map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>
@@ -357,10 +308,10 @@ function DashboardContent() {
             <label className="text-sm font-bold text-stone-600 dark:text-slate-300">เพศ</label>
             <select
               value={filterGender}
-              onChange={(e) => setFilterGender(e.target.value)}
+              onChange={(e) => handleFilterChange(setFilterGender, e.target.value)}
               className={inputClass}
             >
-              {allGenders.map((g) => (
+              {gendersOptions.map((g) => (
                 <option key={g} value={g}>
                   {g}
                 </option>
@@ -368,12 +319,43 @@ function DashboardContent() {
             </select>
           </div>
 
+          {/* ฟิลเตอร์เพิ่มเติม: แสดงผลเฉพาะเมื่อเลือกประเภท Illegal เท่านั้น */}
+          {filterType === "illegal" && (
+            <>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สถานะผู้เสียหาย</label>
+                <select
+                  value={filterVictim}
+                  onChange={(e) => handleFilterChange(setFilterVictim, e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="ทั้งหมด">ทั้งหมด</option>
+                  <option value="true">เป็นผู้เสียหาย</option>
+                  <option value="false">ไม่เป็นผู้เสียหาย</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สถานะหนังสือเดินทาง</label>
+                <select
+                  value={filterPassport}
+                  onChange={(e) => handleFilterChange(setFilterPassport, e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="ทั้งหมด">ทั้งหมด</option>
+                  <option value="true">มีหนังสือเดินทาง</option>
+                  <option value="false">ไม่มีหนังสือเดินทาง / ไม่มีข้อมูล</option>
+                </select>
+              </div>
+            </>
+          )}
+
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ตั้งแต่วันที่</label>
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => handleFilterChange(setStartDate, e.target.value)}
               className={inputClass}
             />
           </div>
@@ -383,7 +365,7 @@ function DashboardContent() {
             <input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => handleFilterChange(setEndDate, e.target.value)}
               className={inputClass}
             />
           </div>
@@ -392,8 +374,11 @@ function DashboardContent() {
             onClick={() => {
               setFilterNat("ทั้งหมด");
               setFilterGender("ทั้งหมด");
+              setFilterVictim("ทั้งหมด");
+              setFilterPassport("ทั้งหมด");
               setStartDate("");
               setEndDate("");
+              setCurrentPage(1);
             }}
             className="mt-2 w-full py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
           >
@@ -406,7 +391,7 @@ function DashboardContent() {
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 bg-(--container) border border-(--wrapper) rounded-2xl shadow-sm">
                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-(--header) mb-4"></div>
-               <span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูลทั้งหมด...</span>
+               <span className="text-muted-foreground text-sm font-medium">กำลังปรับปรุงแดชบอร์ดให้เป็นข้อมูลล่าสุด...</span>
             </div>
           ) : (
             <>
@@ -435,51 +420,53 @@ function DashboardContent() {
                   กราฟสรุปจำนวนคนทั้งหมด
                 </span>
                 
-                {filteredData.length === 0 ? (
+                {(!dashboardData || dashboardData.tableData.length === 0) ? (
                   <div className="flex items-center justify-center h-48 text-muted-foreground font-medium text-sm">
-                    ไม่มีข้อมูลในช่วงเวลานี้
+                    ไม่มีข้อมูลตามเงื่อนไขที่คุณเลือกฟิลเตอร์
                   </div>
                 ) : (
                   <div className="flex gap-8 flex-wrap justify-center">
                     {filterType === "illegal" ? (
                       <>
-                        <DonutChart data={natChart} title="สัญชาติ (Top 6)" />
-                        <DonutChart data={victimChart} title="สถานะผู้เสียหาย" />
-                        <DonutChart data={passportChart} title="สถานะหนังสือเดินทาง" />
+                        {natChart.length > 0 && <DonutChart data={natChart} title="สัญชาติ (Top 6)" />}
+                        {victimChart.length > 0 && <DonutChart data={victimChart} title="สถานะผู้เสียหาย" />}
+                        {passportChart.length > 0 && <DonutChart data={passportChart} title="สถานะหนังสือเดินทาง" />}
                       </>
                     ) : (
-                      <DonutChart data={channelChart} title="ช่องทางการส่งกลับ" />
+                      <>
+                        {channelChart.length > 0 && <DonutChart data={channelChart} title="ช่องทางการส่งกลับ" />}
+                      </>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Data Table Area - ใช้ตารางหลักของคุณ (ImmigrantsTable) */}
+              {/* Data Table Area */}
               <div className="bg-transparent mb-10">
                  <div className="flex justify-between items-center mb-6">
                    <span className="font-bold text-lg text-(--header)">
-                     ตารางข้อมูล ({filteredData.length.toLocaleString("th-TH")} รายการ)
+                     ตารางข้อมูล ({dashboardData?.meta?.totalItems.toLocaleString("th-TH") || 0} รายการ)
                    </span>
                  </div>
                  
-                 <ImmigrantsTable data={paginatedData} isMock={false} type={filterType} />
+                 <ImmigrantsTable data={tableRows} isMock={false} type={filterType} />
 
-                 {/* ระบบ Pagination แบบเดียวกับหน้า Illegal/Deported */}
-                 {totalPages > 1 && (
+                 {/* ระบบ Pagination ผูกเข้ากับระบบดึงข้อมูลจาก Server */}
+                 {(dashboardData?.meta?.totalPages || 0) > 1 && (
                     <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl mt-6 shadow-sm">
                       <button 
                         disabled={currentPage === 1} 
-                        onClick={() => setCurrentPage(p => p - 1)} 
+                        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
                         className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
                       >
                         ก่อนหน้า
                       </button>
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        หน้า {currentPage} จาก {totalPages} (ทั้งหมด {mappedTableData.length} รายการ)
+                        หน้า {currentPage} จาก {dashboardData?.meta?.totalPages} (ทั้งหมด {dashboardData?.meta?.totalItems} รายการ)
                       </span>
                       <button 
-                        disabled={currentPage === totalPages} 
-                        onClick={() => setCurrentPage(p => p + 1)} 
+                        disabled={currentPage === dashboardData?.meta?.totalPages} 
+                        onClick={() => setCurrentPage(p => Math.min(p + 1, dashboardData?.meta?.totalPages || 1))} 
                         className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
                       >
                         ถัดไป
