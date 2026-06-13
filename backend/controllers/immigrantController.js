@@ -2,6 +2,7 @@ const { PrismaClient } = require("@prisma/client");
 const { Pool } = require("pg");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const xlsx = require("xlsx");
+const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
 
 const connectionString = process.env.DATABASE_URL;
 const isLocalhost = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
@@ -70,8 +71,8 @@ const determineGender = (row, prefix) => {
 exports.getAllData = async (req, res) => {
   try {
     const [illegals, deporteds] = await Promise.all([
-      prisma.illegal_immigrants.findMany({ orderBy: { id: "desc" } }),
-      prisma.deported_persons.findMany({ orderBy: { id: "desc" } })
+      prisma.illegal_immigrants.findMany({ orderBy: { detected_date: "desc" } }),
+      prisma.deported_persons.findMany({ orderBy: { return_date: "desc" } })
     ]);
     res.status(200).json({ success: true, data: { illegals, deporteds } });
   } catch (err) {
@@ -92,6 +93,12 @@ exports.createIllegal = async (req, res) => {
       });
     }
 
+    let photo_url = null;
+    if (req.file) {
+      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
+      photo_url = driveRes.webViewLink;
+    }
+
     const result = await prisma.illegal_immigrants.create({
       data: {
         first_name_th: data.first_name_th,
@@ -108,7 +115,8 @@ exports.createIllegal = async (req, res) => {
         warrant: data.warrant || null,
         screening_details: data.screening_details || null,
         is_victim: data.is_victim === "true" || data.is_victim === true || false,
-        detected_date: data.detected_date ? new Date(data.detected_date) : null
+        detected_date: data.detected_date ? new Date(data.detected_date) : null,
+        photo_url: photo_url
       }
     });
     res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลแอบเข้าสำเร็จ" });
@@ -122,8 +130,32 @@ exports.updateIllegal = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
+    const existingData = await prisma.illegal_immigrants.findUnique({ where: { id: id } });
+    if (!existingData) {
+      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
+    }
+
+    let photo_url = existingData.photo_url;
+
+    if (req.file) {
+      // ลบรูปเก่าจาก Drive ถ้ามี
+      if (existingData.photo_url) {
+        const oldFileId = extractDriveFileId(existingData.photo_url);
+        if (oldFileId) {
+          try {
+            await deleteFromDrive(oldFileId);
+          } catch (delErr) {
+            console.error("Failed to delete old photo:", delErr.message);
+          }
+        }
+      }
+      // อัปโหลดรูปใหม่
+      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
+      photo_url = driveRes.webViewLink;
+    }
+
     const result = await prisma.illegal_immigrants.update({
-      where: { id: parseInt(id) },
+      where: { id: id },
       data: {
         first_name_th: data.first_name_th,
         middle_name_th: data.middle_name_th || null,
@@ -139,7 +171,8 @@ exports.updateIllegal = async (req, res) => {
         warrant: data.warrant || null,
         screening_details: data.screening_details || null,
         is_victim: data.is_victim === "true" || data.is_victim === true || false,
-        detected_date: data.detected_date ? new Date(data.detected_date) : null
+        detected_date: data.detected_date ? new Date(data.detected_date) : null,
+        photo_url: photo_url
       }
     });
     res.status(200).json({ success: true, data: result, message: "แก้ไขข้อมูลสำเร็จ" });
@@ -151,8 +184,17 @@ exports.updateIllegal = async (req, res) => {
 exports.deleteIllegal = async (req, res) => {
   try {
     const { id } = req.params;
+    const existingData = await prisma.illegal_immigrants.findUnique({ where: { id: id } });
+    
+    if (existingData && existingData.photo_url) {
+       const fileId = extractDriveFileId(existingData.photo_url);
+       if(fileId) {
+          try { await deleteFromDrive(fileId); } catch(e) { console.error(e); }
+       }
+    }
+
     await prisma.illegal_immigrants.delete({
-      where: { id: parseInt(id) }
+      where: { id: id }
     });
     res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
   } catch (err) {
@@ -183,6 +225,12 @@ exports.createDeported = async (req, res) => {
       if (existingPassport) return res.status(400).json({ success: false, message: "เลขหนังสือเดินทาง (passport_id) นี้มีอยู่ในระบบแล้ว" });
     }
 
+    let photo_url = null;
+    if (req.file) {
+      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
+      photo_url = driveRes.webViewLink;
+    }
+
     const result = await prisma.deported_persons.create({
       data: {
         first_name_th: data.first_name_th,
@@ -191,9 +239,10 @@ exports.createDeported = async (req, res) => {
         first_name_en: data.first_name_en || null,
         middle_name_en: data.middle_name_en || null,
         last_name_en: data.last_name_en || null,
-        date_of_birth: new Date(data.date_of_birth),
+        date_of_birth: data.date_of_birth, // schema กำหนดเป็น String
         national_id: data.national_id,
         passport_id: data.passport_id || null,
+        gender: data.gender || null, // เพิ่ม gender
         address: data.address || "ไม่ระบุ",
         channel: data.channel || null,
         result: data.result || "PENDING",
@@ -201,7 +250,7 @@ exports.createDeported = async (req, res) => {
         number_of_warrant: parseInt(data.number_of_warrant) || 0,
         age: parseInt(data.age) || null,
         return_date: data.return_date ? new Date(data.return_date) : null,
-        photo_url: req.file ? `/uploads/${req.file.filename}` : null,
+        photo_url: photo_url,
       }
     });
     res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลส่งกลับสำเร็จ" });
@@ -215,6 +264,30 @@ exports.updateDeported = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
+    const existingData = await prisma.deported_persons.findUnique({ where: { id: id } });
+    if (!existingData) {
+      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
+    }
+
+    let photo_url = existingData.photo_url;
+
+    if (req.file) {
+      // ลบรูปเก่าจาก Drive ถ้ามี
+      if (existingData.photo_url) {
+        const oldFileId = extractDriveFileId(existingData.photo_url);
+        if (oldFileId) {
+          try {
+            await deleteFromDrive(oldFileId);
+          } catch (delErr) {
+            console.error("Failed to delete old photo:", delErr.message);
+          }
+        }
+      }
+      // อัปโหลดรูปใหม่
+      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
+      photo_url = driveRes.webViewLink;
+    }
+
     const updateData = {
       first_name_th: data.first_name_th,
       middle_name_th: data.middle_name_th || null,
@@ -222,9 +295,10 @@ exports.updateDeported = async (req, res) => {
       first_name_en: data.first_name_en || null,
       middle_name_en: data.middle_name_en || null,
       last_name_en: data.last_name_en || null,
-      date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : undefined,
+      date_of_birth: data.date_of_birth,
       national_id: data.national_id,
       passport_id: data.passport_id || null,
+      gender: data.gender || null, // เพิ่มอัปเดต gender
       address: data.address || "ไม่ระบุ",
       channel: data.channel || null,
       result: data.result || "PENDING",
@@ -232,14 +306,11 @@ exports.updateDeported = async (req, res) => {
       number_of_warrant: parseInt(data.number_of_warrant) || 0,
       age: parseInt(data.age) || null,
       return_date: data.return_date ? new Date(data.return_date) : null,
+      photo_url: photo_url
     };
 
-    if (req.file) {
-      updateData.photo_url = `/uploads/${req.file.filename}`;
-    }
-
     const result = await prisma.deported_persons.update({
-      where: { id: parseInt(id) },
+      where: { id: id },
       data: updateData
     });
     res.status(200).json({ success: true, data: result, message: "แก้ไขข้อมูลสำเร็จ" });
@@ -251,8 +322,17 @@ exports.updateDeported = async (req, res) => {
 exports.deleteDeported = async (req, res) => {
   try {
     const { id } = req.params;
+    const existingData = await prisma.deported_persons.findUnique({ where: { id: id } });
+    
+    if (existingData && existingData.photo_url) {
+       const fileId = extractDriveFileId(existingData.photo_url);
+       if(fileId) {
+          try { await deleteFromDrive(fileId); } catch(e) { console.error(e); }
+       }
+    }
+
     await prisma.deported_persons.delete({
-      where: { id: parseInt(id) }
+      where: { id: id }
     });
     res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
   } catch (err) {

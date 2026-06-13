@@ -7,31 +7,21 @@ const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
 const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
 
-// สร้าง Client สำหรับจัดการ OAuth2
 const oauth2Client = new google.auth.OAuth2(
   CLIENT_ID,
   CLIENT_SECRET,
   REDIRECT_URI
 );
 
-// ส่ง Refresh Token เข้าไปเพื่อให้ไลบรารีเจน Access Token ใหม่อัตโนมัติเมื่อหมดอายุ
 oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-
-// เรียกใช้งานเซอร์วิส Google Drive API
 const driveService = google.drive({ version: 'v3', auth: oauth2Client });
 
-/**
- * อัพโหลดไฟล์ขึ้น Google Drive โดยใช้บัญชีส่วนตัวผ่านสิทธิ์ OAuth2
- * @param {Object} fileObject - ออบเจกต์ไฟล์ที่ได้รับมาจาก Multer (req.file)
- * @param {String} folderId - ID ของโฟลเดอร์ปลายทางใน Google Drive
- */
 const uploadToDrive = async (fileObject, folderId) => {
   try {
     const fileMetadata = {
       name: fileObject.originalname,
     };
 
-    // หากมีการกำหนด Folder ID ใน .env ให้จัดเก็บลงในโฟลเดอร์นั้น
     if (folderId) {
       fileMetadata.parents = [folderId];
     }
@@ -41,7 +31,6 @@ const uploadToDrive = async (fileObject, folderId) => {
       body: fs.createReadStream(fileObject.path)
     };
 
-    // ส่งคำสั่งสร้างไฟล์ไปยัง Google Drive API
     const response = await driveService.files.create({
       resource: fileMetadata,
       media: media,
@@ -50,7 +39,6 @@ const uploadToDrive = async (fileObject, folderId) => {
 
     const fileId = response.data.id;
 
-    // อัปเดตสิทธิ์ของไฟล์ (Permissions) ให้ทุกคนที่มีลิงก์สามารถเปิดดูเนื้อหาได้ (Reader)
     await driveService.permissions.create({
       fileId: fileId,
       requestBody: {
@@ -61,9 +49,32 @@ const uploadToDrive = async (fileObject, folderId) => {
 
     return response.data;
   } catch (error) {
-    console.error('[Drive Service Error]:', error.message);
+    console.error('[Drive Service Upload Error]:', error.message);
     throw error;
   }
 };
 
-module.exports = { uploadToDrive };
+const deleteFromDrive = async (fileId) => {
+  try {
+    if (!fileId) return;
+    await driveService.files.delete({ fileId: fileId });
+    console.log(`[Drive Service]: Deleted file ${fileId} successfully.`);
+    return true;
+  } catch (error) {
+    console.error('[Drive Service Delete Error]:', error.message);
+    throw error;
+  }
+};
+
+const extractDriveFileId = (url) => {
+  if (!url) return null;
+  const matchIdParam = url.match(/id=([^&]+)/);
+  if (matchIdParam) return matchIdParam[1];
+  
+  const matchPath = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (matchPath) return matchPath[1];
+
+  return null;
+};
+
+module.exports = { uploadToDrive, deleteFromDrive, extractDriveFileId };

@@ -17,7 +17,8 @@ CREATE TABLE illegal_immigrants (
     gender VARCHAR(50),
     detected_date DATE,
     workplace VARCHAR(255),
-    screening_details TEXT
+    screening_details TEXT,
+    photo_url TEXT
 );
 
 -- ตาราง ส่งกลับ (Deported Persons)
@@ -37,6 +38,7 @@ CREATE TABLE deported_persons (
     age INT,
     national_id VARCHAR(50) UNIQUE NOT NULL,  -- ตรงกับ id_card
     passport_id VARCHAR(255) UNIQUE,          -- ตรงกับ passport
+    gender VARCHAR(50),
     address TEXT NOT NULL,
     photo_url TEXT,                           -- เพิ่มใหม่: เก็บ URL รูปภาพ หรือ Base64 string ยาวๆ
     

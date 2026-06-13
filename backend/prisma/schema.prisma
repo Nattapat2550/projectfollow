@@ -45,6 +45,7 @@ model illegal_immigrants {
   warrant           String?
   workplace         String?
   screening_details String?
+  photo_url         String?
 }
 
 // ตาราง ส่งกลับ (Deported Persons)
@@ -60,6 +61,7 @@ model deported_persons {
   age                Int?
   national_id        String         @unique
   passport_id        String?        @unique
+  gender             String?
   address            String
   photo_url          String?
   

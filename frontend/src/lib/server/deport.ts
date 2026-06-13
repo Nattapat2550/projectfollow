@@ -21,14 +21,13 @@ export async function getDeportData(
 		// Map ข้อมูลให้ตรงกับ UI
 		const mappedData = rawData.map((item: any) => {
 			
-			// จัดการแปลงวันเกิด (จาก String 12/05/2535 เป็นตัวเลข วัน/เดือน/ปี ตาม UI)
+			// จัดการแปลงวันเกิด
 			let birth_day = 1, birth_month = 0, birth_year = 2000;
 			if (item.date_of_birth && item.date_of_birth.includes('/')) {
 				const parts = item.date_of_birth.split('/');
 				birth_day = parseInt(parts[0]) || 1;
-				birth_month = (parseInt(parts[1]) || 1) - 1; // JavaScript month index (0-11)
+				birth_month = (parseInt(parts[1]) || 1) - 1; 
 				birth_year = parseInt(parts[2]) || 2000;
-				// ถ้าเป็น พ.ศ. ให้แปลงเป็น ค.ศ.
 				if (birth_year > 2500) birth_year -= 543; 
 			}
 
@@ -41,7 +40,9 @@ export async function getDeportData(
 				middle_name_en: item.middle_name_en || null,
 				last_name_en: item.last_name_en || null,
 				
-				gender: "male", // ค่า Default เนื่องจากตาราง deported ไม่มีคอลัมน์เพศ
+				// ตรวจสอบข้อมูลเพศเหมือนกับฝั่งแอบเข้า
+				gender: item.gender === "หญิง" ? "female" : "male", 
+				
 				national_id: item.national_id || "ไม่ระบุ",
 				passport_id: item.passport_id || null,
 				
@@ -50,12 +51,11 @@ export async function getDeportData(
 				birth_year,
 				
 				address: item.address || "ไม่ระบุ",
-				image_url: item.photo_url || null, // นำรูปภาพที่ฝากบน Drive มาใช้
+				image_url: item.photo_url || null, 
 				
 				number_of_case: item.number_of_case || 0,
 				number_of_warrant: item.number_of_warrant || 0,
 				
-				// สกัดข้อมูลเหยื่อ
 				is_victim: item.victim_indicator ? item.victim_indicator.includes("มีข้อบ่งชี้") : null,
 			};
 		});

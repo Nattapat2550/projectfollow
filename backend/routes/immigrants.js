@@ -15,14 +15,14 @@ const uploadExcel = multer({ storage: memoryStorage });
 // GET: ดึงข้อมูลทั้งหมด
 router.get("/", immigrantController.getAllData);
 
-// POST: เพิ่มข้อมูลแอบเข้า (รายคน)
-router.post("/illegal", immigrantController.createIllegal);
+// POST: เพิ่มข้อมูลแอบเข้า (รายคน พร้อมรูปภาพ)
+router.post("/illegal", uploadMiddleware.single("photo"), immigrantController.createIllegal);
 
 // POST: เพิ่มข้อมูลส่งกลับ (รายคน พร้อมรูปภาพ)
 router.post("/deported", uploadMiddleware.single("photo"), immigrantController.createDeported);
 
-// PUT: แก้ไขข้อมูลแอบเข้า (รายคน)
-router.put("/illegal/:id", immigrantController.updateIllegal);
+// PUT: แก้ไขข้อมูลแอบเข้า (รายคน พร้อมอัปเดตรูปภาพได้)
+router.put("/illegal/:id", uploadMiddleware.single("photo"), immigrantController.updateIllegal);
 
 // PUT: แก้ไขข้อมูลส่งกลับ (รายคน พร้อมอัปเดตรูปภาพได้)
 router.put("/deported/:id", uploadMiddleware.single("photo"), immigrantController.updateDeported);
