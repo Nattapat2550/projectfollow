@@ -23,6 +23,10 @@ export default function ImmigrantDetailPage() {
   const [formData, setFormData] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
 
+  // States สำหรับจัดการไฟล์รูปภาพและการพรีวิว
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -45,6 +49,7 @@ export default function ImmigrantDetailPage() {
           date_of_birth: foundDep.date_of_birth ? foundDep.date_of_birth.split("T")[0] : "",
           return_date: foundDep.return_date ? foundDep.return_date.split("T")[0] : "",
         });
+        setImagePreview(foundDep.photo_url || null);
       } else {
         // 2. ถ้าไม่เจอ ไปหาในฝั่งลอบเข้า
         const foundIll = illegals.find((p: any) => String(p.id) === String(id));
@@ -56,6 +61,7 @@ export default function ImmigrantDetailPage() {
             ...foundIll,
             detected_date: foundIll.detected_date ? foundIll.detected_date.split("T")[0] : "",
           });
+          setImagePreview(foundIll.photo_url || null);
         } else {
           setPerson(null);
           setPersonType(null);
@@ -84,6 +90,15 @@ export default function ImmigrantDetailPage() {
     setFormData((prev: any) => ({ ...prev, [name]: checked }));
   };
 
+  // ฟังก์ชันสำหรับจัดการเมื่อผู้ใช้อัปโหลดรูปภาพใหม่
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file)); // สร้าง URL จำลองชั่วคราวเพื่อทำ Preview
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -99,22 +114,35 @@ export default function ImmigrantDetailPage() {
         payload.age = parseInt(payload.age) || null;
       }
 
+      // สร้างสถาปัตยกรรมแบบ FormData เพื่อให้ส่งข้อมูลรูปภาพไปพร้อมกับ Text ได้
+      const submitData = new FormData();
+      
+      // วนลูปใส่ฟิลด์ปกติลงใน FormData
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] !== null && payload[key] !== undefined) {
+          submitData.append(key, payload[key]);
+        }
+      });
+
+      // ถ้าผู้ใช้เลือกไฟล์ใหม่ ให้แนบไฟล์ไปด้วยภายใต้ชื่อฟิลด์ "photo" ให้สอดคล้องกับ multer ฝั่ง Backend
+      if (selectedImage) {
+        submitData.append("photo", selectedImage);
+      }
+
       const res = await fetch(`${backendUrl}/api/v1/immigrants/${endpoint}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        body: submitData, // ปล่อยว่าง Content-Type เพื่อให้ Fetch จัดการ boundary อัตโนมัติ
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
+        throw new Error(errorData.error || errorData.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
       }
 
       alert("บันทึกการแก้ไขข้อมูลเรียบร้อยแล้ว!");
       setIsEditing(false);
-      fetchData(); // ดึงข้อมูลชุดใหม่มาแสดงผลทันที
+      setSelectedImage(null); // รีเซ็ตสถานะไฟล์
+      fetchData(); // เรียกขอข้อมูลเวอร์ชันล่าสุดมาเรนเดอร์ใหม่
     } catch (error: any) {
       console.error("Error updating data:", error);
       alert(error.message || "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกข้อมูลได้");
@@ -165,7 +193,26 @@ export default function ImmigrantDetailPage() {
       {isEditing ? (
         /* ==================== โหมดแบบฟอร์มการแก้ไขข้อมูลความละเอียดสูง ==================== */
         <form onSubmit={handleSave} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
-          <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
+          
+          {/* เพิ่มอินพุตสำหรับอัปโหลดและพรีวิวรูปภาพ */}
+          <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
+          <div className="mb-6 flex flex-col items-start gap-4">
+            {imagePreview && (
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" 
+              />
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-stone-200 dark:file:bg-stone-800 file:text-foreground hover:file:opacity-80 cursor-pointer"
+            />
+          </div>
+
+          <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
             <div>
@@ -350,8 +397,8 @@ export default function ImmigrantDetailPage() {
                     className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40"
                   >
                     <option value="PENDING">PENDING</option>
-                    <option value="COMPLETED">COMPLETED</option>
-                    <option value="REJECTED">REJECTED</option>
+                    <option value="SUCCESS">SUCCESS</option>
+                    <option value="FAILED">FAILED</option>
                   </select>
                 </div>
               </div>

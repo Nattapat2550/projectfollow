@@ -241,9 +241,10 @@ export default function TestUpload2Page() {
 
                         <div className="grid grid-cols-2 gap-4 mb-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
                           <div>
-                            <span className="text-[10px] font-semibold text-zinc-400 uppercase block mb-1">อายุและวันเกิด</span>
+                            <span className="text-[10px] font-semibold text-zinc-400 uppercase block mb-1">ข้อมูลส่วนบุคคล (อายุ/วันเกิด/เพศ)</span>
                             <div className="text-sm"><span className="text-zinc-500 mr-1">[DB: age]</span> <span className="font-medium">{row.age || renderNull()}</span></div>
                             <div className="text-sm"><span className="text-zinc-500 mr-1">[DB: dob]</span> <span className="font-medium">{row.dob || renderNull()}</span></div>
+                            <div className="text-sm"><span className="text-zinc-500 mr-1">[DB: gender]</span> <span className="font-medium text-blue-700 dark:text-blue-400">{row.gender || renderNull()}</span></div>
                           </div>
                           <div>
                             <span className="text-[10px] font-semibold text-zinc-400 uppercase block mb-1">เอกสาร</span>

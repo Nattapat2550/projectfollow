@@ -17,7 +17,8 @@ const { uploadToDrive } = require("../services/googleDriveService");
 
 const removePrefix = (fullName) => {
     if (!fullName || typeof fullName !== "string") return fullName;
-    const prefixRegex = /^(พล\.ต\.อ\.|พล\.ต\.ท\.|พล\.ต\.ต\.|พ\.ต\.อ\.|พ\.ต\.ท\.|พ\.ต\.ต\.|ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|ด\.ต\.|จ\.ส\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ว่าที่ ร\.ต\.|นางสาว|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|Mr\.|Mrs\.|Ms\.|Miss\s*)/i;
+    // ✨ เพิ่ม น.ส. เข้าไปใน Regex ตรงนี้เพื่อตัดออกจากชื่อ
+    const prefixRegex = /^(พล\.ต\.อ\.|พล\.ต\.ท\.|พล\.ต\.ต\.|พ\.ต\.อ\.|พ\.ต\.ท\.|พ\.ต\.ต\.|ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|ด\.ต\.|จ\.ส\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ว่าที่ ร\.ต\.|นางสาว|น\.ส\.|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|Mr\.|Mrs\.|Ms\.|Miss\s*)/i;
     return fullName.replace(prefixRegex, '').trim();
 };
 
@@ -37,6 +38,22 @@ const splitName = (fullName) => {
         return { first, middle, last };
     }
     return { first: null, middle: null, last: null };
+};
+
+// ฟังก์ชันช่วยเดาเพศจากคำนำหน้าชื่อ
+const determineGenderFromName = (fullName) => {
+    if (!fullName || typeof fullName !== "string") return null;
+    // ✨ เพิ่ม น\.ส\. เข้าไปใน Regex ให้ระบบรู้จัก
+    const prefixRegex = /^(นาย|นางสาว|น\.ส\.|นาง|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|Mr\.|Mrs\.|Ms\.|Miss)/i;
+    const match = fullName.match(prefixRegex);
+    
+    if (match) {
+        const prefix = match[1].toLowerCase().replace(/\s+/g, '');
+        if (["นาย", "เด็กชาย", "ด.ช.", "mr."].includes(prefix)) return "ชาย";
+        // ✨ เพิ่ม "น.ส." ลงในกลุ่มเพศหญิง
+        if (["นาง", "นางสาว", "น.ส.", "เด็กหญิง", "ด.ญ.", "mrs.", "ms.", "miss"].includes(prefix)) return "หญิง";
+    }
+    return null;
 };
 
 // จัดการ Global state สำหรับ Progress Bar
@@ -90,14 +107,18 @@ exports.uploadExcel = async (req, res) => {
             const preview_data = [];
             for (let i = 0; i < rawData.length; i++) {
                 const row = rawData[i];
-                const thName = splitName(row["ชื่อ สกุล (ไทย)"]);
-                const enName = splitName(row["ชื่อ สกุล (อังกฤษ)"]);
+                const rawThName = row["ชื่อ สกุล (ไทย)"];
+                const rawEnName = row["ชื่อ สกุล (อังกฤษ)"];
+                
+                const thName = splitName(rawThName);
+                const enName = splitName(rawEnName);
+                const autoGender = determineGenderFromName(rawThName) || determineGenderFromName(rawEnName) || (row["เพศ"] ? String(row["เพศ"]).trim() : null);
+
                 const id_card = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"] || `NO_ID_${i}`;
                 const dob = row["วัน/เดือน/ปี เกิด"] ? String(row["วัน/เดือน/ปี เกิด"]) : "ไม่ระบุ";
                 
                 let photo_url_preview = null;
                 if (imagesMap[i + 1]) {
-                    // แปลง Buffer ภาพเป็น Base64 เพื่อส่งไปพรีวิวแสดงหน้าจอทันที
                     const base64Data = imagesMap[i + 1].buffer.toString('base64');
                     const mimeType = imagesMap[i + 1].extension === 'png' ? 'image/png' : 'image/jpeg';
                     photo_url_preview = `data:${mimeType};base64,${base64Data}`;
@@ -113,6 +134,7 @@ exports.uploadExcel = async (req, res) => {
                     last_name_en: enName.last || null,
                     age: parseInt(row["อายุ(ปี)"]) || null,
                     dob: dob,
+                    gender: autoGender,
                     id_card: id_card,
                     passport: row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]) : null,
                     photo_url: photo_url_preview,
@@ -121,7 +143,7 @@ exports.uploadExcel = async (req, res) => {
                     raw_data_from_excel: row
                 });
             }
-            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); // ลบทิ้งเลยไม่ต้องอัพรูป
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); 
             return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวและรูปภาพสำเร็จ", total_rows: preview_data.length, preview_data });
         }
 
@@ -135,8 +157,13 @@ exports.uploadExcel = async (req, res) => {
 
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
-            const thName = splitName(row["ชื่อ สกุล (ไทย)"]);
-            const enName = splitName(row["ชื่อ สกุล (อังกฤษ)"]);
+            const rawThName = row["ชื่อ สกุล (ไทย)"];
+            const rawEnName = row["ชื่อ สกุล (อังกฤษ)"];
+            
+            const thName = splitName(rawThName);
+            const enName = splitName(rawEnName);
+            const autoGender = determineGenderFromName(rawThName) || determineGenderFromName(rawEnName) || (row["เพศ"] ? String(row["เพศ"]).trim() : null);
+
             const excelRowIndex = i + 1; 
 
             let drivePhotoUrl = null;
@@ -185,6 +212,7 @@ exports.uploadExcel = async (req, res) => {
                         last_name_en: enName.last || null,
                         
                         date_of_birth: dob,
+                        gender: autoGender,
                         age: isNaN(parsedAge) ? null : parsedAge,
                         national_id: String(id_card).trim(),
                         passport_id: passport === "-" || passport === "" ? null : passport,
