@@ -1,65 +1,217 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 
 export default function Home() {
-	return (
-		<div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-			<main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-				<Image
-					className="dark:invert"
-					src="/next.svg"
-					alt="Next.js logo"
-					width={100}
-					height={20}
-					priority
-				/>
-				<div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-					<h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-						To get started, edit the page.tsx file.
-					</h1>
-					<p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-						Looking for a starting point or more instructions? Head over to{" "}
-						<a
-							href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-							className="font-medium text-zinc-950 dark:text-zinc-50"
-						>
-							Templates
-						</a>{" "}
-						or the{" "}
-						<a
-							href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-							className="font-medium text-zinc-950 dark:text-zinc-50"
-						>
-							Learning
-						</a>{" "}
-						center.
-					</p>
-				</div>
-				<div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-					<a
-						className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-39.5 dark:hover:bg-[#ccc]"
-						href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						<Image
-							className="dark:invert"
-							src="/vercel.svg"
-							alt="Vercel logomark"
-							width={16}
-							height={16}
-						/>
-						Deploy Now
-					</a>
-					<a
-						className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/8 px-5 transition-colors hover:border-transparent hover:bg-black/4 md:w-39.5 dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-						href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						Documentation
-					</a>
-				</div>
-			</main>
-		</div>
-	);
+  const [illegalCount, setIllegalCount] = useState<number | null>(null);
+  const [deportedCount, setDeportedCount] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        const res = await fetch(`${backendUrl}/api/v1/immigrants`, {
+          cache: "no-store",
+        });
+        if (!res.ok) throw new Error("API error");
+        const json = await res.json();
+        setIllegalCount(json.data?.illegals?.length ?? 0);
+        setDeportedCount(json.data?.deporteds?.length ?? 0);
+      } catch {
+        setIllegalCount(0);
+        setDeportedCount(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCounts();
+  }, []);
+
+  const count = (n: number | null) =>
+    n === null ? "XX" : n.toLocaleString("th-TH");
+
+  return (
+    <div
+      className="flex flex-1 justify-center items-start gap-6 px-6 py-8"
+      style={{ backgroundColor: "var(--wrapper)" }}
+    >
+      {/* การ์ด ผู้แอบเข้า */}
+      <HomeCard
+        title="ผู้แอบเข้า"
+        count={count(illegalCount)}
+        loading={loading}
+        viewAllHref="/immigrants/illegal"
+        dashboardHref="/dashboard?type=illegal"
+        addHref="/immigrant/create"
+      />
+
+      {/* การ์ด ผู้ถูกส่งกลับ */}
+      <HomeCard
+        title="ผู้ถูกส่งกลับ"
+        count={count(deportedCount)}
+        loading={loading}
+        viewAllHref="/immigrants/deported"
+        dashboardHref="/dashboard?type=deported"
+        addHref="/deport/create"
+      />
+    </div>
+  );
+}
+
+interface HomeCardProps {
+  title: string;
+  count: string;
+  loading: boolean;
+  viewAllHref: string;
+  dashboardHref: string;
+  addHref: string;
+}
+
+function HomeCard({
+  title,
+  count,
+  loading,
+  viewAllHref,
+  dashboardHref,
+  addHref,
+}: HomeCardProps) {
+  return (
+    <div
+      className="flex flex-col rounded-2xl shadow-md overflow-hidden"
+      style={{
+        backgroundColor: "var(--container)",
+        border: "1px solid var(--shadow)",
+        width: "320px",
+        minHeight: "560px",
+      }}
+    >
+      {/* Header: ไอคอน + ชื่อ + จำนวน */}
+      <div
+        className="flex items-center gap-4 px-5 py-4"
+        style={{ borderBottom: "1px solid var(--shadow)" }}
+      >
+        {/* Icon placeholder */}
+        <div
+          className="rounded-lg shrink-0 flex items-center justify-center"
+          style={{
+            width: 80,
+            height: 64,
+            backgroundColor: "var(--wrapper)",
+            border: "1px solid var(--shadow)",
+          }}
+        >
+          <Image
+            src="/police.png"
+            alt="icon"
+            width={40}
+            height={40}
+            className="opacity-40"
+          />
+        </div>
+
+        {/* Title + count */}
+        <div className="flex flex-col">
+          <span
+            className="font-bold leading-tight"
+            style={{ color: "var(--header)", fontSize: "1.35rem" }}
+          >
+            {title}
+          </span>
+          <span
+            className="font-bold"
+            style={{ color: "var(--header)", fontSize: "1.15rem" }}
+          >
+            จำนวน{" "}
+            {loading ? (
+              <span className="opacity-50">...</span>
+            ) : (
+              <span>{count}</span>
+            )}{" "}
+            คน
+          </span>
+        </div>
+      </div>
+
+      {/* ปุ่ม ดูข้อมูลทั้งหมด */}
+      <div className="px-5 pt-4">
+        <Link href={viewAllHref} className="block w-full">
+          <button
+            className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
+            style={{
+              backgroundColor: "var(--button)",
+              border: "1px solid var(--shadow)",
+              color: "var(--foreground)",
+            }}
+          >
+            ดูข้อมูลทั้งหมด
+          </button>
+        </Link>
+      </div>
+
+      {/* ปุ่ม แดชบอร์ด */}
+      <div className="px-5 pt-2">
+        <Link href={dashboardHref} className="block w-full">
+          <button
+            className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
+            style={{
+              backgroundColor: "var(--button)",
+              border: "1px solid var(--shadow)",
+              color: "var(--foreground)",
+            }}
+          >
+            แดชบอร์ด
+          </button>
+        </Link>
+      </div>
+
+      {/* Divider */}
+      <div
+        className="mx-5 mt-4"
+        style={{
+          borderBottom: "1px solid var(--shadow)",
+        }}
+      />
+
+      {/* Chart placeholder - วงกลม */}
+      <div className="flex flex-1 items-center justify-center px-5 py-6">
+        <div
+          className="rounded-full"
+          style={{
+            width: 180,
+            height: 180,
+            border: "24px solid var(--wrapper)",
+            backgroundColor: "var(--container)",
+          }}
+        />
+      </div>
+
+      {/* Divider */}
+      <div
+        className="mx-5"
+        style={{
+          borderBottom: "1px solid var(--shadow)",
+        }}
+      />
+
+      {/* ปุ่ม เพิ่มข้อมูล */}
+      <div className="px-5 py-4">
+        <Link href={addHref} className="block w-full">
+          <button
+            className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
+            style={{
+              backgroundColor: "var(--button)",
+              border: "1px solid var(--shadow)",
+              color: "var(--foreground)",
+            }}
+          >
+            เพิ่มข้อมูล
+          </button>
+        </Link>
+      </div>
+    </div>
+  );
 }
