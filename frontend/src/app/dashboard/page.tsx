@@ -331,21 +331,23 @@ function DashboardContent() {
             </select>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สัญชาติ</label>
-            <select
-              value={filterNat}
-              onChange={(e) => handleFilterChange(setFilterNat, e.target.value)}
-              className={inputClass}
-              disabled={filterType === "deported"} 
-            >
-              {nationalitiesOptions.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* ✨ แสดงตัวเลือกสัญชาติเฉพาะเมื่อเลือกประเภทเป็นผู้แอบเข้า (Illegal) เท่านั้น */}
+          {filterType === "illegal" && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สัญชาติ</label>
+              <select
+                value={filterNat}
+                onChange={(e) => handleFilterChange(setFilterNat, e.target.value)}
+                className={inputClass}
+              >
+                {nationalitiesOptions.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-stone-600 dark:text-slate-300">เพศ</label>
