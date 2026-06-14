@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 type SortField = "name" | "nationality" | "detected_date" | "detected_location" | "is_victim";
 
@@ -16,19 +16,40 @@ export default function IllegalTable({ data, sortField, sortDirection, onSort }:
   const router = useRouter();
 
   const Th = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <th onClick={() => onSort(field)} className="p-3 font-bold cursor-pointer select-none whitespace-nowrap">
+    <th
+      onClick={() => onSort(field)}
+      className="px-4 py-3 text-left font-semibold cursor-pointer select-none whitespace-nowrap border-r last:border-r-0"
+      style={{
+        backgroundColor: "var(--container)",
+        color: "var(--foreground)",
+        borderColor: "var(--wrapper)",
+      }}
+    >
       <div className="flex items-center gap-1">
         {children}
-        {sortField === field ? (sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />) : <span className="w-4 h-4 text-transparent inline-block">↕</span>}
+        {sortField === field ? (
+          sortDirection === "asc" ? (
+            <ChevronUp className="w-4 h-4 shrink-0" />
+          ) : (
+            <ChevronDown className="w-4 h-4 shrink-0" />
+          )
+        ) : (
+          <ChevronsUpDown className="w-4 h-4 shrink-0 opacity-40" />
+        )}
       </div>
     </th>
   );
 
   return (
-    <div className="overflow-x-auto border rounded-sm" style={{ borderColor: "var(--foreground)" }}>
-      <table className="w-full text-left border-collapse">
+    <div
+      className="overflow-x-auto"
+      style={{
+        border: "1px solid var(--wrapper)",
+      }}
+    >
+      <table className="w-full text-left border-collapse text-sm">
         <thead>
-          <tr>
+          <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
             <Th field="name">ชื่อ - นามสกุล</Th>
             <Th field="nationality">สัญชาติ</Th>
             <Th field="detected_date">วันที่ตรวจพบ</Th>
@@ -36,21 +57,69 @@ export default function IllegalTable({ data, sortField, sortDirection, onSort }:
             <Th field="is_victim">สถานะผู้เสียหาย</Th>
           </tr>
         </thead>
-        <tbody className="divide-y" style={{ borderColor: "var(--foreground)" }}>
-          {data.length > 0 ? data.map((person) => (
-            <tr 
-              key={person.id} 
-              onClick={() => router.push(`/immigrants/${person.id}`)}
-              className="hover:bg-muted/30 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
-            >
-              <td className="p-3">{person.first_name_th} {person.last_name_th}</td>
-              <td className="p-3">{person.nationality || "ไม่ระบุ"}</td>
-              <td className="p-3">{person.detected_date ? new Date(person.detected_date).toLocaleDateString('th-TH') : "ไม่ระบุ"}</td>
-              <td className="p-3 max-w-62.5 truncate">{person.detected_location || "ไม่ระบุสถานที่"}</td>
-              <td className="p-3">{person.is_victim ? "เป็นผู้เสียหาย" : "ไม่ใช่"}</td>
+        <tbody>
+          {data.length > 0 ? (
+            data.map((person) => (
+              <tr
+                key={person.id}
+                onClick={() => router.push(`/immigrants/${person.id}`)}
+                className="cursor-pointer transition-colors"
+                style={{
+                  backgroundColor: "var(--background)",
+                  borderBottom: "1px solid var(--wrapper)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--row-hover)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--background)";
+                }}
+              >
+                <td
+                  className="px-4 py-3 whitespace-nowrap border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.first_name_th} {person.last_name_th}
+                </td>
+                <td
+                  className="px-4 py-3 whitespace-nowrap border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.nationality || "ไม่ระบุ"}
+                </td>
+                <td
+                  className="px-4 py-3 whitespace-nowrap border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.detected_date
+                    ? new Date(person.detected_date).toLocaleDateString("th-TH")
+                    : "ไม่ระบุ"}
+                </td>
+                <td
+                  className="px-4 py-3 max-w-xs truncate border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.detected_location || "ไม่ระบุสถานที่"}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {person.is_victim ? (
+                    <span style={{ color: "var(--redText)" }}>เป็นผู้เสียหาย</span>
+                  ) : (
+                    <span>ไม่ใช่</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan={5}
+                className="px-4 py-10 text-center"
+                style={{ color: "var(--foreground)", opacity: 0.5 }}
+              >
+                ไม่พบข้อมูล
+              </td>
             </tr>
-          )) : (
-            <tr><td colSpan={5} className="p-8 text-center">ไม่พบข้อมูล</td></tr>
           )}
         </tbody>
       </table>

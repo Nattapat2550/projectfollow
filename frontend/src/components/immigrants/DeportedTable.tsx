@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "result";
 
@@ -16,47 +16,121 @@ export default function DeportedTable({ data, sortField, sortDirection, onSort }
   const router = useRouter();
 
   const Th = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <th onClick={() => onSort(field)} className="p-3 font-bold cursor-pointer select-none whitespace-nowrap">
+    <th
+      onClick={() => onSort(field)}
+      className="px-4 py-3 text-left font-semibold cursor-pointer select-none whitespace-nowrap border-r last:border-r-0"
+      style={{
+        backgroundColor: "var(--container)",
+        color: "var(--foreground)",
+        borderColor: "var(--wrapper)",
+      }}
+    >
       <div className="flex items-center gap-1">
         {children}
-        {sortField === field ? (sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />) : <span className="w-4 h-4 text-transparent inline-block">↕</span>}
+        {sortField === field ? (
+          sortDirection === "asc" ? (
+            <ChevronUp className="w-4 h-4 shrink-0" />
+          ) : (
+            <ChevronDown className="w-4 h-4 shrink-0" />
+          )
+        ) : (
+          <ChevronsUpDown className="w-4 h-4 shrink-0 opacity-40" />
+        )}
       </div>
     </th>
   );
 
   return (
-    <div className="overflow-x-auto border rounded-sm" style={{ borderColor: "var(--foreground)" }}>
-      <table className="w-full text-left border-collapse">
+    <div
+      className="overflow-x-auto"
+      style={{
+        border: "1px solid var(--wrapper)",
+      }}
+    >
+      <table className="w-full text-left border-collapse text-sm">
         <thead>
-          <tr>
-            <Th field="name">ชื่อ - นามสกุล</Th>
-            <Th field="date_of_birth">วันเกิด / อายุ</Th>
-            <Th field="national_id">เลขประจำตัว</Th>
-            <Th field="address">สถานที่</Th>
+          <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
+            <Th field="name">ชื่อ-สกุล</Th>
+            <Th field="date_of_birth">วัน/เดือน/ปี ที่เกิด</Th>
+            <Th field="national_id">เลขประจำตัวประชาชน</Th>
+            <Th field="address">ที่อยู่</Th>
             <Th field="return_date">วันที่ส่งกลับ</Th>
             <Th field="result">สถานะ</Th>
           </tr>
         </thead>
-        <tbody className="divide-y" style={{ borderColor: "var(--foreground)" }}>
-          {data.length > 0 ? data.map((person) => (
-            <tr 
-              key={person.id} 
-              onClick={() => router.push(`/immigrants/${person.id}`)}
-              className="hover:bg-muted/30 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
-            >
-              <td className="p-3">{person.first_name_th} {person.last_name_th}</td>
-              <td className="p-3">{person.date_of_birth || "ไม่ระบุ"} {person.age ? `(${person.age} ปี)` : ""}</td>
-              <td className="p-3">{person.national_id || person.passport_id || "ไม่ระบุ"}</td>
-              <td className="p-3 max-w-62.5 truncate">{person.address || "ไม่ระบุสถานที่"}</td>
-              <td className="p-3">{person.return_date ? new Date(person.return_date).toLocaleDateString('th-TH') : "รอการส่งกลับ"}</td>
-              <td className="p-3 font-medium">
-                 {person.result === "SUCCESS" && <span className="text-emerald-500">สำเร็จ</span>}
-                 {person.result === "FAILED" && <span className="text-red-500">ล้มเหลว</span>}
-                 {(!person.result || person.result === "PENDING") && <span className="text-amber-500">รอดำเนินการ</span>}
+        <tbody>
+          {data.length > 0 ? (
+            data.map((person, index) => (
+              <tr
+                key={person.id}
+                onClick={() => router.push(`/immigrants/${person.id}`)}
+                className="cursor-pointer transition-colors"
+                style={{
+                  backgroundColor: "var(--background)",
+                  borderBottom: "1px solid var(--wrapper)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--row-hover)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--background)";
+                }}
+              >
+                <td
+                  className="px-4 py-3 whitespace-nowrap border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.first_name_th} {person.last_name_th}
+                </td>
+                <td
+                  className="px-4 py-3 whitespace-nowrap border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.date_of_birth || "ไม่ระบุ"}{person.age ? ` (${person.age} ปี)` : ""}
+                </td>
+                <td
+                  className="px-4 py-3 whitespace-nowrap border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.national_id || person.passport_id || "ไม่ระบุ"}
+                </td>
+                <td
+                  className="px-4 py-3 max-w-xs truncate border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.address || "ไม่ระบุสถานที่"}
+                </td>
+                <td
+                  className="px-4 py-3 whitespace-nowrap border-r"
+                  style={{ borderColor: "var(--wrapper)" }}
+                >
+                  {person.return_date
+                    ? new Date(person.return_date).toLocaleDateString("th-TH")
+                    : "รอการส่งกลับ"}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap font-medium">
+                  {person.result === "SUCCESS" && (
+                    <span style={{ color: "var(--greenText)" }}>สำเร็จ</span>
+                  )}
+                  {person.result === "FAILED" && (
+                    <span style={{ color: "var(--redText)" }}>ล้มเหลว</span>
+                  )}
+                  {(!person.result || person.result === "PENDING") && (
+                    <span style={{ color: "var(--yellowText)" }}>รอดำเนินการ</span>
+                  )}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td
+                colSpan={6}
+                className="px-4 py-10 text-center"
+                style={{ color: "var(--foreground)", opacity: 0.5 }}
+              >
+                ไม่พบข้อมูล
               </td>
             </tr>
-          )) : (
-            <tr><td colSpan={6} className="p-8 text-center">ไม่พบข้อมูล</td></tr>
           )}
         </tbody>
       </table>
