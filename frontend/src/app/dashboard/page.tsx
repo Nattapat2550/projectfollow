@@ -420,7 +420,7 @@ function DashboardContent() {
               setFilterPassport("ทั้งหมด");
               setStartDate("");
               setEndDate("");
-              setSortField(null);
+              setSortField("");
               setCurrentPage(1);
             }}
             className="mt-2 w-full py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
@@ -497,14 +497,14 @@ function DashboardContent() {
                  {filterType === "illegal" ? (
                    <IllegalTable 
                      data={tableRows} 
-                     sortField={sortField} 
+                     sortField={sortField as IllegalSortField}
                      sortDirection={sortDirection} 
                      onSort={handleSort} 
                    />
                  ) : (
                    <DeportedTable 
                      data={tableRows} 
-                     sortField={sortField} 
+                     sortField={sortField as DeportedSortField}
                      sortDirection={sortDirection} 
                      onSort={handleSort} 
                    />
