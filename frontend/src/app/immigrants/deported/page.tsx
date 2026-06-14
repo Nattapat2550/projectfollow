@@ -96,7 +96,7 @@ function DeportedPageContent() {
     <div className="p-6 max-w-7xl mx-auto text-foreground">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้ถูกส่งกลับ (Deported)</h1>
-        <Link href="/immigrants/deported/create" className="px-4 py-2 bg-(--header) text-white font-bold rounded-sm hover:opacity-90 transition text-sm">
+        <Link href="/immigrants/deported/create" className="px-4 py-2 bg-(--header) text-(--background) font-bold rounded-sm hover:opacity-90 transition text-sm">
           + เพิ่มข้อมูล
         </Link>
       </div>
