@@ -639,7 +639,15 @@ exports.getDashboardData = async (req, res) => {
     // 3. จัดการเงื่อนไขการจัดเรียงข้อมูล (Dynamic OrderBy)
     let orderByCondition = {};
     if (sortBy && sortBy.trim() !== "") {
-      orderByCondition = { [sortBy]: sortOrder };
+      if (sortBy === "name") {
+        // กรณีเรียงตามชื่อ ให้เรียงทั้งชื่อจริงและนามสกุล
+        orderByCondition = [
+          { first_name_th: sortOrder },
+          { last_name_th: sortOrder }
+        ];
+      } else {
+        orderByCondition = { [sortBy]: sortOrder };
+      }
     } else {
       // ค่าเริ่มต้นถ้าผู้ใช้ไม่ได้กดเรียงลำดับอะไรเลย
       orderByCondition = type === "deported" 

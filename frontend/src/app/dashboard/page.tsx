@@ -188,9 +188,7 @@ function DashboardContent() {
         });
 
         if (sortField) {
-          // ปรับชื่อฟิลด์ให้ตรงกับฐานข้อมูล: "name" -> "first_name_th"
-          const apiSortField = sortField === "name" ? "first_name_th" : sortField;
-          params.append("sortBy", apiSortField);
+          params.append("sortBy", sortField);
           params.append("sortOrder", sortDirection);
         }
 

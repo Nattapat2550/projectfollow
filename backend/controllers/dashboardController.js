@@ -62,14 +62,16 @@ exports.getDashboardStats = async (req, res) => {
     // ─── กำหนดรูปแบบการ Sort (ป้องกัน SQL Injection) ───
     let orderClause = `ORDER BY ${dateField} DESC, id DESC`; 
     if (sortBy) {
-      let dbSortField = sortBy;
-      if (sortBy === "name") dbSortField = "first_name_th"; // ถ้ากดเรียงชื่อ ให้เรียงตาม first_name_th ใน DB
+      const dir = sortOrder.toLowerCase() === "desc" ? "DESC" : "ASC";
       
-      const allowedColumns = ["first_name_th", "nationality", "detected_date", "detected_location", "is_victim", "date_of_birth", "national_id", "address", "return_date", "result"];
-      
-      if (allowedColumns.includes(dbSortField)) {
-          const dir = sortOrder.toLowerCase() === "desc" ? "DESC" : "ASC";
-          orderClause = `ORDER BY ${dbSortField} ${dir} NULLS LAST, id DESC`; // NULLS LAST ช่วยให้ค่าว่างไปอยู่ล่างสุด
+      if (sortBy === "name") {
+          // ถ้ากดเรียงชื่อ ให้เรียงตาม first_name_th และ last_name_th ใน DB
+          orderClause = `ORDER BY first_name_th ${dir} NULLS LAST, last_name_th ${dir} NULLS LAST, id DESC`;
+      } else {
+          const allowedColumns = ["nationality", "detected_date", "detected_location", "is_victim", "date_of_birth", "national_id", "address", "return_date", "result"];
+          if (allowedColumns.includes(sortBy)) {
+              orderClause = `ORDER BY ${sortBy} ${dir} NULLS LAST, id DESC`;
+          }
       }
     }
 

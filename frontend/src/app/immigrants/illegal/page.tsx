@@ -53,8 +53,7 @@ function IllegalPageContent() {
         });
 
         if (sortField) {
-          const apiSortField = sortField === "name" ? "first_name_th" : sortField;
-          params.append("sortBy", apiSortField);
+          params.append("sortBy", sortField);
           params.append("sortOrder", sortDirection);
         }
 
