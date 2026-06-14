@@ -370,7 +370,14 @@ exports.uploadExcelIllegal = async (req, res) => {
       }
     });
 
-    if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel" });
+    // ✨✨ กรองข้อมูล: ตัดบรรทัดที่ไม่มีชื่อ (บรรทัดว่าง) ทิ้งไปเลยตั้งแต่แรก ✨✨
+    allJsonData = allJsonData.filter(row => {
+        const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
+        const { hasName } = processName(rawFullName);
+        return hasName;
+    });
+
+    if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel หรือไม่มีรายชื่อให้บันทึก (ระวังบรรทัดว่าง)" });
 
     if (action === "preview") {
       const preview_data = [];
