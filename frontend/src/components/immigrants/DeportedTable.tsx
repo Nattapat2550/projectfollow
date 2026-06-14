@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
-// ✨ แก้ตรงนี้: เพิ่มคำว่า export เข้าไป
 export type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "result";
 
 interface DeportedTableProps {
@@ -43,11 +42,12 @@ export default function DeportedTable({ data, sortField, sortDirection, onSort }
 
   return (
     <div
-      className="overflow-x-auto"
+      className="w-full overflow-hidden rounded-sm"
       style={{
         border: "1px solid var(--wrapper)",
       }}
     >
+      {/* ใส่ table-fixed เพื่อช่วยบังคับให้การตัดคำ (truncate) ทำงานได้เสถียรขึ้น */}
       <table className="w-full text-left border-collapse text-sm">
         <thead>
           <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
@@ -61,67 +61,77 @@ export default function DeportedTable({ data, sortField, sortDirection, onSort }
         </thead>
         <tbody>
           {data.length > 0 ? (
-            data.map((person, index) => (
-              <tr
-                key={person.id}
-                onClick={() => router.push(`/immigrants/${person.id}`)}
-                className="cursor-pointer transition-colors"
-                style={{
-                  backgroundColor: "var(--background)",
-                  borderBottom: "1px solid var(--wrapper)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--row-hover)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--background)";
-                }}
-              >
-                <td
-                  className="px-4 py-3 whitespace-nowrap border-r"
-                  style={{ borderColor: "var(--wrapper)" }}
+            data.map((person, index) => {
+              const fullName = `${person.first_name_th} ${person.last_name_th}`;
+              const nationalId = person.national_id || person.passport_id || "ไม่ระบุ";
+              const address = person.address || "ไม่ระบุสถานที่";
+
+              return (
+                <tr
+                  key={person.id}
+                  onClick={() => router.push(`/immigrants/${person.id}`)}
+                  className="cursor-pointer transition-colors"
+                  style={{
+                    backgroundColor: "var(--background)",
+                    borderBottom: "1px solid var(--wrapper)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--row-hover)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--background)";
+                  }}
                 >
-                  {person.first_name_th} {person.last_name_th}
-                </td>
-                <td
-                  className="px-4 py-3 whitespace-nowrap border-r"
-                  style={{ borderColor: "var(--wrapper)" }}
-                >
-                  {person.date_of_birth || "ไม่ระบุ"}{person.age ? ` (${person.age} ปี)` : ""}
-                </td>
-                <td
-                  className="px-4 py-3 whitespace-nowrap border-r"
-                  style={{ borderColor: "var(--wrapper)" }}
-                >
-                  {person.national_id || person.passport_id || "ไม่ระบุ"}
-                </td>
-                <td
-                  className="px-4 py-3 max-w-xs truncate border-r"
-                  style={{ borderColor: "var(--wrapper)" }}
-                >
-                  {person.address || "ไม่ระบุสถานที่"}
-                </td>
-                <td
-                  className="px-4 py-3 whitespace-nowrap border-r"
-                  style={{ borderColor: "var(--wrapper)" }}
-                >
-                  {person.return_date
-                    ? new Date(person.return_date).toLocaleDateString("th-TH")
-                    : "รอการส่งกลับ"}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap font-medium">
-                  {person.result === "SUCCESS" && (
-                    <span style={{ color: "var(--greenText)" }}>สำเร็จ</span>
-                  )}
-                  {person.result === "FAILED" && (
-                    <span style={{ color: "var(--redText)" }}>ล้มเหลว</span>
-                  )}
-                  {(!person.result || person.result === "PENDING") && (
-                    <span style={{ color: "var(--yellowText)" }}>รอดำเนินการ</span>
-                  )}
-                </td>
-              </tr>
-            ))
+                  {/* กำหนด max-w-[ขนาด] และ truncate เพื่อตัดคำเป็น ... */}
+                  <td
+                    className="px-4 py-3 border-r truncate max-w-37.5"
+                    style={{ borderColor: "var(--wrapper)" }}
+                    title={fullName} // เมื่อชี้เมาส์จะแสดงข้อความเต็ม
+                  >
+                    {fullName}
+                  </td>
+                  <td
+                    className="px-4 py-3 border-r truncate max-w-30"
+                    style={{ borderColor: "var(--wrapper)" }}
+                  >
+                    {person.date_of_birth || "ไม่ระบุ"}{person.age ? ` (${person.age} ปี)` : ""}
+                  </td>
+                  <td
+                    className="px-4 py-3 border-r truncate max-w-32.5"
+                    style={{ borderColor: "var(--wrapper)" }}
+                    title={nationalId}
+                  >
+                    {nationalId}
+                  </td>
+                  <td
+                    className="px-4 py-3 border-r truncate max-w-50"
+                    style={{ borderColor: "var(--wrapper)" }}
+                    title={address}
+                  >
+                    {address}
+                  </td>
+                  <td
+                    className="px-4 py-3 border-r truncate max-w-25"
+                    style={{ borderColor: "var(--wrapper)" }}
+                  >
+                    {person.return_date
+                      ? new Date(person.return_date).toLocaleDateString("th-TH")
+                      : "รอการส่งกลับ"}
+                  </td>
+                  <td className="px-4 py-3 font-medium truncate max-w-25">
+                    {person.result === "SUCCESS" && (
+                      <span style={{ color: "var(--greenText)" }}>สำเร็จ</span>
+                    )}
+                    {person.result === "FAILED" && (
+                      <span style={{ color: "var(--redText)" }}>ล้มเหลว</span>
+                    )}
+                    {(!person.result || person.result === "PENDING") && (
+                      <span style={{ color: "var(--yellowText)" }}>รอดำเนินการ</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })
           ) : (
             <tr>
               <td

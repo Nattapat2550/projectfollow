@@ -55,6 +55,9 @@ const CHART_COLORS = [
   "#8B7355",
 ];
 
+// ✨ ระบบ Cache ข้อมูลหน้าบ้าน (ทำให้กดเปลี่ยนแท็บหรือเปลี่ยนหน้าไวขึ้นทันที)
+const dashboardFetchCache = new Map<string, DashboardData>();
+
 // ─── คอมโพเนนต์กราฟวงกลม Donut Chart (SVG) ───────────────────────────────────
 
 function DonutChart({ data, title }: { data: ChartItem[]; title: string; }) {
@@ -142,10 +145,8 @@ function DashboardContent() {
   const typeParam = (searchParams.get("type") as "illegal" | "deported") || "illegal";
 
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  
-  // ✨ แยก Loading เป็น 2 แบบ (แบบแรกสุด กับ แบบอัปเดตข้อมูล)
-  const [loading, setLoading] = useState(true); // โหลดแบบเต็มจอ (ครั้งแรก)
-  const [isUpdating, setIsUpdating] = useState(false); // โหลดแบบเฟดหน้าจอ (เปลี่ยนหน้า/ฟิลเตอร์)
+  const [loading, setLoading] = useState(true); 
+  const [isUpdating, setIsUpdating] = useState(false); 
 
   // States สำหรับระบุ Filters ตัวกรองข้อมูล
   const [filterType, setFilterType] = useState<"illegal" | "deported">(typeParam);
@@ -156,56 +157,66 @@ function DashboardContent() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
-  
-  // State สำหรับควบคุมการเรียงลำดับข้อมูลระดับฐานข้อมูล (Server-side Sorting)
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // ฟังก์ชันดึงข้อมูลจาก API หลังบ้าน
+  // ฟังก์ชันดึงข้อมูลแบบ Optimize ความเร็วขั้นสุด
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // ✨ ถ้ามีข้อมูลอยู่แล้ว ให้แสดงแค่สถานะกำลังอัปเดต (หน้าจอจะได้ไม่หายไป)
-        if (!dashboardData) {
-          setLoading(true);
-        } else {
-          setIsUpdating(true);
-        }
-        
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-        
-        // ประกอบพารามิเตอร์เงื่อนไขการค้นหา
-        const params = new URLSearchParams({
-          type: filterType,
-          nationality: filterType === "illegal" ? filterNat : "ทั้งหมด",
-          gender: filterGender,
-          startDate,
-          endDate,
-          isVictim: filterType === "illegal" ? filterVictim : "ทั้งหมด",
-          hasPassport: filterType === "illegal" ? filterPassport : "ทั้งหมด",
-          page: currentPage.toString(),
-          limit: "50"
-        });
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+    
+    const params = new URLSearchParams({
+      type: filterType,
+      nationality: filterType === "illegal" ? filterNat : "ทั้งหมด",
+      gender: filterGender,
+      startDate,
+      endDate,
+      isVictim: filterType === "illegal" ? filterVictim : "ทั้งหมด",
+      hasPassport: filterType === "illegal" ? filterPassport : "ทั้งหมด",
+      page: currentPage.toString(),
+      limit: "50"
+    });
 
-        if (sortField) {
-          params.append("sortBy", sortField);
-          params.append("sortOrder", sortDirection);
-        }
+    if (sortField) {
+      params.append("sortBy", sortField);
+      params.append("sortOrder", sortDirection);
+    }
 
-        const res = await fetch(`${backendUrl}/api/v1/dashboard?${params.toString()}`, { cache: "no-store" });
+    const url = `${backendUrl}/api/v1/dashboard?${params.toString()}`;
+
+    // ✨ 1. ดึง Cache มาแสดงก่อนเลยถ้าเคยโหลดแล้ว (Instant Load)
+    if (dashboardFetchCache.has(url)) {
+      setDashboardData(dashboardFetchCache.get(url)!);
+      setLoading(false);
+      setIsUpdating(false);
+    } else {
+      if (!dashboardData) setLoading(true);
+      else setIsUpdating(true);
+    }
+
+    // ✨ 2. ใช้ AbortController ตัด Request เก่าทิ้ง หากผู้ใช้กดย้ำๆ
+    const controller = new AbortController();
+    
+    fetch(url, { cache: "no-store", signal: controller.signal })
+      .then((res) => {
         if (!res.ok) throw new Error("API error");
-        const json = await res.json();
-        
+        return res.json();
+      })
+      .then((json) => {
+        dashboardFetchCache.set(url, json); // เซฟลง Cache
         setDashboardData(json);
-      } catch (err) {
-        console.error("Fetch Error:", err);
-      } finally {
         setLoading(false);
-        setIsUpdating(false); // ✨ ปิดสถานะกำลังอัปเดตเมื่อดึงเสร็จ
-      }
-    };
+        setIsUpdating(false);
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") return; // ข้ามการแสดง Error หากถูกกดยกเลิก
+        console.error("Fetch Error:", err);
+        setLoading(false);
+        setIsUpdating(false);
+      });
 
-    fetchDashboardData();
+    // คืนค่าฟังก์ชันเพื่อยกเลิก Request หาก Component อัปเดตก่อนข้อมูลจะมา
+    return () => controller.abort();
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, currentPage, sortField, sortDirection]);
 
@@ -219,13 +230,11 @@ function DashboardContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeParam]);
 
-  // ฟังก์ชันรีเซ็ตหน้าเพจกลับไปหน้า 1 เสมอเมื่อมีการขยับ Filters ตัวกรอง
   const handleFilterChange = (setter: Function, value: any) => {
     setter(value);
     setCurrentPage(1);
   };
 
-  // ฟังก์ชันจัดการเมื่อยูสเซอร์กดหัวตารางเพื่อจัดเรียงลำดับข้อมูล
   const handleSort = (field: string) => {
     if (sortField === field) {
         setSortDirection(prev => prev === "asc" ? "desc" : "asc");
@@ -239,7 +248,6 @@ function DashboardContent() {
   const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
   const gendersOptions = dashboardData?.meta?.allGenders || ["ทั้งหมด"];
 
-  // ตรวจสอบเช็คชื่อและนามสกุลไทย หากไม่มีข้อมูลให้ดึงชื่ออังกฤษมาแสดงทดแทนป้องกัน "ไม่ระบุ"
   const tableRows = (dashboardData?.tableData || []).map((item: any) => {
     const firstName = !item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ"
       ? (item.first_name_en || "ไม่ระบุ")
@@ -321,7 +329,6 @@ function DashboardContent() {
                 setEndDate("");
                 setSortField(""); 
                 setCurrentPage(1);
-                // ✨ เพิ่ม scroll: false ป้องกันการเด้งไปด้านบนตอนกดเปลี่ยนประเภท
                 router.replace(`/dashboard?type=${val}`, { scroll: false }); 
               }}
               className={inputClass}
@@ -331,7 +338,6 @@ function DashboardContent() {
             </select>
           </div>
 
-          {/* ✨ แสดงตัวเลือกสัญชาติเฉพาะเมื่อเลือกประเภทเป็นผู้แอบเข้า (Illegal) เท่านั้น */}
           {filterType === "illegal" && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สัญชาติ</label>
@@ -433,19 +439,19 @@ function DashboardContent() {
 
         {/* ── โซนฝั่งขวา: แสดงสถิติ กราฟ และ ตารางข้อมูล ────────────────── */}
         <div className="flex flex-col gap-6 flex-1 min-w-0 w-full relative">
-          {/* ✨ ไอคอนโหลดแสดงเฉพาะโหลดครั้งแรกสุดเท่านั้น */}
+          
           {loading && !dashboardData ? (
             <div className="flex flex-col items-center justify-center h-64 bg-(--container) border border-(--wrapper) rounded-2xl shadow-sm">
                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-(--header) mb-4"></div>
                <span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูลแดชบอร์ดล่าสุด...</span>
             </div>
           ) : (
-            // ✨ ส่วนนี้จะทำการจางลง (Fade) เมื่อมีการโหลดหน้าถัดไปหรือเลือกฟิลเตอร์
-            <div className={`flex flex-col gap-6 w-full transition-opacity duration-300 ${isUpdating ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
+            <div className={`flex flex-col gap-6 w-full transition-opacity duration-300 ${isUpdating ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
               {/* ส่วนที่ 1: การแสดงตัวเลขสถิติภาพรวม */}
               <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
-                <span className="font-bold text-lg block mb-4 text-(--header)">
-                  สถิติเบื้องต้น
+                <span className="font-bold text-lg block mb-4 text-(--header) justify-between">
+                  <span>สถิติเบื้องต้น</span>
+                  {isUpdating && <span className="text-xs animate-pulse opacity-70">กำลังอัปเดต...</span>}
                 </span>
                 <div className="flex gap-10 flex-wrap">
                   {stats.map((s) => (
@@ -605,10 +611,9 @@ function DashboardContent() {
   );
 }
 
-// Default export wrapper ที่ล้อมด้วย Suspense เพื่อรองรับ useSearchParams() ใน Next.js (Turbopack)
 export default function Dashboard() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-muted-foreground font-medium">กำลังโหลดระบบแดชบอร์ด...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-muted-foreground font-medium"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-500 mr-3"></div>กำลังโหลดระบบแดชบอร์ด...</div>}>
       <DashboardContent />
     </Suspense>
   );

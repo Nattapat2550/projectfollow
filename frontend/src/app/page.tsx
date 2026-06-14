@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -98,56 +95,43 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
   );
 }
 
-// ─── หน้าเพจหลัก ────────────────────────────────────────────────────────
-export default function Home() {
-  const [illegalCount, setIllegalCount] = useState<number | null>(null);
-  const [deportedCount, setDeportedCount] = useState<number | null>(null);
-  const [illegalData, setIllegalData] = useState<any>(null);
-  const [deportedData, setDeportedData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+// ─── ดึงข้อมูลแบบ Server-Side พร้อมระบบ Cache ตัวเลขเบื้องหลัง (ไวขึ้นมาก) ─────
+async function fetchDashboardStats(type: string) {
+  try {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+    // ใช้ revalidate ให้ Next.js อัปเดต Cache หลังบ้านทุกๆ 10 วินาที ช่วยให้โหลดหน้าแรกไวดุจสายฟ้า
+    const res = await fetch(`${backendUrl}/api/v1/dashboard?type=${type}&limit=1`, { 
+      next: { revalidate: 10 } 
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (error) {
+    return null;
+  }
+}
 
-  useEffect(() => {
-    const fetchCountsAndCharts = async () => {
-      try {
-        const backendUrl =
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-        
-        // ดึง API dashboard ของทั้ง 2 ประเภทมาเลย เพื่อจะได้กราฟสรุป
-        const [illegalRes, deportedRes] = await Promise.all([
-          fetch(`${backendUrl}/api/v1/dashboard?type=illegal&limit=1`, { cache: "no-store" }),
-          fetch(`${backendUrl}/api/v1/dashboard?type=deported&limit=1`, { cache: "no-store" })
-        ]);
+// ─── หน้าเพจหลัก (Server Component) ──────────────────────────────────────
+export default async function Home() {
+  
+  // โหลดข้อมูลคู่ขนานกันบนเซิร์ฟเวอร์
+  const [illegalJson, deportedJson] = await Promise.all([
+    fetchDashboardStats("illegal"),
+    fetchDashboardStats("deported")
+  ]);
 
-        if (!illegalRes.ok || !deportedRes.ok) throw new Error("API error");
+  const illegalCount = illegalJson?.stats?.total ?? null;
+  const deportedCount = deportedJson?.stats?.total ?? null;
 
-        const illegalJson = await illegalRes.json();
-        const deportedJson = await deportedRes.json();
-
-        setIllegalCount(illegalJson.stats?.total ?? 0);
-        setDeportedCount(deportedJson.stats?.total ?? 0);
-        
-        setIllegalData(illegalJson.charts);
-        setDeportedData(deportedJson.charts);
-      } catch {
-        setIllegalCount(0);
-        setDeportedCount(0);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCountsAndCharts();
-  }, []);
-
-  const count = (n: number | null) =>
+  const countDisplay = (n: number | null) =>
     n === null ? "XX" : n.toLocaleString("th-TH");
 
   // เตรียมข้อมูลกราฟ (แมปสีใส่ให้ข้อมูล)
-  const illegalChart = (illegalData?.nationality || []).map((d: any, i: number) => ({
+  const illegalChart = (illegalJson?.charts?.nationality || []).map((d: any, i: number) => ({
     ...d,
     color: CHART_COLORS[i % CHART_COLORS.length],
   }));
 
-  const deportedChart = (deportedData?.channel || []).map((d: any, i: number) => ({
+  const deportedChart = (deportedJson?.charts?.channel || []).map((d: any, i: number) => ({
     ...d,
     color: CHART_COLORS[i % CHART_COLORS.length],
   }));
@@ -160,8 +144,7 @@ export default function Home() {
       {/* การ์ด ผู้แอบเข้า */}
       <HomeCard
         title="ผู้แอบเข้า"
-        count={count(illegalCount)}
-        loading={loading}
+        count={countDisplay(illegalCount)}
         viewAllHref="/immigrants/illegal"
         dashboardHref="/dashboard?type=illegal"
         addHref="/immigrants/illegal/create"
@@ -172,8 +155,7 @@ export default function Home() {
       {/* การ์ด ผู้ถูกส่งกลับ */}
       <HomeCard
         title="ผู้ถูกส่งกลับ"
-        count={count(deportedCount)}
-        loading={loading}
+        count={countDisplay(deportedCount)}
         viewAllHref="/immigrants/deported"
         dashboardHref="/dashboard?type=deported"
         addHref="/immigrants/deported/create"
@@ -187,7 +169,6 @@ export default function Home() {
 interface HomeCardProps {
   title: string;
   count: string;
-  loading: boolean;
   viewAllHref: string;
   dashboardHref: string;
   addHref: string;
@@ -198,7 +179,6 @@ interface HomeCardProps {
 function HomeCard({
   title,
   count,
-  loading,
   viewAllHref,
   dashboardHref,
   addHref,
@@ -211,7 +191,7 @@ function HomeCard({
       style={{
         backgroundColor: "var(--container)",
         border: "1px solid var(--shadow)",
-        width: "350px", // ขยายความกว้างการ์ดขึ้นเล็กน้อย เพื่อให้แสดง Label กราฟได้สวยงาม
+        width: "350px", 
         minHeight: "560px",
       }}
     >
@@ -249,13 +229,7 @@ function HomeCard({
             className="font-bold"
             style={{ color: "var(--header)", fontSize: "1.15rem" }}
           >
-            จำนวน{" "}
-            {loading ? (
-              <span className="opacity-50">...</span>
-            ) : (
-              <span>{count}</span>
-            )}{" "}
-            คน
+            จำนวน <span>{count}</span> คน
           </span>
         </div>
       </div>
@@ -297,14 +271,9 @@ function HomeCard({
         style={{ borderBottom: "1px solid var(--shadow)" }}
       />
 
-      {/* ส่วนแสดง Chart ที่เพิ่มเข้ามาแทนวงกลมเปล่า */}
+      {/* ส่วนแสดง Chart */}
       <div className="flex flex-1 items-center justify-center px-5 py-6">
-        {loading ? (
-          <div className="animate-pulse flex flex-col items-center gap-4">
-            <div className="w-32 h-32 bg-stone-200 dark:bg-stone-800 rounded-full" />
-            <div className="w-24 h-4 bg-stone-200 dark:bg-stone-800 rounded-md" />
-          </div>
-        ) : chartData && chartData.length > 0 ? (
+        {chartData && chartData.length > 0 ? (
           <DonutChart data={chartData} title={chartTitle} />
         ) : (
           <div

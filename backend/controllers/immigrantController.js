@@ -192,11 +192,42 @@ const normalizeNationality = (rawNat) => {
 
 exports.getAllData = async (req, res) => {
   try {
-    const [illegals, deporteds] = await Promise.all([
-      prisma.illegal_immigrants.findMany({ orderBy: { detected_date: "desc" } }),
-      prisma.deported_persons.findMany({ orderBy: { return_date: "desc" } })
+    // 1. รับค่า page และ limit จาก URL (ถ้าไม่ส่งมา ให้ค่าเริ่มต้นคือ หน้า 1 จำนวน 100 รายการ)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const skip = (page - 1) * limit;
+
+    // 2. ใช้ Prisma ตัดข้อมูลจาก Database ตามหน้า (skip, take) และนับจำนวนรวม (count) แบบขนานเพื่อความไว
+    const [illegals, totalIllegals, deporteds, totalDeporteds] = await Promise.all([
+      prisma.illegal_immigrants.findMany({ 
+        orderBy: { detected_date: "desc" },
+        skip: skip,
+        take: limit
+      }),
+      prisma.illegal_immigrants.count(),
+      
+      prisma.deported_persons.findMany({ 
+        orderBy: { return_date: "desc" },
+        skip: skip,
+        take: limit
+      }),
+      prisma.deported_persons.count()
     ]);
-    res.status(200).json({ success: true, data: { illegals, deporteds } });
+
+    // 3. ส่งข้อมูลกลับไปพร้อม meta data (จำนวนรวมทั้งหมด) เพื่อให้ Frontend เอาไปทำปุ่มเปลี่ยนหน้า
+    res.status(200).json({ 
+      success: true, 
+      data: { 
+        illegals, 
+        deporteds,
+        meta: {
+          illegalsTotal: totalIllegals,
+          deportedsTotal: totalDeporteds,
+          currentPage: page,
+          limit: limit
+        }
+      } 
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error" });
   }
