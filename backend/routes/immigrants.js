@@ -12,8 +12,14 @@ const uploadExcel = multer({ storage: memoryStorage });
 // Routes
 // ----------------------------------------------------
 
-// GET: ดึงข้อมูลทั้งหมด
+// GET: ดึงข้อมูลทั้งหมด (แบบมี Pagination ซ่อนอยู่)
 router.get("/", immigrantController.getAllData);
+
+// 🆕 GET: ดึงข้อมูลแอบเข้าเมืองรายคนด้วย ID
+router.get("/illegal/:id", immigrantController.getIllegalById);
+
+// 🆕 GET: ดึงข้อมูลส่งกลับรายคนด้วย ID
+router.get("/deported/:id", immigrantController.getDeportedById);
 
 // POST: เพิ่มข้อมูลแอบเข้า (รายคน พร้อมรูปภาพ)
 router.post("/illegal", uploadMiddleware.single("photo"), immigrantController.createIllegal);

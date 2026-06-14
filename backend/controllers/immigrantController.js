@@ -66,16 +66,13 @@ const determineGender = (row, prefix) => {
   return gender || null;
 };
 
-// ✨ ระบบ Map สัญชาติ (ครอบคลุมทั่วโลก)
 const normalizeNationality = (rawNat) => {
   if (!rawNat) return null;
   
-  // แปลงเป็นตัวพิมพ์เล็กทั้งหมดเพื่อตรวจสอบง่าย และลบคำนำหน้าที่ไม่จำเป็น
   let nat = String(rawNat).trim().toLowerCase();
   nat = nat.replace(/^(ประเทศ|ชาว|สัญชาติ|คน)\s*/g, '').trim();
 
   const countryMap = {
-      // 1. กลุ่มอาเซียนและประเทศเพื่อนบ้าน (พบบ่อยที่สุด)
       "ไทย": "ไทย", "thai": "ไทย", "thailand": "ไทย", "th": "ไทย", "ไท": "ไทย",
       "พม่า": "เมียนมา", "เมียนมา": "เมียนมา", "เมียนมาร์": "เมียนมา", "myanmar": "เมียนมา", "burma": "เมียนมา", "mm": "เมียนมา", "เมืยนมา": "เมียนมา", "เมียมา": "เมียนมา",
       "ลาว": "ลาว", "lao": "ลาว", "laos": "ลาว", "สปป.ลาว": "ลาว", "สปป ลาว": "ลาว",
@@ -87,8 +84,6 @@ const normalizeNationality = (rawNat) => {
       "สิงคโปร์": "สิงคโปร์", "singapore": "สิงคโปร์", "sg": "สิงคโปร์", "สิงคโปร": "สิงคโปร์",
       "บรูไน": "บรูไน", "brunei": "บรูไน",
       "ติมอร์-เลสเต": "ติมอร์-เลสเต", "timor-leste": "ติมอร์-เลสเต", "ติมอร์": "ติมอร์-เลสเต", "timor": "ติมอร์-เลสเต",
-
-      // 2. ทวีปเอเชียตะวันออกและเอเชียใต้
       "จีน": "จีน", "china": "จีน", "chinese": "จีน", "cn": "จีน", "สาธารณรัฐประชาชนจีน": "จีน", "ไชน่า": "จีน", "จีนแดง": "จีน",
       "ญี่ปุ่น": "ญี่ปุ่น", "japan": "ญี่ปุ่น", "jp": "ญี่ปุ่น", "เจแปน": "ญี่ปุ่น", "japanese": "ญี่ปุ่น",
       "เกาหลีใต้": "เกาหลีใต้", "เกาหลี": "เกาหลีใต้", "south korea": "เกาหลีใต้", "korea": "เกาหลีใต้", "kr": "เกาหลีใต้", "เกาหลีไต้": "เกาหลีใต้", "republic of korea": "เกาหลีใต้",
@@ -104,8 +99,6 @@ const normalizeNationality = (rawNat) => {
       "อัฟกานิสถาน": "อัฟกานิสถาน", "afghanistan": "อัฟกานิสถาน",
       "มัลดีฟส์": "มัลดีฟส์", "maldives": "มัลดีฟส์",
       "ภูฏาน": "ภูฏาน", "bhutan": "ภูฏาน",
-
-      // 3. เอเชียตะวันออกกลาง
       "อิหร่าน": "อิหร่าน", "iran": "อิหร่าน",
       "อิรัก": "อิรัก", "iraq": "อิรัก",
       "ซาอุดีอาระเบีย": "ซาอุดีอาระเบีย", "ซาอุ": "ซาอุดีอาระเบีย", "saudi arabia": "ซาอุดีอาระเบีย", "saudi": "ซาอุดีอาระเบีย",
@@ -118,9 +111,7 @@ const normalizeNationality = (rawNat) => {
       "จอร์แดน": "จอร์แดน", "jordan": "จอร์แดน",
       "เลบานอน": "เลบานอน", "lebanon": "เลบานอน",
       "โอมาน": "โอมาน", "oman": "โอมาน",
-
-      // 4. ทวีปยุโรปและรัสเซีย
-      "สหราชอาณาจักร": "สหราชอาณาจักร", "อังกฤษ": "สหราชอาณาจักร", "uk": "สหราชอาณาจักร", "england": "สหราชอาณาจักร", "britain": "สหราชอาณาจักร", "united kingdom": "สหราชอาณาจักร", "british": "สหราชอาณาจักร",
+      "สหราชอาณาจักร": "สหราชอาณาจักร", "อังกฤษ": "สหราชอาณาจักร", "uk": "สหราชอาณาจักร", "england": "สหราชอาณาจักร", "britain": "สหราชอาจักร", "united kingdom": "สหราชอาณาจักร", "british": "สหราชอาณาจักร",
       "รัสเซีย": "รัสเซีย", "russia": "รัสเซีย", "russian": "รัสเซีย",
       "ฝรั่งเศส": "ฝรั่งเศส", "france": "ฝรั่งเศส", "french": "ฝรั่งเศส",
       "เยอรมนี": "เยอรมนี", "เยอรมัน": "เยอรมนี", "เยอรมันนี": "เยอรมนี", "germany": "เยอรมนี", "german": "เยอรมนี",
@@ -142,8 +133,6 @@ const normalizeNationality = (rawNat) => {
       "ไอร์แลนด์": "ไอร์แลนด์", "ireland": "ไอร์แลนด์",
       "โรมาเนีย": "โรมาเนีย", "romania": "โรมาเนีย",
       "ฮังการี": "ฮังการี", "hungary": "ฮังการี",
-      
-      // 5. ทวีปอเมริกาเหนือและใต้
       "สหรัฐอเมริกา": "สหรัฐอเมริกา", "อเมริกา": "สหรัฐอเมริกา", "usa": "สหรัฐอเมริกา", "us": "สหรัฐอเมริกา", "america": "สหรัฐอเมริกา", "สหรัฐ": "สหรัฐอเมริกา", "อเมริกัน": "สหรัฐอเมริกา", "united states": "สหรัฐอเมริกา", "american": "สหรัฐอเมริกา",
       "แคนาดา": "แคนาดา", "canada": "แคนาดา", "canadian": "แคนาดา",
       "เม็กซิโก": "เม็กซิโก", "mexico": "เม็กซิโก",
@@ -154,14 +143,10 @@ const normalizeNationality = (rawNat) => {
       "เปรู": "เปรู", "peru": "เปรู",
       "คิวบา": "คิวบา", "cuba": "คิวบา",
       "เวเนซุเอลา": "เวเนซุเอลา", "venezuela": "เวเนซุเอลา",
-
-      // 6. ทวีปโอเชียเนีย
       "ออสเตรเลีย": "ออสเตรเลีย", "australia": "ออสเตรเลีย", "aus": "ออสเตรเลีย", "australian": "ออสเตรเลีย",
       "นิวซีแลนด์": "นิวซีแลนด์", "new zealand": "นิวซีแลนด์", "nz": "นิวซีแลนด์",
       "ฟิจิ": "ฟิจิ", "fiji": "ฟิจิ",
       "ปาปัวนิวกินี": "ปาปัวนิวกินี", "papua new guinea": "ปาปัวนิวกินี",
-
-      // 7. ทวีปแอฟริกา
       "แอฟริกาใต้": "แอฟริกาใต้", "south africa": "แอฟริกาใต้", "za": "แอฟริกาใต้",
       "อียิปต์": "อียิปต์", "egypt": "อียิปต์",
       "ไนจีเรีย": "ไนจีเรีย", "nigeria": "ไนจีเรีย",
@@ -173,18 +158,14 @@ const normalizeNationality = (rawNat) => {
       "อัลจีเรีย": "อัลจีเรีย", "algeria": "อัลจีเรีย"
   };
 
-  // ตรวจสอบว่าตรงกับประเทศใน Map ด้านบนหรือไม่
   if (countryMap[nat]) {
       return countryMap[nat];
   }
 
-  // ✨ Fallback Strategy (ถ้าใส่ประเทศแปลกๆ ที่ไม่มีในลิสต์มา)
-  // หากเป็นภาษาอังกฤษล้วน (เช่น พิมพ์มาว่า "madagascar" หรือ "zambia") ให้ทำเป็น Title Case (Madagascar, Zambia)
   if (/^[a-zA-Z\s]+$/.test(nat)) {
        return nat.replace(/\b\w/g, c => c.toUpperCase());
   }
 
-  // หากเป็นภาษาไทยแปลกๆ หรือสะกดมาไม่เหมือนชาวบ้าน จะถูกตัดคำว่า "ประเทศ" หรือ "สัญชาติ" ทิ้ง และใช้คำที่ผู้ใช้กรอกมาตรงๆ
   return String(rawNat).replace(/^(ประเทศ|ชาว|สัญชาติ|คน)\s*/g, '').trim();
 };
 
@@ -192,12 +173,10 @@ const normalizeNationality = (rawNat) => {
 
 exports.getAllData = async (req, res) => {
   try {
-    // 1. รับค่า page และ limit จาก URL (ถ้าไม่ส่งมา ให้ค่าเริ่มต้นคือ หน้า 1 จำนวน 100 รายการ)
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 100;
     const skip = (page - 1) * limit;
 
-    // 2. ใช้ Prisma ตัดข้อมูลจาก Database ตามหน้า (skip, take) และนับจำนวนรวม (count) แบบขนานเพื่อความไว
     const [illegals, totalIllegals, deporteds, totalDeporteds] = await Promise.all([
       prisma.illegal_immigrants.findMany({ 
         orderBy: { detected_date: "desc" },
@@ -214,7 +193,6 @@ exports.getAllData = async (req, res) => {
       prisma.deported_persons.count()
     ]);
 
-    // 3. ส่งข้อมูลกลับไปพร้อม meta data (จำนวนรวมทั้งหมด) เพื่อให้ Frontend เอาไปทำปุ่มเปลี่ยนหน้า
     res.status(200).json({ 
       success: true, 
       data: { 
@@ -291,7 +269,6 @@ exports.updateIllegal = async (req, res) => {
     let photo_url = existingData.photo_url;
 
     if (req.file) {
-      // ลบรูปเก่าจาก Drive ถ้ามี
       if (existingData.photo_url) {
         const oldFileId = extractDriveFileId(existingData.photo_url);
         if (oldFileId) {
@@ -302,7 +279,6 @@ exports.updateIllegal = async (req, res) => {
           }
         }
       }
-      // อัปโหลดรูปใหม่
       const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
       photo_url = driveRes.webViewLink;
     }
@@ -392,10 +368,10 @@ exports.createDeported = async (req, res) => {
         first_name_en: data.first_name_en || null,
         middle_name_en: data.middle_name_en || null,
         last_name_en: data.last_name_en || null,
-        date_of_birth: data.date_of_birth, // schema กำหนดเป็น String
+        date_of_birth: data.date_of_birth,
         national_id: data.national_id,
         passport_id: data.passport_id || null,
-        gender: data.gender || null, // เพิ่ม gender
+        gender: data.gender || null,
         address: data.address || "ไม่ระบุ",
         channel: data.channel || null,
         result: data.result || "PENDING",
@@ -425,7 +401,6 @@ exports.updateDeported = async (req, res) => {
     let photo_url = existingData.photo_url;
 
     if (req.file) {
-      // ลบรูปเก่าจาก Drive ถ้ามี
       if (existingData.photo_url) {
         const oldFileId = extractDriveFileId(existingData.photo_url);
         if (oldFileId) {
@@ -436,7 +411,6 @@ exports.updateDeported = async (req, res) => {
           }
         }
       }
-      // อัปโหลดรูปใหม่
       const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
       photo_url = driveRes.webViewLink;
     }
@@ -451,7 +425,7 @@ exports.updateDeported = async (req, res) => {
       date_of_birth: data.date_of_birth,
       national_id: data.national_id,
       passport_id: data.passport_id || null,
-      gender: data.gender || null, // เพิ่มอัปเดต gender
+      gender: data.gender || null,
       address: data.address || "ไม่ระบุ",
       channel: data.channel || null,
       result: data.result || "PENDING",
@@ -523,7 +497,6 @@ exports.uploadExcelIllegal = async (req, res) => {
       }
     });
 
-    // ✨✨ กรองข้อมูล: ตัดบรรทัดที่ไม่มีชื่อ (บรรทัดว่าง) ทิ้งไปเลยตั้งแต่แรก ✨✨
     allJsonData = allJsonData.filter(row => {
         const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
         const { hasName } = processName(rawFullName);
@@ -621,11 +594,10 @@ exports.uploadExcelIllegal = async (req, res) => {
 };
 
 exports.getDashboardData = async (req, res) => {
-
   console.log("Query received:", req.query);
 
   try {
-    const type = req.query.type || "deported"; // เริ่มต้นเป็น deported ตามที่หน้าเว็บเรียก
+    const type = req.query.type || "deported";
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const sortBy = req.query.sortBy;
@@ -634,17 +606,12 @@ exports.getDashboardData = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    // 1. สร้างฐานเงื่อนไขการค้นหา (Where Clause)
     let whereCondition = {};
 
-    // 🔍 2. จัดการระบบ Intersect Search (พิมพ์เว้นวรรคเพื่อแยกเงื่อนไข)
     if (search && search.trim() !== "") {
-      // แยกข้อความด้วยช่องว่าง (และจัดการกรณีพิมพ์ช่องว่างเบิ้ลหลายตัวด้วย Regular Expression)
       const keywords = search.trim().split(/\s+/);
 
-      // ใช้โครงสร้าง .AND ของ Prisma เพื่อบังคับว่าทุกคำใน Array ต้องเป็นจริงทั้งหมด (Intersect)
       whereCondition.AND = keywords.map((keyword) => {
-        // เจาะจงฟิลด์ที่จะยอมให้ค้นหาเจอ (ใช้ mode: 'insensitive' เพื่อให้พิมพ์เล็ก-ใหญ่มีค่าเท่ากัน)
         const searchFields = [
           { first_name_th: { contains: keyword, mode: "insensitive" } },
           { last_name_th: { contains: keyword, mode: "insensitive" } },
@@ -653,12 +620,10 @@ exports.getDashboardData = async (req, res) => {
           { passport_id: { contains: keyword, mode: "insensitive" } },
         ];
 
-        // ถ้าเป็นประเภทส่งกลับ (Deported) ให้ค้นหาเลขบัตรประชาชนเพิ่มได้
         if (type === "deported") {
           searchFields.push({ national_id: { contains: keyword, mode: "insensitive" } });
           searchFields.push({ channel: { contains: keyword, mode: "insensitive" } });
         } else {
-          // ถ้าเป็นประเภทแอบเข้าเมือง (Illegal) ให้ค้นหาสถานที่ตรวจพบและสัญชาติเพิ่มได้
           searchFields.push({ nationality: { contains: keyword, mode: "insensitive" } });
           searchFields.push({ detected_location: { contains: keyword, mode: "insensitive" } });
         }
@@ -667,11 +632,9 @@ exports.getDashboardData = async (req, res) => {
       });
     }
 
-    // 3. จัดการเงื่อนไขการจัดเรียงข้อมูล (Dynamic OrderBy)
     let orderByCondition = {};
     if (sortBy && sortBy.trim() !== "") {
       if (sortBy === "name") {
-        // กรณีเรียงตามชื่อ ให้เรียงทั้งชื่อจริงและนามสกุล
         orderByCondition = [
           { first_name_th: sortOrder },
           { last_name_th: sortOrder }
@@ -680,13 +643,11 @@ exports.getDashboardData = async (req, res) => {
         orderByCondition = { [sortBy]: sortOrder };
       }
     } else {
-      // ค่าเริ่มต้นถ้าผู้ใช้ไม่ได้กดเรียงลำดับอะไรเลย
       orderByCondition = type === "deported" 
         ? { return_date: "desc" } 
         : { detected_date: "desc" };
     }
 
-    // 4. แยกการคิวรีตามประเภทโมเดลของ Prisma (และรันไปพร้อมกันด้วย Promise.all เพื่อความเร็ว)
     let tableData = [];
     let totalItems = 0;
 
@@ -699,7 +660,7 @@ exports.getDashboardData = async (req, res) => {
           orderBy: orderByCondition,
         }),
         prisma.deported_persons.count({
-          where: whereCondition, // บังคับนับจำนวนแถวภายใต้เงื่อนไขการเซิร์ชเดียวกัน ไม่งั้นเลขหน้าจะพัง
+          where: whereCondition,
         }),
       ]);
     } else {
@@ -716,7 +677,6 @@ exports.getDashboardData = async (req, res) => {
       ]);
     }
 
-    // 5. ส่งกลับโครงสร้างข้อมูลที่จับคู่กับ Next.js หน้าบ้านของคุณเป๊ะๆ
     res.status(200).json({
       success: true,
       tableData: tableData,
@@ -735,5 +695,41 @@ exports.getDashboardData = async (req, res) => {
       message: "เกิดข้อผิดพลาดในการดึงข้อมูลแดชบอร์ด", 
       error: err.message 
     });
+  }
+};
+
+// 🆕 ฟังก์ชันดึงข้อมูลแอบเข้าเมืองรายคนด้วย ID
+exports.getIllegalById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await prisma.illegal_immigrants.findUnique({
+      where: { id: id }
+    });
+    
+    if (!data) {
+      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลผู้หลบหนีเข้าเมืองรายนี้" });
+    }
+    
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
+  }
+};
+
+// 🆕 ฟังก์ชันดึงข้อมูลส่งกลับประเทศรายคนด้วย ID
+exports.getDeportedById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await prisma.deported_persons.findUnique({
+      where: { id: id }
+    });
+    
+    if (!data) {
+      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลผู้ถูกส่งกลับรายนี้" });
+    }
+    
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
 };

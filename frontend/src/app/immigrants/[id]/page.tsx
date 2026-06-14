@@ -27,33 +27,39 @@ export default function ImmigrantDetailPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // 🛠️ แก้ไข fetchData ให้ยิงหา API แบบรายคนโดยตรง
   const fetchData = async () => {
+    if (!id) return;
+    
     try {
       setLoading(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const res = await fetch(`${backendUrl}/api/v1/immigrants`);
-      if (!res.ok) throw new Error("Failed to fetch");
-      const json = await res.json();
 
-      const deporteds = json.data?.deporteds || [];
-      const illegals = json.data?.illegals || [];
+      // 1. ลองค้นหาในฝั่งผู้ถูกส่งกลับ (Deported) ก่อน
+      let res = await fetch(`${backendUrl}/api/v1/immigrants/deported/${id}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const foundDep = json.data;
+          setPerson(foundDep);
+          setPersonType("deported");
+          setNote(foundDep.note || "");
+          setFormData({
+            ...foundDep,
+            date_of_birth: foundDep.date_of_birth ? foundDep.date_of_birth.split("T")[0] : "",
+            return_date: foundDep.return_date ? foundDep.return_date.split("T")[0] : "",
+          });
+          setImagePreview(foundDep.photo_url || null);
+          return; // เจอแล้ว หยุดการทำงานเลย
+        }
+      }
 
-      // 1. หาในฝั่งส่งกลับก่อน
-      const foundDep = deporteds.find((p: any) => String(p.id) === String(id));
-      if (foundDep) {
-        setPerson(foundDep);
-        setPersonType("deported");
-        setNote(foundDep.note || "");
-        setFormData({
-          ...foundDep,
-          date_of_birth: foundDep.date_of_birth ? foundDep.date_of_birth.split("T")[0] : "",
-          return_date: foundDep.return_date ? foundDep.return_date.split("T")[0] : "",
-        });
-        setImagePreview(foundDep.photo_url || null);
-      } else {
-        // 2. ถ้าไม่เจอ ไปหาในฝั่งลอบเข้า
-        const foundIll = illegals.find((p: any) => String(p.id) === String(id));
-        if (foundIll) {
+      // 2. ถ้าไม่เจอในฝั่งส่งกลับ ให้ลองค้นหาในฝั่งลอบเข้าเมือง (Illegal)
+      res = await fetch(`${backendUrl}/api/v1/immigrants/illegal/${id}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const foundIll = json.data;
           setPerson(foundIll);
           setPersonType("illegal");
           setNote(foundIll.note || "");
@@ -62,22 +68,25 @@ export default function ImmigrantDetailPage() {
             detected_date: foundIll.detected_date ? foundIll.detected_date.split("T")[0] : "",
           });
           setImagePreview(foundIll.photo_url || null);
-        } else {
-          setPerson(null);
-          setPersonType(null);
+          return; // เจอแล้ว หยุดการทำงานเลย
         }
       }
+
+      // 3. ถ้าหาไม่เจอทั้งสองฝั่ง
+      setPerson(null);
+      setPersonType(null);
+
     } catch (error) {
       console.error("Error fetching details:", error);
+      setPerson(null);
+      setPersonType(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (id) {
-      fetchData();
-    }
+    fetchData();
   }, [id]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -90,12 +99,11 @@ export default function ImmigrantDetailPage() {
     setFormData((prev: any) => ({ ...prev, [name]: checked }));
   };
 
-  // ฟังก์ชันสำหรับจัดการเมื่อผู้ใช้อัปโหลดรูปภาพใหม่
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file)); // สร้าง URL จำลองชั่วคราวเพื่อทำ Preview
+      setImagePreview(URL.createObjectURL(file)); 
     }
   };
 
@@ -106,7 +114,6 @@ export default function ImmigrantDetailPage() {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const endpoint = personType === "deported" ? `deported/${id}` : `illegal/${id}`;
 
-      // เคลียร์และแปลงชนิดข้อมูลให้ถูกต้องก่อนส่งกลับไปยังฐานข้อมูล
       const payload = { ...formData };
       if (personType === "deported") {
         payload.number_of_case = parseInt(payload.number_of_case) || 0;
@@ -114,24 +121,21 @@ export default function ImmigrantDetailPage() {
         payload.age = parseInt(payload.age) || null;
       }
 
-      // สร้างสถาปัตยกรรมแบบ FormData เพื่อให้ส่งข้อมูลรูปภาพไปพร้อมกับ Text ได้
       const submitData = new FormData();
       
-      // วนลูปใส่ฟิลด์ปกติลงใน FormData
       Object.keys(payload).forEach((key) => {
         if (payload[key] !== null && payload[key] !== undefined) {
           submitData.append(key, payload[key]);
         }
       });
 
-      // ถ้าผู้ใช้เลือกไฟล์ใหม่ ให้แนบไฟล์ไปด้วยภายใต้ชื่อฟิลด์ "photo" ให้สอดคล้องกับ multer ฝั่ง Backend
       if (selectedImage) {
         submitData.append("photo", selectedImage);
       }
 
       const res = await fetch(`${backendUrl}/api/v1/immigrants/${endpoint}`, {
         method: "PUT",
-        body: submitData, // ปล่อยว่าง Content-Type เพื่อให้ Fetch จัดการ boundary อัตโนมัติ
+        body: submitData, 
       });
 
       if (!res.ok) {
@@ -141,8 +145,8 @@ export default function ImmigrantDetailPage() {
 
       alert("บันทึกการแก้ไขข้อมูลเรียบร้อยแล้ว!");
       setIsEditing(false);
-      setSelectedImage(null); // รีเซ็ตสถานะไฟล์
-      fetchData(); // เรียกขอข้อมูลเวอร์ชันล่าสุดมาเรนเดอร์ใหม่
+      setSelectedImage(null); 
+      fetchData(); 
     } catch (error: any) {
       console.error("Error updating data:", error);
       alert(error.message || "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์เพื่อบันทึกข้อมูลได้");
@@ -194,7 +198,6 @@ export default function ImmigrantDetailPage() {
         /* ==================== โหมดแบบฟอร์มการแก้ไขข้อมูลความละเอียดสูง ==================== */
         <form onSubmit={handleSave} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
           
-          {/* เพิ่มอินพุตสำหรับอัปโหลดและพรีวิวรูปภาพ */}
           <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
           <div className="mb-6 flex flex-col items-start gap-4">
             {imagePreview && (

@@ -34,12 +34,48 @@ export async function getImmigrantData(
 	}
 }
 
+// 🛠️ ปรับปรุงฟังก์ชันดึงรายบุคคล: เรียกข้อมูลตรงด้วย ID จากเส้น API หลังบ้านโดยไม่ต้องโหลดข้อมูลทั้งหมดมาวนลูปหา
 export async function getSingleImmigrantData(id: string): Promise<any | null> {
-	const { data } = await getImmigrantData(0, 10000);
-	return data.find((immigrant: any) => immigrant.id === id) ?? null;
+	try {
+		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+		
+		// ยิงดึงข้อมูลตรงไปยัง Endpoint รายบุคคลที่สร้างขึ้นที่หลังบ้าน (/api/v1/immigrants/illegal/:id)
+		const response = await fetch(`${backendUrl}/api/v1/immigrants/illegal/${id}`, { 
+			cache: 'no-store' 
+		});
+
+		if (!response.ok) {
+			return null;
+		}
+
+		const result = await response.json();
+		
+		if (result.success && result.data) {
+			const item = result.data;
+			// Map ข้อมูลให้โครงสร้างตรงกับหน้า Page เรียกใช้งานเดิม
+			return {
+				id: item.id,
+				first_name: item.first_name_th || item.first_name_en || "ไม่ระบุ",
+				middle_name: item.middle_name_th || item.middle_name_en || null,
+				last_name: item.last_name_th || item.last_name_en || "ไม่ระบุ",
+				gender: item.gender === "หญิง" ? "female" : "male", 
+				nationality: item.nationality || "ไม่ระบุ",
+				passport_id: item.passport_id || null,
+				detected_location: item.detected_location || "ไม่ระบุสถานที่",
+				detected_date: item.detected_date ? new Date(item.detected_date).toISOString() : null,
+				is_victim: item.is_victim ?? null,
+				image_url: item.photo_url || null,
+			};
+		}
+		
+		return null;
+	} catch (error) {
+		console.error("Error fetching single immigrant data:", error);
+		return null;
+	}
 }
 
-// ✨ ฟังก์ชันใหม่: เรียกใช้งานระบบ Dashboard Pagination ของ Backend เพื่อความเร็วสูงสุด ✨
+// ฟังก์ชันเดิมสำหรับระบบ Dashboard Pagination
 export async function getImmigrantDashboardData(
 	type: "illegal" | "deported",
 	page: number = 1,
@@ -59,7 +95,6 @@ export async function getImmigrantDashboardData(
 	try {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 		
-		// สร้าง Query Parameters ส่งไปหา Backend แปลงตามเงื่อนไขที่กรอกเข้ามา
 		const params = new URLSearchParams({
 			type,
 			page: page.toString(),
@@ -70,7 +105,6 @@ export async function getImmigrantDashboardData(
 		if (sortBy.trim() !== "") params.append("sortBy", sortBy);
 		if (sortOrder.trim() !== "") params.append("sortOrder", sortOrder);
 
-		// ดึงข้อมูลจาก URL เส้น /dashboard ของฝั่ง Backend
 		const response = await fetch(`${backendUrl}/api/v1/immigrants/dashboard?${params.toString()}`, {
 			cache: 'no-store'
 		});
