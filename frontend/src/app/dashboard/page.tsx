@@ -142,7 +142,10 @@ function DashboardContent() {
   const typeParam = (searchParams.get("type") as "illegal" | "deported") || "illegal";
 
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // ✨ แยก Loading เป็น 2 แบบ (แบบแรกสุด กับ แบบอัปเดตข้อมูล)
+  const [loading, setLoading] = useState(true); // โหลดแบบเต็มจอ (ครั้งแรก)
+  const [isUpdating, setIsUpdating] = useState(false); // โหลดแบบเฟดหน้าจอ (เปลี่ยนหน้า/ฟิลเตอร์)
 
   // States สำหรับระบุ Filters ตัวกรองข้อมูล
   const [filterType, setFilterType] = useState<"illegal" | "deported">(typeParam);
@@ -162,7 +165,13 @@ function DashboardContent() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        setLoading(true);
+        // ✨ ถ้ามีข้อมูลอยู่แล้ว ให้แสดงแค่สถานะกำลังอัปเดต (หน้าจอจะได้ไม่หายไป)
+        if (!dashboardData) {
+          setLoading(true);
+        } else {
+          setIsUpdating(true);
+        }
+        
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         
         // ประกอบพารามิเตอร์เงื่อนไขการค้นหา
@@ -178,7 +187,6 @@ function DashboardContent() {
           limit: "50"
         });
 
-        // หากมีการกดเรียงลำดับหัวตาราง ให้แนบพารามิเตอร์ Sort ไปฝั่งหลังบ้านด้วย
         if (sortField) {
             params.append("sortBy", sortField);
             params.append("sortOrder", sortDirection);
@@ -193,17 +201,22 @@ function DashboardContent() {
         console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
+        setIsUpdating(false); // ✨ ปิดสถานะกำลังอัปเดตเมื่อดึงเสร็จ
       }
     };
 
     fetchDashboardData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, currentPage, sortField, sortDirection]);
 
   // ตรวจจับกรณีเปลี่ยนแท็บประเภทผ่าน URL Parameter 
   useEffect(() => {
-    setFilterType(typeParam);
-    setCurrentPage(1);
-    setSortField(""); // รีเซ็ตสถานะการเรียงลำดับเมื่อสลับประเภทตารางข้อมูล
+    if (typeParam !== filterType) {
+      setFilterType(typeParam);
+      setCurrentPage(1);
+      setSortField(""); 
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeParam]);
 
   // ฟังก์ชันรีเซ็ตหน้าเพจกลับไปหน้า 1 เสมอเมื่อมีการขยับ Filters ตัวกรอง
@@ -220,7 +233,7 @@ function DashboardContent() {
         setSortField(field);
         setSortDirection("asc");
     }
-    setCurrentPage(1); // รีเซ็ตกลับไปเริ่มต้นหน้าแรกป้องกันหน้าแสดงผลว่างเปล่า
+    setCurrentPage(1); 
   };
 
   const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
@@ -243,7 +256,6 @@ function DashboardContent() {
     };
   });
 
-  // จัดการชุดตัวเลขกล่องสถิติเบื้องต้นด้านบน
   const stats: StatItem[] = (() => {
     if (!dashboardData) return [];
     if (filterType === "illegal") {
@@ -260,7 +272,6 @@ function DashboardContent() {
     }
   })();
 
-  // จับคู่การระบุสีกราฟสถิติต่างๆ
   const natChart = (dashboardData?.charts?.nationality || []).map((d, i) => ({
     ...d, color: CHART_COLORS[i % CHART_COLORS.length]
   }));
@@ -303,14 +314,15 @@ function DashboardContent() {
                 const val = e.target.value as "illegal" | "deported";
                 setFilterType(val);
                 setFilterNat("ทั้งหมด");
-                setFilterGender("統หมด");
+                setFilterGender("ทั้งหมด");
                 setFilterVictim("ทั้งหมด");
                 setFilterPassport("ทั้งหมด");
                 setStartDate("");
                 setEndDate("");
-                setSortField(""); // รีเซ็ตการ Sort เมื่อเปลี่ยนประเภทตาราง
+                setSortField(""); 
                 setCurrentPage(1);
-                router.replace(`/dashboard?type=${val}`);
+                // ✨ เพิ่ม scroll: false ป้องกันการเด้งไปด้านบนตอนกดเปลี่ยนประเภท
+                router.replace(`/dashboard?type=${val}`, { scroll: false }); 
               }}
               className={inputClass}
             >
@@ -325,7 +337,7 @@ function DashboardContent() {
               value={filterNat}
               onChange={(e) => handleFilterChange(setFilterNat, e.target.value)}
               className={inputClass}
-              disabled={filterType === "deported"} // ปิดเนื่องจากตาราง Deported ไม่มีสัญชาติในโครงสร้าง DB
+              disabled={filterType === "deported"} 
             >
               {nationalitiesOptions.map((n) => (
                 <option key={n} value={n}>
@@ -350,7 +362,6 @@ function DashboardContent() {
             </select>
           </div>
 
-          {/* เงื่อนไขฟิลเตอร์เพิ่มเติมเฉพาะประเภท แอบเข้าเมือง (Illegal) */}
           {filterType === "illegal" && (
             <>
               <div className="flex flex-col gap-2">
@@ -418,15 +429,17 @@ function DashboardContent() {
           </button>
         </div>
 
-        {/* ── โซนฝั่งขวา: แสดงสถิติ กราฟ และ ตารางข้อมูลแยกชุด ────────────────── */}
-        <div className="flex flex-col gap-6 flex-1 min-w-0 w-full">
-          {loading ? (
+        {/* ── โซนฝั่งขวา: แสดงสถิติ กราฟ และ ตารางข้อมูล ────────────────── */}
+        <div className="flex flex-col gap-6 flex-1 min-w-0 w-full relative">
+          {/* ✨ ไอคอนโหลดแสดงเฉพาะโหลดครั้งแรกสุดเท่านั้น */}
+          {loading && !dashboardData ? (
             <div className="flex flex-col items-center justify-center h-64 bg-(--container) border border-(--wrapper) rounded-2xl shadow-sm">
                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-(--header) mb-4"></div>
                <span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูลแดชบอร์ดล่าสุด...</span>
             </div>
           ) : (
-            <>
+            // ✨ ส่วนนี้จะทำการจางลง (Fade) เมื่อมีการโหลดหน้าถัดไปหรือเลือกฟิลเตอร์
+            <div className={`flex flex-col gap-6 w-full transition-opacity duration-300 ${isUpdating ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
               {/* ส่วนที่ 1: การแสดงตัวเลขสถิติภาพรวม */}
               <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
                 <span className="font-bold text-lg block mb-4 text-(--header)">
@@ -481,7 +494,6 @@ function DashboardContent() {
                    </span>
                  </div>
                  
-                 {/* เรียกใช้ตารางแยกตาม filterType พร้อมส่งข้อมูลและสถานะการ Sort ข้ามไปยังตารางย่อย */}
                  {filterType === "illegal" ? (
                    <IllegalTable 
                      data={tableRows} 
@@ -499,29 +511,91 @@ function DashboardContent() {
                  )}
 
                  {/* แถบควบคุมเปลี่ยนหน้าเพจ (Pagination) */}
-                 {(dashboardData?.meta?.totalPages || 0) > 1 && (
-                    <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm">
-                      <button 
-                        disabled={currentPage === 1} 
-                        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
-                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
-                      >
-                        ก่อนหน้า
-                      </button>
-                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        หน้า {currentPage} จาก {dashboardData?.meta?.totalPages}
-                      </span>
-                      <button 
-                        disabled={currentPage === dashboardData?.meta?.totalPages} 
-                        onClick={() => setCurrentPage(p => Math.min(p + 1, dashboardData?.meta?.totalPages || 1))} 
-                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
-                      >
-                        ถัดไป
-                      </button>
-                    </div>
-                  )}
+                 {(dashboardData?.meta?.totalPages || 0) > 1 && (() => {
+                    const totalPages = dashboardData?.meta?.totalPages || 1;
+                    
+                    let startPage = Math.max(1, currentPage - 5);
+                    let endPage = Math.min(totalPages, currentPage + 5);
+
+                    if (endPage - startPage < 10) {
+                      if (startPage === 1) {
+                        endPage = Math.min(totalPages, startPage + 10);
+                      } else if (endPage === totalPages) {
+                        startPage = Math.max(1, endPage - 10);
+                      }
+                    }
+
+                    const pageNumbers = [];
+                    for (let i = startPage; i <= endPage; i++) {
+                      pageNumbers.push(i);
+                    }
+
+                    return (
+                      <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm gap-4">
+                        
+                        <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                          หน้า {currentPage} จาก {totalPages}
+                        </span>
+
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(1)}
+                            className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                            title="หน้าแรกสุด"
+                          >
+                            &laquo;
+                          </button>
+
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                            className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                            title="ก่อนหน้า"
+                          >
+                            &lsaquo;
+                          </button>
+
+                          <div className="hidden sm:flex items-center gap-1">
+                            {pageNumbers.map((page) => (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`px-3 py-2 border rounded-sm text-sm font-medium transition cursor-pointer ${
+                                  page === currentPage
+                                    ? "bg-zinc-800 text-white border-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 dark:border-zinc-200 pointer-events-none"
+                                    : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            ))}
+                          </div>
+
+                          <button
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                            className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                            title="ถัดไป"
+                          >
+                            &rsaquo;
+                          </button>
+
+                          <button
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                            title="หน้าท้ายสุด"
+                          >
+                            &raquo;
+                          </button>
+                        </div>
+                      </div>
+                    );
+                 })()}
+
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

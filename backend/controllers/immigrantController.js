@@ -66,6 +66,128 @@ const determineGender = (row, prefix) => {
   return gender || null;
 };
 
+// ✨ ระบบ Map สัญชาติ (ครอบคลุมทั่วโลก)
+const normalizeNationality = (rawNat) => {
+  if (!rawNat) return null;
+  
+  // แปลงเป็นตัวพิมพ์เล็กทั้งหมดเพื่อตรวจสอบง่าย และลบคำนำหน้าที่ไม่จำเป็น
+  let nat = String(rawNat).trim().toLowerCase();
+  nat = nat.replace(/^(ประเทศ|ชาว|สัญชาติ|คน)\s*/g, '').trim();
+
+  const countryMap = {
+      // 1. กลุ่มอาเซียนและประเทศเพื่อนบ้าน (พบบ่อยที่สุด)
+      "ไทย": "ไทย", "thai": "ไทย", "thailand": "ไทย", "th": "ไทย", "ไท": "ไทย",
+      "พม่า": "เมียนมา", "เมียนมา": "เมียนมา", "เมียนมาร์": "เมียนมา", "myanmar": "เมียนมา", "burma": "เมียนมา", "mm": "เมียนมา", "เมืยนมา": "เมียนมา", "เมียมา": "เมียนมา",
+      "ลาว": "ลาว", "lao": "ลาว", "laos": "ลาว", "สปป.ลาว": "ลาว", "สปป ลาว": "ลาว",
+      "กัมพูชา": "กัมพูชา", "เขมร": "กัมพูชา", "cambodia": "กัมพูชา", "khmer": "กัมพูชา", "กัมพูซา": "กัมพูชา",
+      "เวียดนาม": "เวียดนาม", "เวียตนาม": "เวียดนาม", "vietnam": "เวียดนาม", "viet nam": "เวียดนาม", "vn": "เวียดนาม", "เวียด": "เวียดนาม",
+      "มาเลเซีย": "มาเลเซีย", "มาเล": "มาเลเซีย", "malaysia": "มาเลเซีย", "malay": "มาเลเซีย", "my": "มาเลเซีย",
+      "อินโดนีเซีย": "อินโดนีเซีย", "อินโด": "อินโดนีเซีย", "indonesia": "อินโดนีเซีย", "id": "อินโดนีเซีย",
+      "ฟิลิปปินส์": "ฟิลิปปินส์", "ฟิลิปปิน": "ฟิลิปปินส์", "philippines": "ฟิลิปปินส์", "philippine": "ฟิลิปปินส์", "ph": "ฟิลิปปินส์", "ฟิลลิปปินส์": "ฟิลิปปินส์",
+      "สิงคโปร์": "สิงคโปร์", "singapore": "สิงคโปร์", "sg": "สิงคโปร์", "สิงคโปร": "สิงคโปร์",
+      "บรูไน": "บรูไน", "brunei": "บรูไน",
+      "ติมอร์-เลสเต": "ติมอร์-เลสเต", "timor-leste": "ติมอร์-เลสเต", "ติมอร์": "ติมอร์-เลสเต", "timor": "ติมอร์-เลสเต",
+
+      // 2. ทวีปเอเชียตะวันออกและเอเชียใต้
+      "จีน": "จีน", "china": "จีน", "chinese": "จีน", "cn": "จีน", "สาธารณรัฐประชาชนจีน": "จีน", "ไชน่า": "จีน", "จีนแดง": "จีน",
+      "ญี่ปุ่น": "ญี่ปุ่น", "japan": "ญี่ปุ่น", "jp": "ญี่ปุ่น", "เจแปน": "ญี่ปุ่น", "japanese": "ญี่ปุ่น",
+      "เกาหลีใต้": "เกาหลีใต้", "เกาหลี": "เกาหลีใต้", "south korea": "เกาหลีใต้", "korea": "เกาหลีใต้", "kr": "เกาหลีใต้", "เกาหลีไต้": "เกาหลีใต้", "republic of korea": "เกาหลีใต้",
+      "เกาหลีเหนือ": "เกาหลีเหนือ", "north korea": "เกาหลีเหนือ", "dprk": "เกาหลีเหนือ",
+      "ไต้หวัน": "ไต้หวัน", "taiwan": "ไต้หวัน", "tw": "ไต้หวัน",
+      "ฮ่องกง": "ฮ่องกง", "hong kong": "ฮ่องกง", "hongkong": "ฮ่องกง", "hk": "ฮ่องกง",
+      "มาเก๊า": "มาเก๊า", "macau": "มาเก๊า", "macao": "มาเก๊า",
+      "อินเดีย": "อินเดีย", "india": "อินเดีย", "in": "อินเดีย", "แขก": "อินเดีย", "indian": "อินเดีย",
+      "บังกลาเทศ": "บังกลาเทศ", "บังคลาเทศ": "บังกลาเทศ", "bangladesh": "บังกลาเทศ",
+      "ปากีสถาน": "ปากีสถาน", "pakistan": "ปากีสถาน",
+      "ศรีลังกา": "ศรีลังกา", "sri lanka": "ศรีลังกา",
+      "เนปาล": "เนปาล", "nepal": "เนปาล",
+      "อัฟกานิสถาน": "อัฟกานิสถาน", "afghanistan": "อัฟกานิสถาน",
+      "มัลดีฟส์": "มัลดีฟส์", "maldives": "มัลดีฟส์",
+      "ภูฏาน": "ภูฏาน", "bhutan": "ภูฏาน",
+
+      // 3. เอเชียตะวันออกกลาง
+      "อิหร่าน": "อิหร่าน", "iran": "อิหร่าน",
+      "อิรัก": "อิรัก", "iraq": "อิรัก",
+      "ซาอุดีอาระเบีย": "ซาอุดีอาระเบีย", "ซาอุ": "ซาอุดีอาระเบีย", "saudi arabia": "ซาอุดีอาระเบีย", "saudi": "ซาอุดีอาระเบีย",
+      "สหรัฐอาหรับเอมิเรตส์": "ยูเออี", "uae": "ยูเออี", "ยูเออี": "ยูเออี", "ดูไบ": "ยูเออี", "dubai": "ยูเออี", "united arab emirates": "ยูเออี",
+      "กาตาร์": "กาตาร์", "qatar": "กาตาร์",
+      "คูเวต": "คูเวต", "kuwait": "คูเวต",
+      "อิสราเอล": "อิสราเอล", "israel": "อิสราเอล",
+      "ตุรกี": "ตุรกี", "ตุรเคีย": "ตุรกี", "turkey": "ตุรกี", "turkiye": "ตุรกี",
+      "ซีเรีย": "ซีเรีย", "syria": "ซีเรีย",
+      "จอร์แดน": "จอร์แดน", "jordan": "จอร์แดน",
+      "เลบานอน": "เลบานอน", "lebanon": "เลบานอน",
+      "โอมาน": "โอมาน", "oman": "โอมาน",
+
+      // 4. ทวีปยุโรปและรัสเซีย
+      "สหราชอาณาจักร": "สหราชอาณาจักร", "อังกฤษ": "สหราชอาณาจักร", "uk": "สหราชอาณาจักร", "england": "สหราชอาณาจักร", "britain": "สหราชอาณาจักร", "united kingdom": "สหราชอาณาจักร", "british": "สหราชอาณาจักร",
+      "รัสเซีย": "รัสเซีย", "russia": "รัสเซีย", "russian": "รัสเซีย",
+      "ฝรั่งเศส": "ฝรั่งเศส", "france": "ฝรั่งเศส", "french": "ฝรั่งเศส",
+      "เยอรมนี": "เยอรมนี", "เยอรมัน": "เยอรมนี", "เยอรมันนี": "เยอรมนี", "germany": "เยอรมนี", "german": "เยอรมนี",
+      "อิตาลี": "อิตาลี", "italy": "อิตาลี", "italian": "อิตาลี",
+      "สเปน": "สเปน", "spain": "สเปน", "spanish": "สเปน",
+      "โปรตุเกส": "โปรตุเกส", "portugal": "โปรตุเกส",
+      "เนเธอร์แลนด์": "เนเธอร์แลนด์", "ฮอลแลนด์": "เนเธอร์แลนด์", "netherlands": "เนเธอร์แลนด์", "holland": "เนเธอร์แลนด์", "dutch": "เนเธอร์แลนด์",
+      "สวิตเซอร์แลนด์": "สวิตเซอร์แลนด์", "สวิส": "สวิตเซอร์แลนด์", "switzerland": "สวิตเซอร์แลนด์", "swiss": "สวิตเซอร์แลนด์",
+      "สวีเดน": "สวีเดน", "sweden": "สวีเดน", "swedish": "สวีเดน",
+      "เดนมาร์ก": "เดนมาร์ก", "denmark": "เดนมาร์ก",
+      "นอร์เวย์": "นอร์เวย์", "norway": "นอร์เวย์",
+      "ฟินแลนด์": "ฟินแลนด์", "finland": "ฟินแลนด์",
+      "ยูเครน": "ยูเครน", "ukraine": "ยูเครน",
+      "โปแลนด์": "โปแลนด์", "poland": "โปแลนด์",
+      "ออสเตรีย": "ออสเตรีย", "austria": "ออสเตรีย",
+      "เช็ก": "เช็ก", "czech": "เช็ก", "czechia": "เช็ก",
+      "เบลเยียม": "เบลเยียม", "belgium": "เบลเยียม",
+      "กรีซ": "กรีซ", "greece": "กรีซ", "greek": "กรีซ",
+      "ไอร์แลนด์": "ไอร์แลนด์", "ireland": "ไอร์แลนด์",
+      "โรมาเนีย": "โรมาเนีย", "romania": "โรมาเนีย",
+      "ฮังการี": "ฮังการี", "hungary": "ฮังการี",
+      
+      // 5. ทวีปอเมริกาเหนือและใต้
+      "สหรัฐอเมริกา": "สหรัฐอเมริกา", "อเมริกา": "สหรัฐอเมริกา", "usa": "สหรัฐอเมริกา", "us": "สหรัฐอเมริกา", "america": "สหรัฐอเมริกา", "สหรัฐ": "สหรัฐอเมริกา", "อเมริกัน": "สหรัฐอเมริกา", "united states": "สหรัฐอเมริกา", "american": "สหรัฐอเมริกา",
+      "แคนาดา": "แคนาดา", "canada": "แคนาดา", "canadian": "แคนาดา",
+      "เม็กซิโก": "เม็กซิโก", "mexico": "เม็กซิโก",
+      "บราซิล": "บราซิล", "brazil": "บราซิล",
+      "อาร์เจนตินา": "อาร์เจนตินา", "argentina": "อาร์เจนตินา",
+      "ชิลี": "ชิลี", "chile": "ชิลี",
+      "โคลอมเบีย": "โคลอมเบีย", "colombia": "โคลอมเบีย",
+      "เปรู": "เปรู", "peru": "เปรู",
+      "คิวบา": "คิวบา", "cuba": "คิวบา",
+      "เวเนซุเอลา": "เวเนซุเอลา", "venezuela": "เวเนซุเอลา",
+
+      // 6. ทวีปโอเชียเนีย
+      "ออสเตรเลีย": "ออสเตรเลีย", "australia": "ออสเตรเลีย", "aus": "ออสเตรเลีย", "australian": "ออสเตรเลีย",
+      "นิวซีแลนด์": "นิวซีแลนด์", "new zealand": "นิวซีแลนด์", "nz": "นิวซีแลนด์",
+      "ฟิจิ": "ฟิจิ", "fiji": "ฟิจิ",
+      "ปาปัวนิวกินี": "ปาปัวนิวกินี", "papua new guinea": "ปาปัวนิวกินี",
+
+      // 7. ทวีปแอฟริกา
+      "แอฟริกาใต้": "แอฟริกาใต้", "south africa": "แอฟริกาใต้", "za": "แอฟริกาใต้",
+      "อียิปต์": "อียิปต์", "egypt": "อียิปต์",
+      "ไนจีเรีย": "ไนจีเรีย", "nigeria": "ไนจีเรีย",
+      "เคนยา": "เคนยา", "kenya": "เคนยา",
+      "โมร็อกโก": "โมร็อกโก", "morocco": "โมร็อกโก",
+      "กานา": "กานา", "ghana": "กานา",
+      "เอธิโอเปีย": "เอธิโอเปีย", "ethiopia": "เอธิโอเปีย",
+      "ซูดาน": "ซูดาน", "sudan": "ซูดาน",
+      "อัลจีเรีย": "อัลจีเรีย", "algeria": "อัลจีเรีย"
+  };
+
+  // ตรวจสอบว่าตรงกับประเทศใน Map ด้านบนหรือไม่
+  if (countryMap[nat]) {
+      return countryMap[nat];
+  }
+
+  // ✨ Fallback Strategy (ถ้าใส่ประเทศแปลกๆ ที่ไม่มีในลิสต์มา)
+  // หากเป็นภาษาอังกฤษล้วน (เช่น พิมพ์มาว่า "madagascar" หรือ "zambia") ให้ทำเป็น Title Case (Madagascar, Zambia)
+  if (/^[a-zA-Z\s]+$/.test(nat)) {
+       return nat.replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // หากเป็นภาษาไทยแปลกๆ หรือสะกดมาไม่เหมือนชาวบ้าน จะถูกตัดคำว่า "ประเทศ" หรือ "สัญชาติ" ทิ้ง และใช้คำที่ผู้ใช้กรอกมาตรงๆ
+  return String(rawNat).replace(/^(ประเทศ|ชาว|สัญชาติ|คน)\s*/g, '').trim();
+};
+
 // ================= คอนโทรลเลอร์ (Controllers) หลัก =================
 
 exports.getAllData = async (req, res) => {
@@ -109,7 +231,7 @@ exports.createIllegal = async (req, res) => {
         last_name_en: data.last_name_en || null,
         passport_id: data.passport_id || null,
         gender: data.gender || null,
-        nationality: data.nationality || null,
+        nationality: data.nationality ? normalizeNationality(data.nationality) : null,
         detected_location: data.detected_location || "ไม่ระบุ",
         workplace: data.workplace || null,
         warrant: data.warrant || null,
@@ -165,7 +287,7 @@ exports.updateIllegal = async (req, res) => {
         last_name_en: data.last_name_en || null,
         passport_id: data.passport_id || null,
         gender: data.gender || null,
-        nationality: data.nationality || null,
+        nationality: data.nationality ? normalizeNationality(data.nationality) : null,
         detected_location: data.detected_location || "ไม่ระบุ",
         workplace: data.workplace || null,
         warrant: data.warrant || null,
@@ -397,7 +519,7 @@ exports.uploadExcelIllegal = async (req, res) => {
           first_name_en: hasName && !isThai ? fname || null : null,
           middle_name_en: !isThai ? mname : null,
           last_name_en: hasName && !isThai ? lname || null : null,
-          nationality: findValue(row, "สัญชาติ") ? String(findValue(row, "สัญชาติ")) : null,
+          nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
           passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
           detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
           workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,
@@ -434,7 +556,7 @@ exports.uploadExcelIllegal = async (req, res) => {
                 first_name_en: hasName && !isThai ? fname || null : null,
                 middle_name_en: !isThai ? mname : null,
                 last_name_en: hasName && !isThai ? lname || null : null,
-                nationality: findValue(row, "สัญชาติ") ? String(findValue(row, "สัญชาติ")) : null,
+                nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
                 passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
                 detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
                 workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,

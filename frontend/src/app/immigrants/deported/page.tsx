@@ -10,7 +10,11 @@ import DeportedTable from "@/components/immigrants/DeportedTable";
 function DeportedPageContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<any>(null);
+  
+  // ✨ แยก State Loading ออกเป็น 2 แบบ (โหลดครั้งแรก กับ โหลดเปลี่ยนหน้า)
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  
   const [currentPage, setCurrentPage] = useState(1);
   
   // States สำหรับควบคุมการเรียงลำดับแบบ Server-side เหมือนหน้า Dashboard
@@ -20,7 +24,13 @@ function DeportedPageContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
+        // ✨ โหลดครั้งแรกให้หมุนติ้วๆ โหลดครั้งต่อไปแค่เฟดหน้าจอจางลง
+        if (!data) {
+          setLoading(true);
+        } else {
+          setIsUpdating(true);
+        }
+        
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         
         const params = new URLSearchParams({
@@ -43,10 +53,12 @@ function DeportedPageContent() {
         console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
+        setIsUpdating(false); // ✨ ปิดสถานะจางหน้าจอเมื่อโหลดเสร็จ
       }
     };
 
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, sortField, sortDirection]);
 
   // ฟังก์ชันจัดการเมื่อยูสเซอร์คลิกเปลี่ยนการเรียงข้อมูลที่หัวตาราง
@@ -89,10 +101,13 @@ function DeportedPageContent() {
         </Link>
       </div>
 
-      {loading ? (
-        <div className="text-center p-8 text-muted-foreground">กำลังโหลดข้อมูล...</div>
+      {loading && !data ? (
+        <div className="flex flex-col items-center justify-center h-64">
+           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-(--header) mb-4"></div>
+           <span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูล...</span>
+        </div>
       ) : (
-        <div className="bg-transparent mb-10">
+        <div className={`bg-transparent mb-10 transition-opacity duration-300 ${isUpdating ? "opacity-40 pointer-events-none" : "opacity-100"}`}>
           <div className="mb-4 text-sm text-muted-foreground font-medium">
             ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)
           </div>
@@ -105,28 +120,88 @@ function DeportedPageContent() {
             onSort={handleSort} 
           />
 
-          {/* แถบเปลี่ยนหน้าเพจสไตล์เดิม */}
-          {totalPages > 1 && (
-            <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm">
-              <button 
-                disabled={currentPage === 1} 
-                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
-                className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium transition cursor-pointer"
-              >
-                ก่อนหน้า
-              </button>
-              <span className="text-sm font-medium">
-                หน้า {currentPage} จาก {totalPages}
-              </span>
-              <button 
-                disabled={currentPage === totalPages} 
-                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} 
-                className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium transition cursor-pointer"
-              >
-                ถัดไป
-              </button>
-            </div>
-          )}
+          {/* ✨ แถบเปลี่ยนหน้าเพจ (Pagination) อัปเกรดใหม่ */}
+          {totalPages > 1 && (() => {
+             let startPage = Math.max(1, currentPage - 5);
+             let endPage = Math.min(totalPages, currentPage + 5);
+
+             if (endPage - startPage < 10) {
+               if (startPage === 1) {
+                 endPage = Math.min(totalPages, startPage + 10);
+               } else if (endPage === totalPages) {
+                 startPage = Math.max(1, endPage - 10);
+               }
+             }
+
+             const pageNumbers = [];
+             for (let i = startPage; i <= endPage; i++) {
+               pageNumbers.push(i);
+             }
+
+             return (
+               <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm gap-4">
+                 
+                 <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                   หน้า {currentPage} จาก {totalPages}
+                 </span>
+
+                 <div className="flex items-center gap-1 sm:gap-2">
+                   <button
+                     disabled={currentPage === 1}
+                     onClick={() => setCurrentPage(1)}
+                     className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                     title="หน้าแรกสุด"
+                   >
+                     &laquo;
+                   </button>
+
+                   <button
+                     disabled={currentPage === 1}
+                     onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                     className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                     title="ก่อนหน้า"
+                   >
+                     &lsaquo;
+                   </button>
+
+                   {/* กล่องแสดงตัวเลขหน้า */}
+                   <div className="hidden sm:flex items-center gap-1">
+                     {pageNumbers.map((page) => (
+                       <button
+                         key={page}
+                         onClick={() => setCurrentPage(page)}
+                         className={`px-3 py-2 border rounded-sm text-sm font-medium transition cursor-pointer ${
+                           page === currentPage
+                             ? "bg-zinc-800 text-white border-zinc-800 dark:bg-zinc-200 dark:text-zinc-900 dark:border-zinc-200 pointer-events-none"
+                             : "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                         }`}
+                       >
+                         {page}
+                       </button>
+                     ))}
+                   </div>
+
+                   <button
+                     disabled={currentPage === totalPages}
+                     onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                     className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                     title="ถัดไป"
+                   >
+                     &rsaquo;
+                   </button>
+
+                   <button
+                     disabled={currentPage === totalPages}
+                     onClick={() => setCurrentPage(totalPages)}
+                     className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
+                     title="หน้าท้ายสุด"
+                   >
+                     &raquo;
+                   </button>
+                 </div>
+               </div>
+             );
+          })()}
         </div>
       )}
     </div>
