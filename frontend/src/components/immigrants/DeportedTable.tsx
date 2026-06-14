@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
-type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "result";
+// ✨ แก้ตรงนี้: เพิ่มคำว่า export เข้าไป
+export type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "result";
 
 interface DeportedTableProps {
   data: any[];
-  sortField: string;
+  sortField: SortField | null;
   sortDirection: "asc" | "desc";
   onSort: (field: SortField) => void;
 }

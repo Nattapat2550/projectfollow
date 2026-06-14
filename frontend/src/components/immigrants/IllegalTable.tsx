@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
-type SortField = "name" | "nationality" | "detected_date" | "detected_location" | "is_victim";
+// ✨ แก้ตรงนี้: เพิ่มคำว่า export เข้าไป
+export type SortField = "name" | "nationality" | "detected_date" | "detected_location" | "is_victim";
 
 interface IllegalTableProps {
   data: any[];
-  sortField: string;
+  sortField: SortField | null;
   sortDirection: "asc" | "desc";
   onSort: (field: SortField) => void;
 }

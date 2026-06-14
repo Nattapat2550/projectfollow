@@ -4,28 +4,25 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-// นำเข้าคอมโพเนนต์ตาราง Deported ตัวใหม่ที่คลิกแถวเพื่อเข้าดูรายละเอียดได้โดยตรง
-import DeportedTable from "@/components/immigrants/DeportedTable";
+// ✨ แก้ตรงนี้: นำเข้าคอมโพเนนต์ตารางและ SortField จาก DeportedTable โดยตรง
+import DeportedTable, { SortField } from "@/components/immigrants/DeportedTable";
 
 function DeportedPageContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<any>(null);
   
-  // แยก State Loading ออกเป็น 2 แบบ (โหลดครั้งแรก กับ โหลดเปลี่ยนหน้า)
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   
   const [currentPage, setCurrentPage] = useState(1);
   
   // States สำหรับควบคุมการเรียงลำดับแบบ Server-side เหมือนหน้า Dashboard
-  const [sortField, setSortField] = useState<string>("");
+  const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // 🔍 State สำหรับระบบค้นหา (Global Intersect Search)
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // ⏳ ทำ Debounce หน่วงเวลาพิมพ์ 500ms เพื่อส่งคำกรองชุดใหญ่ไปหลังบ้านทีเดียว
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
@@ -34,8 +31,6 @@ function DeportedPageContent() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // รีเซ็ตหน้ากลับไปหน้า 1 เฉพาะตอนที่ "คำค้นหาหลัก" เปลี่ยนแปลงเท่านั้น 
-  // (ตอนกด Sort จะไม่วิ่งเข้ามาในนี้ ทำให้หน้าไม่เอ๋อและคำค้นหาไม่หลุด)
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedSearch]);
@@ -43,7 +38,6 @@ function DeportedPageContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // โหลดครั้งแรกให้หมุนติ้วๆ โหลดครั้งต่อไปแค่เฟดหน้าจอจางลง
         if (!data) {
           setLoading(true);
         } else {
@@ -58,13 +52,11 @@ function DeportedPageContent() {
           limit: "50"
         });
 
-        // แนบเงื่อนไขการ Sort ส่งไปให้หลังบ้านเรียงลำดับจาก DB
         if (sortField) {
           params.append("sortBy", sortField);
           params.append("sortOrder", sortDirection);
         }
 
-        // 🔍 แนบคำค้นหาส่งไปให้หลังบ้านจัดการตัดคำทำ Intersect (ถ้ามีค่า)
         if (debouncedSearch.trim()) {
           params.append("search", debouncedSearch.trim());
         }
@@ -77,7 +69,7 @@ function DeportedPageContent() {
         console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
-        setIsUpdating(false); // ปิดสถานะจางหน้าจอเมื่อโหลดเสร็จ
+        setIsUpdating(false); 
       }
     };
 
@@ -85,18 +77,16 @@ function DeportedPageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, sortField, sortDirection, debouncedSearch]);
 
-  // ฟังก์ชันจัดการเมื่อยูสเซอร์คลิกเปลี่ยนการเรียงข้อมูลที่หัวตาราง
-  const handleSort = (field: any) => {
+  const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(prev => prev === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
       setSortDirection("asc");
     }
-    setCurrentPage(1); // รีเซ็ตหน้ากลับไปหน้าแรกทุกครั้งที่กดเรียงลำดับใหม่ แต่ค่าค้นหายังอยู่ครบ
+    setCurrentPage(1); 
   };
 
-  // 🔍 ตรวจสอบสลับชื่อภาษาอังกฤษมาแสดงผลหากไม่มีชื่อภาษาไทย ป้องกันคำว่า "ไม่ระบุ"
   const tableRows = (data?.tableData || []).map((item: any) => {
     const firstName = !item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ"
       ? (item.first_name_en || "ไม่ระบุ")
@@ -125,7 +115,6 @@ function DeportedPageContent() {
         </Link>
       </div>
 
-      {/* 🔍 UI ช่องค้นหา: ใช้ตัวแปรธีมจาก CSS ของคุณตรงๆ เพื่อรองรับ Light / Dark Mode */}
       <div className="mb-6 flex items-center px-4 py-2 border rounded-sm shadow-[0_1px_2px_var(--shadow)] bg-[var(--container)] border-[var(--wrapper)] text-[var(--foreground)]">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -157,7 +146,6 @@ function DeportedPageContent() {
             ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)
           </div>
           
-          {/* เรียกตาราง DeportedTable แบบเดียวกันกับที่ใช้ใน Dashboard */}
           <DeportedTable 
             data={tableRows} 
             sortField={sortField} 
@@ -165,7 +153,6 @@ function DeportedPageContent() {
             onSort={handleSort} 
           />
 
-          {/* ✨ แถบเปลี่ยนหน้าเพจ (Pagination) ครอบธีมสีใหม่ */}
           {totalPages > 1 && (() => {
               let startPage = Math.max(1, currentPage - 5);
               let endPage = Math.min(totalPages, currentPage + 5);
@@ -209,7 +196,6 @@ function DeportedPageContent() {
                       &lsaquo;
                     </button>
 
-                    {/* กล่องแสดงตัวเลขหน้า */}
                     <div className="hidden sm:flex items-center gap-1">
                       {pageNumbers.map((page) => (
                         <button
