@@ -3,9 +3,12 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import ImmigrantsTable from "@/components/immigrants/ImmigrantsTable";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// นำเข้าตารางที่แยกจากกันอย่างเด็ดขาดตามโครงสร้างสไตล์เดิม
+import IllegalTable from "@/components/immigrants/IllegalTable";
+import DeportedTable from "@/components/immigrants/DeportedTable";
+
+// ─── Interfaces & Types ──────────────────────────────────────────────────────
 
 interface StatItem {
   label: string;
@@ -41,7 +44,7 @@ interface DashboardData {
   tableData: any[];
 }
 
-// ─── Colours ─────────────────────────────────────────────────────────────────
+// ─── คอนสแตนท์สีสำหรับกราฟวงกลม ────────────────────────────────────────────────
 
 const CHART_COLORS = [
   "#6B3A3A",
@@ -52,7 +55,7 @@ const CHART_COLORS = [
   "#8B7355",
 ];
 
-// ─── SVG Donut Chart Component ──────────────────────────────────────────────
+// ─── คอมโพเนนต์กราฟวงกลม Donut Chart (SVG) ───────────────────────────────────
 
 function DonutChart({ data, title }: { data: ChartItem[]; title: string; }) {
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -131,7 +134,7 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string; }) {
   );
 }
 
-// ─── Dashboard Content ───────────────────────────────────────────────────────
+// ─── คอมโพเนนต์เนื้อหาแดชบอร์ดหลัก ─────────────────────────────────────────────
 
 function DashboardContent() {
   const searchParams = useSearchParams();
@@ -141,7 +144,7 @@ function DashboardContent() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // States สำหรับระบุตัวกรอง
+  // States สำหรับระบุ Filters ตัวกรองข้อมูล
   const [filterType, setFilterType] = useState<"illegal" | "deported">(typeParam);
   const [filterNat, setFilterNat] = useState<string>("ทั้งหมด");
   const [filterGender, setFilterGender] = useState<string>("ทั้งหมด");
@@ -150,18 +153,22 @@ function DashboardContent() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // State สำหรับควบคุมการเรียงลำดับข้อมูลระดับฐานข้อมูล (Server-side Sorting)
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // เรียกโหลดข้อมูลใหม่แบบ Server-side ทุกครั้งที่มีการเปลี่ยน Filters หรือหน้าเปลี่ยน
+  // ฟังก์ชันดึงข้อมูลจาก API หลังบ้าน
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         
-        // ประกอบ Query Parameters
+        // ประกอบพารามิเตอร์เงื่อนไขการค้นหา
         const params = new URLSearchParams({
           type: filterType,
-          nationality: filterNat,
+          nationality: filterType === "illegal" ? filterNat : "ทั้งหมด",
           gender: filterGender,
           startDate,
           endDate,
@@ -170,6 +177,12 @@ function DashboardContent() {
           page: currentPage.toString(),
           limit: "50"
         });
+
+        // หากมีการกดเรียงลำดับหัวตาราง ให้แนบพารามิเตอร์ Sort ไปฝั่งหลังบ้านด้วย
+        if (sortField) {
+            params.append("sortBy", sortField);
+            params.append("sortOrder", sortDirection);
+        }
 
         const res = await fetch(`${backendUrl}/api/v1/dashboard?${params.toString()}`, { cache: "no-store" });
         if (!res.ok) throw new Error("API error");
@@ -184,43 +197,59 @@ function DashboardContent() {
     };
 
     fetchDashboardData();
-  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, currentPage]);
+  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, currentPage, sortField, sortDirection]);
 
-  // ซิงค์ URL Parameter กับ State หลัก
+  // ตรวจจับกรณีเปลี่ยนแท็บประเภทผ่าน URL Parameter 
   useEffect(() => {
     setFilterType(typeParam);
     setCurrentPage(1);
+    setSortField(""); // รีเซ็ตสถานะการเรียงลำดับเมื่อสลับประเภทตารางข้อมูล
   }, [typeParam]);
 
-  // รีเซ็ตกลับไปหน้าแรกเสมอเมื่อฟิลเตอร์มีการขยับเปลี่ยนแปลง
+  // ฟังก์ชันรีเซ็ตหน้าเพจกลับไปหน้า 1 เสมอเมื่อมีการขยับ Filters ตัวกรอง
   const handleFilterChange = (setter: Function, value: any) => {
     setter(value);
     setCurrentPage(1);
   };
 
-  // ดึงรายการสัญชาติและเพศจาก Metadata ฝั่งฐานข้อมูล เพื่อแสดงผลใน Select Box
+  // ฟังก์ชันจัดการเมื่อยูสเซอร์กดหัวตารางเพื่อจัดเรียงลำดับข้อมูล
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+        setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+        setSortField(field);
+        setSortDirection("asc");
+    }
+    setCurrentPage(1); // รีเซ็ตกลับไปเริ่มต้นหน้าแรกป้องกันหน้าแสดงผลว่างเปล่า
+  };
+
   const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
   const gendersOptions = dashboardData?.meta?.allGenders || ["ทั้งหมด"];
 
-  // Mapping จัดฟอร์แมตข้อมูลส่งต่อให้ ImmigrantsTable ทำงานได้อย่างเสถียร
+  // ตรวจสอบเช็คชื่อและนามสกุลไทย หากไม่มีข้อมูลให้ดึงชื่ออังกฤษมาแสดงทดแทนป้องกัน "ไม่ระบุ"
   const tableRows = (dashboardData?.tableData || []).map((item: any) => {
-    if (filterType === "illegal") {
-      return {
-        ...item,
-        date_of_birth: item.date_of_birth ? new Date(item.date_of_birth).toLocaleDateString('th-TH') : "ไม่ระบุ",
-        national_id: item.passport_id || "ไม่มีพาสปอร์ต",
-        address: item.detected_location || "ไม่ระบุสถานที่",
-      };
-    }
-    return item;
+    const firstName = !item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ"
+      ? (item.first_name_en || "ไม่ระบุ")
+      : item.first_name_th;
+
+    const lastName = !item.last_name_th || item.last_name_th.trim() === "" || item.last_name_th === "ไม่ระบุ"
+      ? (item.last_name_en || "ไม่ระบุ")
+      : item.last_name_th;
+
+    return {
+      ...item,
+      first_name_th: firstName,
+      last_name_th: lastName,
+    };
   });
 
+  // จัดการชุดตัวเลขกล่องสถิติเบื้องต้นด้านบน
   const stats: StatItem[] = (() => {
     if (!dashboardData) return [];
     if (filterType === "illegal") {
       return [
         { label: "จำนวนทั้งหมดที่พบตามตัวกรอง", value: dashboardData.stats.total },
-        { label: "ผู้เสียหาย (ค้ามนุษย์)", value: dashboardData.stats.victims || 0 },
+        { label: "เป็นผู้เสียหาย (ค้ามนุษย์)", value: dashboardData.stats.victims || 0 },
         { label: "ผู้มีหนังสือเดินทาง", value: dashboardData.stats.hasPassport || 0 },
       ];
     } else {
@@ -231,7 +260,7 @@ function DashboardContent() {
     }
   })();
 
-  // จัดชุดข้อมูลสีกราฟวงกลม
+  // จับคู่การระบุสีกราฟสถิติต่างๆ
   const natChart = (dashboardData?.charts?.nationality || []).map((d, i) => ({
     ...d, color: CHART_COLORS[i % CHART_COLORS.length]
   }));
@@ -245,12 +274,12 @@ function DashboardContent() {
     ...d, color: CHART_COLORS[i % CHART_COLORS.length]
   }));
 
-  const inputClass = "w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40";
+  const inputClass = "w-full bg-background border border-[var(--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--header)]/40";
 
   return (
     <div className="min-h-screen p-6 bg-background text-foreground transition-colors duration-200">
       
-      {/* Header */}
+      {/* ปุ่มกดกลับหน้าแรก */}
       <Link
         href="/"
         className="inline-flex items-center gap-1 font-bold mb-6 hover:opacity-80 transition text-(--header) text-2xl"
@@ -260,7 +289,7 @@ function DashboardContent() {
 
       <div className="flex flex-col lg:flex-row gap-6 items-start max-w-7xl mx-auto">
         
-        {/* ── ซ้าย: Filters ──────────────────────────── */}
+        {/* ── โซนฝั่งซ้าย: แผงควบคุม Filters ──────────────────────────── */}
         <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm shrink-0 flex flex-col gap-5 w-full lg:w-72">
           <span className="font-bold text-lg text-(--header)">
             ฟิลเตอร์ตัวเลือก
@@ -274,11 +303,12 @@ function DashboardContent() {
                 const val = e.target.value as "illegal" | "deported";
                 setFilterType(val);
                 setFilterNat("ทั้งหมด");
-                setFilterGender("ทั้งหมด");
+                setFilterGender("統หมด");
                 setFilterVictim("ทั้งหมด");
                 setFilterPassport("ทั้งหมด");
                 setStartDate("");
                 setEndDate("");
+                setSortField(""); // รีเซ็ตการ Sort เมื่อเปลี่ยนประเภทตาราง
                 setCurrentPage(1);
                 router.replace(`/dashboard?type=${val}`);
               }}
@@ -295,6 +325,7 @@ function DashboardContent() {
               value={filterNat}
               onChange={(e) => handleFilterChange(setFilterNat, e.target.value)}
               className={inputClass}
+              disabled={filterType === "deported"} // ปิดเนื่องจากตาราง Deported ไม่มีสัญชาติในโครงสร้าง DB
             >
               {nationalitiesOptions.map((n) => (
                 <option key={n} value={n}>
@@ -319,7 +350,7 @@ function DashboardContent() {
             </select>
           </div>
 
-          {/* ฟิลเตอร์เพิ่มเติม: แสดงผลเฉพาะเมื่อเลือกประเภท Illegal เท่านั้น */}
+          {/* เงื่อนไขฟิลเตอร์เพิ่มเติมเฉพาะประเภท แอบเข้าเมือง (Illegal) */}
           {filterType === "illegal" && (
             <>
               <div className="flex flex-col gap-2">
@@ -378,6 +409,7 @@ function DashboardContent() {
               setFilterPassport("ทั้งหมด");
               setStartDate("");
               setEndDate("");
+              setSortField("");
               setCurrentPage(1);
             }}
             className="mt-2 w-full py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
@@ -386,16 +418,16 @@ function DashboardContent() {
           </button>
         </div>
 
-        {/* ── ขวา: Stats + Chart + Table ──────────────────────── */}
+        {/* ── โซนฝั่งขวา: แสดงสถิติ กราฟ และ ตารางข้อมูลแยกชุด ────────────────── */}
         <div className="flex flex-col gap-6 flex-1 min-w-0 w-full">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 bg-(--container) border border-(--wrapper) rounded-2xl shadow-sm">
                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-(--header) mb-4"></div>
-               <span className="text-muted-foreground text-sm font-medium">กำลังปรับปรุงแดชบอร์ดให้เป็นข้อมูลล่าสุด...</span>
+               <span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูลแดชบอร์ดล่าสุด...</span>
             </div>
           ) : (
             <>
-              {/* Stats box */}
+              {/* ส่วนที่ 1: การแสดงตัวเลขสถิติภาพรวม */}
               <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
                 <span className="font-bold text-lg block mb-4 text-(--header)">
                   สถิติเบื้องต้น
@@ -414,7 +446,7 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Chart box */}
+              {/* ส่วนที่ 2: การแสดงผลกราฟ Donut สรุปสัดส่วนข้อมูล */}
               <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
                 <span className="font-bold text-lg block mb-6 text-(--header)">
                   กราฟสรุปจำนวนคนทั้งหมด
@@ -422,7 +454,7 @@ function DashboardContent() {
                 
                 {(!dashboardData || dashboardData.tableData.length === 0) ? (
                   <div className="flex items-center justify-center h-48 text-muted-foreground font-medium text-sm">
-                    ไม่มีข้อมูลตามเงื่อนไขที่คุณเลือกฟิลเตอร์
+                    ไม่มีข้อมูลแสดงผลตามสัญชาติหรือวันที่ระบุ
                   </div>
                 ) : (
                   <div className="flex gap-8 flex-wrap justify-center">
@@ -441,7 +473,7 @@ function DashboardContent() {
                 )}
               </div>
 
-              {/* Data Table Area */}
+              {/* ส่วนที่ 3: ตารางแสดงผลรายการข้อมูลพร้อมปุ่มกดเรียงลำดับหัวข้อตาราง */}
               <div className="bg-transparent mb-10">
                  <div className="flex justify-between items-center mb-6">
                    <span className="font-bold text-lg text-(--header)">
@@ -449,25 +481,40 @@ function DashboardContent() {
                    </span>
                  </div>
                  
-                 <ImmigrantsTable data={tableRows} isMock={false} type={filterType} />
+                 {/* เรียกใช้ตารางแยกตาม filterType พร้อมส่งข้อมูลและสถานะการ Sort ข้ามไปยังตารางย่อย */}
+                 {filterType === "illegal" ? (
+                   <IllegalTable 
+                     data={tableRows} 
+                     sortField={sortField} 
+                     sortDirection={sortDirection} 
+                     onSort={handleSort} 
+                   />
+                 ) : (
+                   <DeportedTable 
+                     data={tableRows} 
+                     sortField={sortField} 
+                     sortDirection={sortDirection} 
+                     onSort={handleSort} 
+                   />
+                 )}
 
-                 {/* ระบบ Pagination ผูกเข้ากับระบบดึงข้อมูลจาก Server */}
+                 {/* แถบควบคุมเปลี่ยนหน้าเพจ (Pagination) */}
                  {(dashboardData?.meta?.totalPages || 0) > 1 && (
-                    <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl mt-6 shadow-sm">
+                    <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm">
                       <button 
                         disabled={currentPage === 1} 
                         onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
-                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
+                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
                       >
                         ก่อนหน้า
                       </button>
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        หน้า {currentPage} จาก {dashboardData?.meta?.totalPages} (ทั้งหมด {dashboardData?.meta?.totalItems} รายการ)
+                        หน้า {currentPage} จาก {dashboardData?.meta?.totalPages}
                       </span>
                       <button 
                         disabled={currentPage === dashboardData?.meta?.totalPages} 
                         onClick={() => setCurrentPage(p => Math.min(p + 1, dashboardData?.meta?.totalPages || 1))} 
-                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
+                        className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition cursor-pointer"
                       >
                         ถัดไป
                       </button>
@@ -482,6 +529,7 @@ function DashboardContent() {
   );
 }
 
+// Default export wrapper ที่ล้อมด้วย Suspense เพื่อรองรับ useSearchParams() ใน Next.js (Turbopack)
 export default function Dashboard() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-muted-foreground font-medium">กำลังโหลดระบบแดชบอร์ด...</div>}>

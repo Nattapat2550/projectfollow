@@ -1,68 +1,64 @@
-// src/components/immigrants/TableHeader.tsx
+import { ChevronUp, ChevronDown } from "lucide-react";
 
-export type SortField = "name" | "date_of_birth" | "national_id" | "address";
+export type SortField = "name" | "date_of_birth" | "detected_date" | "national_id" | "nationality" | "address" | "detected_location" | "is_victim" | "return_date" | "result";
 
 interface TableHeaderProps {
   sortField: SortField | null;
   sortDirection: "asc" | "desc";
   onSort: (field: SortField) => void;
+  type: "deported" | "illegal";
 }
 
-export default function TableHeader({ sortField, sortDirection, onSort }: TableHeaderProps) {
-  // ฟังก์ชันแสดงลูกศรสถานะการ Sort ให้ดูทันสมัยขึ้น
-  const renderArrow = (field: SortField) => {
-    if (sortField !== field) {
-      return <span className="ml-1 opacity-30 text-xs">▲▼</span>;
-    }
+export default function TableHeader({ sortField, sortDirection, onSort, type }: TableHeaderProps) {
+  
+  const renderSortIcon = (field: SortField) => {
+    if (sortField !== field) return <span className="ml-1 w-4 inline-block text-transparent">↕</span>;
     return sortDirection === "asc" ? (
-      <span className="ml-1 text-primary font-bold">▲</span>
+      <ChevronUp className="ml-1 w-4 h-4 inline-block text-foreground" />
     ) : (
-      <span className="ml-1 text-primary font-bold">▼</span>
+      <ChevronDown className="ml-1 w-4 h-4 inline-block text-foreground" />
     );
   };
 
+  const Th = ({ field, children, className = "" }: { field: SortField; children: React.ReactNode; className?: string }) => (
+    <th 
+      onClick={() => onSort(field)} 
+      className={`p-4 font-semibold text-(--header) cursor-pointer hover:bg-muted/50 select-none ${className}`}
+    >
+      <div className="flex items-center">
+        {children}
+        {renderSortIcon(field)}
+      </div>
+    </th>
+  );
+
+  // ─── 1. หัวตาราง แอบเข้าเมือง (Illegal) ───
+  if (type === "illegal") {
+    return (
+      <thead className="bg-muted/30 border-b border-(--wrapper)">
+        <tr>
+          <Th field="name">ชื่อ - นามสกุล</Th>
+          <Th field="nationality">สัญชาติ</Th>
+          <Th field="detected_date">วันที่ตรวจพบ</Th>
+          <Th field="detected_location">สถานที่ตรวจพบ</Th>
+          <Th field="is_victim">สถานะผู้เสียหาย</Th>
+          <th className="p-4 font-semibold text-(--header) w-20">จัดการ</th>
+        </tr>
+      </thead>
+    );
+  }
+
+  // ─── 2. หัวตาราง ผู้ถูกส่งกลับ (Deported) ───
   return (
-    <thead>
-      <tr 
-        className="border-b"
-        style={{ backgroundColor: "var(--container)", borderColor: "var(--foreground)" }}
-      >
-        <th 
-          onClick={() => onSort("name")}
-          className="py-3 px-4 font-semibold text-sm border-r cursor-pointer select-none hover:bg-black/5 dark:hover:bg-white/5 transition-colors" 
-          style={{ borderColor: "var(--foreground)", color: "var(--foreground)" }}
-        >
-          <div className="flex items-center">
-            ชื่อ-สกุล {renderArrow("name")}
-          </div>
-        </th>
-        <th 
-          onClick={() => onSort("date_of_birth")}
-          className="py-3 px-4 font-semibold text-sm border-r cursor-pointer select-none hover:bg-black/5 dark:hover:bg-white/5 transition-colors" 
-          style={{ borderColor: "var(--foreground)", color: "var(--foreground)" }}
-        >
-          <div className="flex items-center">
-            วัน/เดือน/ปี ที่เกิด {renderArrow("date_of_birth")}
-          </div>
-        </th>
-        <th 
-          onClick={() => onSort("national_id")}
-          className="py-3 px-4 font-semibold text-sm border-r cursor-pointer select-none hover:bg-black/5 dark:hover:bg-white/5 transition-colors" 
-          style={{ borderColor: "var(--foreground)", color: "var(--foreground)" }}
-        >
-          <div className="flex items-center">
-            เลขประจำตัวประชาชน {renderArrow("national_id")}
-          </div>
-        </th>
-        <th 
-          onClick={() => onSort("address")}
-          className="py-3 px-4 font-semibold text-sm cursor-pointer select-none hover:bg-black/5 dark:hover:bg-white/5 transition-colors" 
-          style={{ color: "var(--foreground)" }}
-        >
-          <div className="flex items-center">
-            ที่อยู่ {renderArrow("address")}
-          </div>
-        </th>
+    <thead className="bg-muted/30 border-b border-(--wrapper)">
+      <tr>
+        <Th field="name">ชื่อ - นามสกุล</Th>
+        <Th field="date_of_birth">วันเกิด / อายุ</Th>
+        <Th field="national_id">เลขประจำตัว / พาสปอร์ต</Th>
+        <Th field="address">สถานที่ตรวจพบ</Th>
+        <Th field="return_date">วันที่ส่งกลับ</Th>
+        <Th field="result">สถานะ</Th>
+        <th className="p-4 font-semibold text-(--header) w-20">จัดการ</th>
       </tr>
     </thead>
   );

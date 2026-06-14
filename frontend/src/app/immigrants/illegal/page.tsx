@@ -1,92 +1,142 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import ImmigrantsTable from "@/components/immigrants/ImmigrantsTable";
 
-export default function IllegalPage() {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  
-  // สร้าง State สำหรับระบบแบ่งหน้า (Pagination)
+// นำเข้าคอมโพเนนต์ตารางตัวใหม่ที่ไม่มีปุ่มรูปตา และคลิกแถวเพื่อเข้าดูรายละเอียดได้เลย
+import IllegalTable from "@/components/immigrants/IllegalTable";
+
+function IllegalPageContent() {
+  const searchParams = useSearchParams();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50;
+  
+  // States สำหรับควบคุมการเรียงลำดับแบบ Server-side เหมือนหน้า Dashboard
+  const [sortField, setSortField] = useState<string>("");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-        const res = await fetch(`${backendUrl}/api/v1/immigrants`);
-        if (!res.ok) throw new Error("API error");
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         
-        const json = await res.json();
-        const fetchedRecords = json.data?.illegals || [];
+        const params = new URLSearchParams({
+          type: "illegal",
+          page: currentPage.toString(),
+          limit: "50"
+        });
 
-        // แมพข้อมูลเพื่อให้โชว์ในตารางสวยงาม
-        const mappedData = fetchedRecords.map((item: any) => ({
-          ...item,
-          date_of_birth: item.detected_date ? new Date(item.detected_date).toLocaleDateString('th-TH') : "ไม่ระบุวันที่พบ",
-          national_id: item.passport_id || "ไม่มีพาสปอร์ต",
-          address: item.detected_location || "ไม่ระบุสถานที่",
-        }));
-        
-        setData(mappedData);
+        // แนบเงื่อนไขการ Sort ส่งไปให้ฐานข้อมูลหลังบ้านประมวลผล
+        if (sortField) {
+          params.append("sortBy", sortField);
+          params.append("sortOrder", sortDirection);
+        }
+
+        const res = await fetch(`${backendUrl}/api/v1/dashboard?${params.toString()}`, { cache: "no-store" });
+        if (!res.ok) throw new Error("API error");
+        const json = await res.json();
+        setData(json);
       } catch (err) {
-        console.error("Error fetching illegals:", err);
-        setData([]);
+        console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [currentPage, sortField, sortDirection]);
 
-  // คำนวณข้อมูลที่จะแสดงในแต่ละหน้า
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // ฟังก์ชันจัดการเมื่อยูสเซอร์คลิกเปลี่ยนการเรียงข้อมูลที่หัวตาราง
+  const handleSort = (field: any) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+    setCurrentPage(1); // รีเซ็ตหน้ากลับไปที่หน้า 1 ทุกครั้งที่มีการเปลี่ยนกลุ่มจัดเรียง
+  };
+
+  // 🔍 ตรวจสอบสลับชื่อภาษาอังกฤษมาแสดงผลหากไม่มีชื่อภาษาไทย ป้องกันคำว่า "ไม่ระบุ"
+  const tableRows = (data?.tableData || []).map((item: any) => {
+    const firstName = !item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ"
+      ? (item.first_name_en || "ไม่ระบุ")
+      : item.first_name_th;
+
+    const lastName = !item.last_name_th || item.last_name_th.trim() === "" || item.last_name_th === "ไม่ระบุ"
+      ? (item.last_name_en || "ไม่ระบุ")
+      : item.last_name_th;
+
+    return {
+      ...item,
+      first_name_th: firstName,
+      last_name_th: lastName,
+    };
+  });
+
+  const totalItems = data?.meta?.totalItems || 0;
+  const totalPages = data?.meta?.totalPages || 1;
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans antialiased">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <Link href="/" className="text-4xl font-bold transition-opacity hover:opacity-80 flex items-center gap-2" style={{ color: "var(--header)" }}>
-            {"< ลอบเข้า"}
-          </Link>
-        </div>
+    <div className="p-6 max-w-7xl mx-auto text-foreground">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้แอบเข้าเมือง (Illegal)</h1>
+        <Link href="/immigrants/illegal/create" className="px-4 py-2 bg-(--header) text-white font-bold rounded-sm hover:opacity-90 transition text-sm">
+          + เพิ่มข้อมูล
+        </Link>
+      </div>
 
-        {loading && <div className="text-center py-10 opacity-60">กำลังโหลดข้อมูลระบบ...</div>}
-        
-        {!loading && (
-          <>
-            <ImmigrantsTable data={paginatedData} isMock={false} type="illegal" />
-            
-            {/* กล่องควบคุมการเปลี่ยนหน้า (แสดงก็ต่อเมื่อมีมากกว่า 1 หน้า) */}
-            {totalPages > 1 && (
-              <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl mt-6 shadow-sm">
-                <button 
-                  disabled={currentPage === 1} 
-                  onClick={() => setCurrentPage(p => p - 1)} 
-                  className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
-                >
-                  ก่อนหน้า
-                </button>
-                <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                  หน้า {currentPage} จาก {totalPages} (ทั้งหมด {data.length} รายการ)
-                </span>
-                <button 
-                  disabled={currentPage === totalPages} 
-                  onClick={() => setCurrentPage(p => p + 1)} 
-                  className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition"
-                >
-                  ถัดไป
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </main>
+      {loading ? (
+        <div className="text-center p-8 text-muted-foreground">กำลังโหลดข้อมูล...</div>
+      ) : (
+        <div className="bg-transparent mb-10">
+          <div className="mb-4 text-sm text-muted-foreground font-medium">
+            ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)
+          </div>
+          
+          {/* เรียกตาราง IllegalTable แบบเดียวกันกับที่ใช้ใน Dashboard */}
+          <IllegalTable 
+            data={tableRows} 
+            sortField={sortField} 
+            sortDirection={sortDirection} 
+            onSort={handleSort} 
+          />
+
+          {/* แถบเปลี่ยนหน้าเพจสไตล์เดิม */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm">
+              <button 
+                disabled={currentPage === 1} 
+                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))} 
+                className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium transition cursor-pointer"
+              >
+                ก่อนหน้า
+              </button>
+              <span className="text-sm font-medium">
+                หน้า {currentPage} จาก {totalPages}
+              </span>
+              <button 
+                disabled={currentPage === totalPages} 
+                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))} 
+                className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-sm disabled:opacity-50 text-sm font-medium transition cursor-pointer"
+              >
+                ถัดไป
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function IllegalPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center text-muted-foreground">กำลังเริ่มระบบตารางข้อมูล...</div>}>
+      <IllegalPageContent />
+    </Suspense>
   );
 }
