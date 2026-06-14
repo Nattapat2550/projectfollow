@@ -39,4 +39,6 @@ router.post("/upload-excel-illegal", uploadExcel.single("file"), immigrantContro
 // GET: เช็ค Progress การอัปโหลด
 router.get("/upload-progress/:jobId", immigrantController.getUploadProgress);
 
+router.get("/dashboard", immigrantController.getDashboardData);
+
 module.exports = router;

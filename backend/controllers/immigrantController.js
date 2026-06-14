@@ -588,3 +588,110 @@ exports.uploadExcelIllegal = async (req, res) => {
     res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการอ่านไฟล์และบันทึกข้อมูล" });
   }
 };
+
+exports.getDashboardData = async (req, res) => {
+  try {
+    const type = req.query.type || "deported"; // เริ่มต้นเป็น deported ตามที่หน้าเว็บเรียก
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const sortBy = req.query.sortBy;
+    const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
+    const search = req.query.search;
+
+    const skip = (page - 1) * limit;
+
+    // 1. สร้างฐานเงื่อนไขการค้นหา (Where Clause)
+    let whereCondition = {};
+
+    // 🔍 2. จัดการระบบ Intersect Search (พิมพ์เว้นวรรคเพื่อแยกเงื่อนไข)
+    if (search && search.trim() !== "") {
+      // แยกข้อความด้วยช่องว่าง (และจัดการกรณีพิมพ์ช่องว่างเบิ้ลหลายตัวด้วย Regular Expression)
+      const keywords = search.trim().split(/\s+/);
+
+      // ใช้โครงสร้าง .AND ของ Prisma เพื่อบังคับว่าทุกคำใน Array ต้องเป็นจริงทั้งหมด (Intersect)
+      whereCondition.AND = keywords.map((keyword) => {
+        // เจาะจงฟิลด์ที่จะยอมให้ค้นหาเจอ (ใช้ mode: 'insensitive' เพื่อให้พิมพ์เล็ก-ใหญ่มีค่าเท่ากัน)
+        const searchFields = [
+          { first_name_th: { contains: keyword, mode: "insensitive" } },
+          { last_name_th: { contains: keyword, mode: "insensitive" } },
+          { first_name_en: { contains: keyword, mode: "insensitive" } },
+          { last_name_en: { contains: keyword, mode: "insensitive" } },
+          { passport_id: { contains: keyword, mode: "insensitive" } },
+        ];
+
+        // ถ้าเป็นประเภทส่งกลับ (Deported) ให้ค้นหาเลขบัตรประชาชนเพิ่มได้
+        if (type === "deported") {
+          searchFields.push({ national_id: { contains: keyword, mode: "insensitive" } });
+          searchFields.push({ channel: { contains: keyword, mode: "insensitive" } });
+        } else {
+          // ถ้าเป็นประเภทแอบเข้าเมือง (Illegal) ให้ค้นหาสถานที่ตรวจพบและสัญชาติเพิ่มได้
+          searchFields.push({ nationality: { contains: keyword, mode: "insensitive" } });
+          searchFields.push({ detected_location: { contains: keyword, mode: "insensitive" } });
+        }
+
+        return { OR: searchFields };
+      });
+    }
+
+    // 3. จัดการเงื่อนไขการจัดเรียงข้อมูล (Dynamic OrderBy)
+    let orderByCondition = {};
+    if (sortBy && sortBy.trim() !== "") {
+      orderByCondition = { [sortBy]: sortOrder };
+    } else {
+      // ค่าเริ่มต้นถ้าผู้ใช้ไม่ได้กดเรียงลำดับอะไรเลย
+      orderByCondition = type === "deported" 
+        ? { return_date: "desc" } 
+        : { detected_date: "desc" };
+    }
+
+    // 4. แยกการคิวรีตามประเภทโมเดลของ Prisma (และรันไปพร้อมกันด้วย Promise.all เพื่อความเร็ว)
+    let tableData = [];
+    let totalItems = 0;
+
+    if (type === "deported") {
+      [tableData, totalItems] = await Promise.all([
+        prisma.deported_persons.findMany({
+          where: whereCondition,
+          skip: skip,
+          take: limit,
+          orderBy: orderByCondition,
+        }),
+        prisma.deported_persons.count({
+          where: whereCondition, // บังคับนับจำนวนแถวภายใต้เงื่อนไขการเซิร์ชเดียวกัน ไม่งั้นเลขหน้าจะพัง
+        }),
+      ]);
+    } else {
+      [tableData, totalItems] = await Promise.all([
+        prisma.illegal_immigrants.findMany({
+          where: whereCondition,
+          skip: skip,
+          take: limit,
+          orderBy: orderByCondition,
+        }),
+        prisma.illegal_immigrants.count({
+          where: whereCondition,
+        }),
+      ]);
+    }
+
+    // 5. ส่งกลับโครงสร้างข้อมูลที่จับคู่กับ Next.js หน้าบ้านของคุณเป๊ะๆ
+    res.status(200).json({
+      success: true,
+      tableData: tableData,
+      meta: {
+        totalItems: totalItems,
+        totalPages: Math.ceil(totalItems / limit) || 1,
+        currentPage: page,
+        limit: limit,
+      },
+    });
+
+  } catch (err) {
+    console.error("Dashboard API Error:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "เกิดข้อผิดพลาดในการดึงข้อมูลแดชบอร์ด", 
+      error: err.message 
+    });
+  }
+};
