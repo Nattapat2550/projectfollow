@@ -4,14 +4,14 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-// นำเข้าคอมโพเนนต์ตาราง Deported ตัวใหม่ที่คลิกแถวเพื่อเข้าดูรายละเอียดได้โดยตรง
-import DeportedTable from "@/components/immigrants/DeportedTable";
+// นำเข้าคอมโพเนนต์ตารางตัวใหม่ที่ไม่มีปุ่มรูปตา และคลิกแถวเพื่อเข้าดูรายละเอียดได้เลย
+import IllegalTable from "@/components/immigrants/IllegalTable";
 
-function DeportedPageContent() {
+function IllegalPageContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<any>(null);
   
-  // แยก State Loading ออกเป็น 2 แบบ (โหลดครั้งแรก กับ โหลดเปลี่ยนหน้า)
+  // ✨ แยก State Loading ออกเป็น 2 แบบ (โหลดครั้งแรก กับ โหลดเปลี่ยนหน้า)
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -21,25 +21,28 @@ function DeportedPageContent() {
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // 🔍 [จุดที่เพิ่ม 1] States สำหรับระบบค้นหา (Global Search)
+  // 🔍 State สำหรับระบบค้นหา (Global Intersect Search)
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // ⏳ [จุดที่เพิ่ม 2] ทำ Debounce หน่วงเวลาพิมพ์ 500ms ป้องกันการรัวยิง API
+  // ⏳ ทำ Debounce หน่วงเวลาพิมพ์ 500ms เพื่อส่งคำกรองชุดใหญ่ไปหลังบ้านทีเดียว
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
-      // ถ้าคำค้นหาเปลี่ยน ให้เด้งกลับไปหน้า 1 เสมอ (แต่ถ้ากด Sort หน้าจะไม่รีเซ็ตคำค้นหา)
-      setCurrentPage(1);
     }, 500);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // รีเซ็ตหน้ากลับไปหน้า 1 เฉพาะตอนที่ "คำค้นหาหลัก" เปลี่ยนแปลงเท่านั้น
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // โหลดครั้งแรกให้หมุนติ้วๆ โหลดครั้งต่อไปแค่เฟดหน้าจอจางลง
+        // ✨ โหลดครั้งแรกให้หมุนติ้วๆ โหลดครั้งต่อไปแค่เฟดหน้าจอจางลง
         if (!data) {
           setLoading(true);
         } else {
@@ -49,18 +52,18 @@ function DeportedPageContent() {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         
         const params = new URLSearchParams({
-          type: "deported",
+          type: "illegal",
           page: currentPage.toString(),
           limit: "50"
         });
 
-        // แนบเงื่อนไขการ Sort ส่งไปให้หลังบ้านเรียงลำดับจาก DB
+        // แนบเงื่อนไขการ Sort ส่งไปให้ฐานข้อมูลหลังบ้านประมวลผล
         if (sortField) {
           params.append("sortBy", sortField);
           params.append("sortOrder", sortDirection);
         }
 
-        // 🔍 [จุดที่เพิ่ม 3] แนบคำค้นหา Intersect ส่งไปให้หลังบ้าน
+        // 🔍 แนบคำค้นหาส่งไปให้หลังบ้านจัดการตัดคำทำ Intersect (ถ้ามีค่า)
         if (debouncedSearch.trim()) {
           params.append("search", debouncedSearch.trim());
         }
@@ -73,17 +76,15 @@ function DeportedPageContent() {
         console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
-        setIsUpdating(false); // ปิดสถานะจางหน้าจอเมื่อโหลดเสร็จ
+        setIsUpdating(false); // ✨ ปิดสถานะจางหน้าจอเมื่อโหลดเสร็จ
       }
     };
 
     fetchData();
-  // 🔍 [จุดที่เพิ่ม 4] เติม debouncedSearch ใน deps เพื่อให้ fetch ใหม่เมื่อพิมพ์เสร็จ
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, sortField, sortDirection, debouncedSearch]);
 
   // ฟังก์ชันจัดการเมื่อยูสเซอร์คลิกเปลี่ยนการเรียงข้อมูลที่หัวตาราง
-  // ✨ ลอจิกนี้จะรักษาค่า search ไว้ใน State เหมือนเดิม ทำให้ Sort ได้โดยคำค้นหาไม่รีเซ็ต
   const handleSort = (field: any) => {
     if (sortField === field) {
       setSortDirection(prev => prev === "asc" ? "desc" : "asc");
@@ -91,7 +92,7 @@ function DeportedPageContent() {
       setSortField(field);
       setSortDirection("asc");
     }
-    setCurrentPage(1); // รีเซ็ตหน้ากลับไปหน้าแรกทุกครั้งที่กดเรียงลำดับใหม่
+    setCurrentPage(1); // รีเซ็ตหน้ากลับไปที่หน้า 1 ทุกครั้งที่มีการเปลี่ยนกลุ่มจัดเรียง
   };
 
   // 🔍 ตรวจสอบสลับชื่อภาษาอังกฤษมาแสดงผลหากไม่มีชื่อภาษาไทย ป้องกันคำว่า "ไม่ระบุ"
@@ -117,26 +118,26 @@ function DeportedPageContent() {
   return (
     <div className="p-6 max-w-7xl mx-auto text-foreground">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้ถูกส่งกลับ (Deported)</h1>
-        <Link href="/immigrants/deported/create" className="px-4 py-2 bg-(--header) text-(--background) font-bold rounded-sm hover:opacity-90 transition text-sm">
+        <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้แอบเข้าเมือง (Illegal)</h1>
+        <Link href="/immigrants/illegal/create" className="px-4 py-2 bg-(--header) text-(--background) font-bold rounded-sm hover:opacity-90 transition text-sm">
           + เพิ่มข้อมูล
         </Link>
       </div>
 
-      {/* 🔍 [จุดที่เพิ่ม 5] UI ช่องค้นหาที่ใช้ตัวแปรตาม CSS ของคุณ (เข้ากับ Light/Dark Mode เป๊ะๆ) */}
-      <div className="mb-6 flex items-center px-4 py-2 border rounded-sm shadow-xs bg-[var(--container)] border-[var(--wrapper)]">
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-zinc-400 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {/* 🔍 UI ช่องค้นหา */}
+      <div className="mb-6 flex items-center px-4 py-2 border rounded-sm shadow-[0_1px_2px_var(--shadow)] bg-[var(--container)] border-[var(--wrapper)] text-[var(--foreground)]">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
         <input
           type="text"
-          placeholder="ค้นหาแบบเจาะจง (ใช้ช่องว่างแยกคำ เช่น 'สมชาย พม่า')"
+          placeholder="ค้นหาแบบเจาะจง... (ใช้ช่องว่างแยกคำค้นหา เช่น 'สมชาย พม่า')"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-transparent border-none outline-none text-base text-[var(--foreground)] placeholder:text-zinc-400 placeholder:text-sm placeholder:font-normal"
+          className="w-full bg-transparent border-none outline-none text-base text-[var(--foreground)] placeholder:text-zinc-400 placeholder:text-sm"
         />
         {searchTerm && (
-          <button onClick={() => setSearchTerm("")} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 ml-2">
+          <button onClick={() => setSearchTerm("")} className="hover:opacity-70 transition ml-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -155,15 +156,15 @@ function DeportedPageContent() {
             ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)
           </div>
           
-          {/* เรียกตาราง DeportedTable แบบเดียวกันกับที่ใช้ใน Dashboard */}
-          <DeportedTable 
+          {/* เรียกตาราง IllegalTable แบบเดียวกันกับที่ใช้ใน Dashboard */}
+          <IllegalTable 
             data={tableRows} 
             sortField={sortField} 
             sortDirection={sortDirection} 
             onSort={handleSort} 
           />
 
-          {/* แถบเปลี่ยนหน้าเพจ (Pagination) */}
+          {/* ✨ แถบเปลี่ยนหน้าเพจ (Pagination) อัปเกรดใหม่ */}
           {totalPages > 1 && (() => {
              let startPage = Math.max(1, currentPage - 5);
              let endPage = Math.min(totalPages, currentPage + 5);
@@ -182,7 +183,7 @@ function DeportedPageContent() {
              }
 
              return (
-               <div className="flex flex-col md:flex-row justify-between items-center bg-[var(--container)] p-4 border border-[var(--wrapper)] rounded-sm mt-6 shadow-sm gap-4">
+               <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm gap-4">
                  
                  <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                    หน้า {currentPage} จาก {totalPages}
@@ -251,10 +252,10 @@ function DeportedPageContent() {
   );
 }
 
-export default function DeportedPage() {
+export default function IllegalPage() {
   return (
     <Suspense fallback={<div className="p-6 text-center text-muted-foreground">กำลังเริ่มระบบตารางข้อมูล...</div>}>
-      <DeportedPageContent />
+      <IllegalPageContent />
     </Suspense>
   );
 }
