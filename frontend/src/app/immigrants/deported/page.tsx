@@ -69,7 +69,7 @@ function DeportedPageContent() {
           params.append("search", debouncedSearch.trim());
         }
 
-        const res = await fetch(`${backendUrl}/api/v1/dashboard?${params.toString()}`, { cache: "no-store" });
+        const res = await fetch(`${backendUrl}/api/v1/immigrants/dashboard?${params.toString()}`, { cache: "no-store" });
         if (!res.ok) throw new Error("API error");
         const json = await res.json();
         setData(json);
