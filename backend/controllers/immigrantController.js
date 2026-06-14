@@ -590,6 +590,9 @@ exports.uploadExcelIllegal = async (req, res) => {
 };
 
 exports.getDashboardData = async (req, res) => {
+
+  console.log("Query received:", req.query);
+
   try {
     const type = req.query.type || "deported"; // เริ่มต้นเป็น deported ตามที่หน้าเว็บเรียก
     const page = parseInt(req.query.page) || 1;
