@@ -5,8 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 // นำเข้าตารางที่แยกจากกันอย่างเด็ดขาดตามโครงสร้างสไตล์เดิม
-import IllegalTable from "@/components/immigrants/IllegalTable";
-import DeportedTable from "@/components/immigrants/DeportedTable";
+import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
+import DeportedTable, { SortField as DeportedSortField } from "@/components/immigrants/DeportedTable";
 
 // ─── Interfaces & Types ──────────────────────────────────────────────────────
 
@@ -188,8 +188,10 @@ function DashboardContent() {
         });
 
         if (sortField) {
-            params.append("sortBy", sortField);
-            params.append("sortOrder", sortDirection);
+          // ปรับชื่อฟิลด์ให้ตรงกับฐานข้อมูล: "name" -> "first_name_th"
+          const apiSortField = sortField === "name" ? "first_name_th" : sortField;
+          params.append("sortBy", apiSortField);
+          params.append("sortOrder", sortDirection);
         }
 
         const res = await fetch(`${backendUrl}/api/v1/dashboard?${params.toString()}`, { cache: "no-store" });
@@ -420,7 +422,7 @@ function DashboardContent() {
               setFilterPassport("ทั้งหมด");
               setStartDate("");
               setEndDate("");
-              setSortField("");
+              setSortField(null);
               setCurrentPage(1);
             }}
             className="mt-2 w-full py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
