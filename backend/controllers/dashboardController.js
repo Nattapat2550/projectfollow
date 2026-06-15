@@ -13,26 +13,42 @@ exports.getDashboardStats = async (req, res) => {
       hasPassport = "ทั้งหมด",
       page = 1,
       limit = 50,
-      sortBy,             // 👈 รับพารามิเตอร์เรียงข้อมูล
-      sortOrder = "asc"   // 👈 รับทิศทางการเรียง
+      sortBy,             
+      sortOrder = "asc"   
     } = req.query;
 
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 50;
     const offset = (pageNum - 1) * limitNum;
 
+    // เช็คว่ามีค่าวันที่ส่งมาจริงๆ
+    const vStart = startDate && startDate.trim() !== "";
+    const vEnd = endDate && endDate.trim() !== "";
+
     let tableName = type === "deported" ? "deported_persons" : "illegal_immigrants";
-    let dateField = type === "deported" ? "return_date" : "detected_date";
+    
+    // 🌟 เปลี่ยนให้ของ Deported อ้างอิง date_of_birth เป็นหลักในการกรองวันที่
+    let dateField = type === "deported" ? "date_of_birth" : "detected_date";
 
     let conditions = [];
     let queryParams = [];
     let paramIndex = 1;
 
-    if (startDate && endDate) {
-      conditions.push(`${dateField} BETWEEN $${paramIndex} AND $${paramIndex + 1}`);
+    // ─── ใช้ DATE() เพื่อกรองวันที่ได้อย่างแม่นยำ ───
+    if (vStart && vEnd) {
+      conditions.push(`DATE(${dateField}) >= $${paramIndex} AND DATE(${dateField}) <= $${paramIndex + 1}`);
       queryParams.push(startDate, endDate);
       paramIndex += 2;
+    } else if (vStart) {
+      conditions.push(`DATE(${dateField}) >= $${paramIndex}`);
+      queryParams.push(startDate);
+      paramIndex++;
+    } else if (vEnd) {
+      conditions.push(`DATE(${dateField}) <= $${paramIndex}`);
+      queryParams.push(endDate);
+      paramIndex++;
     }
+
     if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
       conditions.push(`nationality = $${paramIndex}`);
       queryParams.push(nationality);
@@ -59,16 +75,14 @@ exports.getDashboardStats = async (req, res) => {
 
     let whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    // ─── กำหนดรูปแบบการ Sort (ป้องกัน SQL Injection) ───
-    let orderClause = `ORDER BY ${dateField} DESC, id DESC`; 
+    // ─── เรียงลำดับ โดยให้รายการที่เป็น NULL อยู่ท้ายสุด ───
+    let orderClause = `ORDER BY ${dateField} DESC NULLS LAST, id DESC`; 
     if (sortBy) {
       const dir = sortOrder.toLowerCase() === "desc" ? "DESC" : "ASC";
-      
       if (sortBy === "name") {
-          // ถ้ากดเรียงชื่อ ให้เรียงตาม first_name_th และ last_name_th ใน DB
           orderClause = `ORDER BY first_name_th ${dir} NULLS LAST, last_name_th ${dir} NULLS LAST, id DESC`;
       } else {
-          const allowedColumns = ["nationality", "detected_date", "detected_location", "is_victim", "date_of_birth", "national_id", "address", "return_date", "result"];
+          const allowedColumns = ["nationality", "detected_date", "detected_location", "is_victim", "date_of_birth", "national_id", "address", "return_date", "result", "channel"];
           if (allowedColumns.includes(sortBy)) {
               orderClause = `ORDER BY ${sortBy} ${dir} NULLS LAST, id DESC`;
           }
@@ -76,12 +90,7 @@ exports.getDashboardStats = async (req, res) => {
     }
 
     // ─── ดึงข้อมูลตาราง ───
-    const dataQuery = `
-      SELECT * FROM ${tableName} 
-      ${whereClause} 
-      ${orderClause}
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
+    const dataQuery = `SELECT * FROM ${tableName} ${whereClause} ${orderClause} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     const tableData = await pool.query(dataQuery, [...queryParams, limitNum, offset]);
 
     // ─── นับจำนวนแถวทั้งหมด ───
@@ -94,11 +103,21 @@ exports.getDashboardStats = async (req, res) => {
     let baseParams = [];
     let baseIdx = 1;
 
-    if (startDate && endDate) {
-      baseConditions.push(`${dateField} BETWEEN $${baseIdx} AND $${baseIdx + 1}`);
+    // ใช้ Logic กรองวันที่ตัวเดียวกันกับกราฟ
+    if (vStart && vEnd) {
+      baseConditions.push(`DATE(${dateField}) >= $${baseIdx} AND DATE(${dateField}) <= $${baseIdx + 1}`);
       baseParams.push(startDate, endDate);
       baseIdx += 2;
+    } else if (vStart) {
+      baseConditions.push(`DATE(${dateField}) >= $${baseIdx}`);
+      baseParams.push(startDate);
+      baseIdx++;
+    } else if (vEnd) {
+      baseConditions.push(`DATE(${dateField}) <= $${baseIdx}`);
+      baseParams.push(endDate);
+      baseIdx++;
     }
+
     if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
       baseConditions.push(`nationality = $${baseIdx}`);
       baseParams.push(nationality);
@@ -109,6 +128,7 @@ exports.getDashboardStats = async (req, res) => {
       baseParams.push(gender);
       baseIdx++;
     }
+    
     let baseWhere = baseConditions.length > 0 ? `WHERE ${baseConditions.join(" AND ")}` : "";
 
     let stats = { total: totalItems };
@@ -147,7 +167,6 @@ exports.getDashboardStats = async (req, res) => {
       charts.channel = channelChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     }
 
-    // ─── ดึงตัวเลือก ───
     let allNatsRes = { rows: [] };
     if (type === "illegal") {
       allNatsRes = await pool.query(`SELECT DISTINCT COALESCE(nationality, 'ไม่ระบุ') as nat FROM illegal_immigrants WHERE nationality IS NOT NULL AND nationality != '' ORDER BY nat`);
@@ -159,7 +178,7 @@ exports.getDashboardStats = async (req, res) => {
       success: true,
       meta: {
         totalItems,
-        totalPages: Math.ceil(totalItems / limitNum),
+        totalPages: Math.ceil(totalItems / limitNum) || 1,
         currentPage: pageNum,
         allNationalities: type === "illegal" ? ["ทั้งหมด", ...allNatsRes.rows.map(r => r.nat)] : ["ทั้งหมด"],
         allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen)]

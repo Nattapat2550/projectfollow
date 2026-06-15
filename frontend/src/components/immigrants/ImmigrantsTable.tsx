@@ -27,27 +27,32 @@ export default function ImmigrantsTable({ data, isMock, type }: ImmigrantsTableP
     if (!sortField) return data;
 
     return [...data].sort((a: any, b: any) => {
-      // จัดการเรียงลำดับคอลัมน์ที่เป็นวันที่ของทั้ง 2 ตาราง
+      // จัดการเรียงลำดับคอลัมน์ที่เป็นวันที่
       const dateFields = ["date_of_birth", "detected_date", "return_date"];
       if (dateFields.includes(sortField as string)) {
-        const parseDate = (dateStr: string) => {
-          if (!dateStr || dateStr === "ไม่ระบุ") return "";
+        const parseDateToTimestamp = (val: any) => {
+          if (!val || val === "ไม่ระบุ") return 0;
+          const dateStr = String(val).trim();
+          
+          // ตรวจสอบกรณีรูปแบบ DD/MM/YYYY
           if (dateStr.includes("/")) {
             const parts = dateStr.split("/");
             if (parts.length === 3) {
               const [day, month, year] = parts;
-              return `${year}-${month}-${day}`;
+              // รองรับกรณีเป็นปี พ.ศ.
+              const parsedYear = parseInt(year) > 2500 ? parseInt(year) - 543 : year;
+              return new Date(`${parsedYear}-${month}-${day}`).getTime() || 0;
             }
           }
-          return dateStr;
+          // สำหรับ ISO String หรือรูปแบบวันที่มาตรฐาน
+          const parsed = new Date(dateStr).getTime();
+          return isNaN(parsed) ? 0 : parsed;
         };
 
-        const aDate = parseDate(a[sortField]);
-        const bDate = parseDate(b[sortField]);
+        const aTime = parseDateToTimestamp(a[sortField]);
+        const bTime = parseDateToTimestamp(b[sortField]);
 
-        return sortDirection === "asc" 
-          ? aDate.localeCompare(bDate) 
-          : bDate.localeCompare(aDate);
+        return sortDirection === "asc" ? aTime - bTime : bTime - aTime;
       }
 
       // จัดการคอลัมน์ข้อความทั่วไป

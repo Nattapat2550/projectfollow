@@ -57,7 +57,7 @@ model deported_persons {
   first_name_en      String?
   middle_name_en     String?
   last_name_en       String?
-  date_of_birth      String
+  date_of_birth      DateTime?
   age                Int?
   national_id        String         @unique
   passport_id        String?        @unique

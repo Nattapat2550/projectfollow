@@ -34,7 +34,7 @@ CREATE TABLE deported_persons (
     last_name_en VARCHAR(255),
     
     -- ข้อมูลส่วนตัว
-    date_of_birth VARCHAR(50) NOT NULL,
+    date_of_birth DATE,
     age INT,
     national_id VARCHAR(50) UNIQUE NOT NULL,  -- ตรงกับ id_card
     passport_id VARCHAR(255) UNIQUE,          -- ตรงกับ passport

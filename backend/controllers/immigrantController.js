@@ -603,15 +603,32 @@ exports.getDashboardData = async (req, res) => {
     const sortBy = req.query.sortBy;
     const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
     const search = req.query.search;
+    
+    // ดึงค่าวันที่มาจากพารามิเตอร์
+    const startDate = req.query.startDate;
+    const endDate = req.query.endDate;
+    const vStart = startDate && startDate.trim() !== "";
+    const vEnd = endDate && endDate.trim() !== "";
 
     const skip = (page - 1) * limit;
 
-    let whereCondition = {};
+    let whereCondition = { AND: [] };
+
+    // ─── เพิ่มระบบตรวจสอบและกรองช่วงเวลาให้ครอบคลุมแบบ Prisma ───
+    if (vStart || vEnd) {
+      const dateField = type === "deported" ? "return_date" : "detected_date";
+      let dateFilter = {};
+      
+      if (vStart) dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`);
+      if (vEnd) dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`);
+      
+      whereCondition.AND.push({ [dateField]: dateFilter });
+    }
 
     if (search && search.trim() !== "") {
       const keywords = search.trim().split(/\s+/);
 
-      whereCondition.AND = keywords.map((keyword) => {
+      const searchConditions = keywords.map((keyword) => {
         const searchFields = [
           { first_name_th: { contains: keyword, mode: "insensitive" } },
           { last_name_th: { contains: keyword, mode: "insensitive" } },
@@ -630,6 +647,13 @@ exports.getDashboardData = async (req, res) => {
 
         return { OR: searchFields };
       });
+      
+      whereCondition.AND.push(...searchConditions);
+    }
+    
+    // ถ้ารายการ AND ว่างเปล่า ให้เคลียร์ทิ้งเพื่อไม่ให้บัค
+    if (whereCondition.AND.length === 0) {
+        whereCondition = {};
     }
 
     let orderByCondition = {};
