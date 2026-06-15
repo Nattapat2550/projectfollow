@@ -73,8 +73,8 @@ export default function ImmigrantsTable({ data, isMock, type }: ImmigrantsTableP
   }, [data, sortField, sortDirection]);
 
   return (
-    <div className="overflow-x-auto border rounded-lg shadow-sm" style={{ borderColor: "var(--wrapper)" }}>
-      <table className="w-full text-left text-sm whitespace-nowrap">
+    <div className="w-full border rounded-lg shadow-sm overflow-hidden" style={{ borderColor: "var(--wrapper)" }}>
+      <table className="w-full text-left text-sm table-fixed whitespace-nowrap [&_td]:truncate [&_th]:truncate [&_td]:max-w-0 [&_th]:max-w-0">
         <TableHeader 
           sortField={sortField} 
           sortDirection={sortDirection} 

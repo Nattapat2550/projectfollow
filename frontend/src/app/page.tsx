@@ -62,14 +62,13 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 w-full h-full min-h-0 overflow-hidden">
+    <div className="flex flex-col items-center justify-start gap-3 w-full h-full min-h-0 overflow-hidden">
       <p className="text-sm font-semibold shrink-0" style={{ color: "var(--header)" }}>{title}</p>
 
-      {/* บังคับให้ SVG ยืดหดตามกล่อง แต่ใหญ่เต็มที่ถึง 230px */}
-      <div className="flex-1 min-h-0 w-full flex items-center justify-center shrink">
+      <div className="w-full flex items-center justify-center shrink-0 h-55">
         <svg 
           viewBox={`0 0 ${SIZE} ${SIZE}`} 
-          style={{ width: "100%", height: "100%", maxHeight: "230px" }}
+          style={{ width: "100%", height: "100%" }}
         >
           {slices.map((s, i) => (
             <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
@@ -128,15 +127,35 @@ export default async function Home() {
   const countDisplay = (n: number | null) =>
     n === null ? "XX" : n.toLocaleString("th-TH");
 
-  const illegalChart = (illegalJson?.charts?.nationality || []).map((d: any, i: number) => ({
-    ...d,
-    color: CHART_COLORS[i % CHART_COLORS.length],
-  }));
+  const illegalChart = (() => {
+    const raw = illegalJson?.charts?.nationality || [];
+    const sum = raw.reduce((acc: number, curr: any) => acc + curr.value, 0);
+    const total = illegalJson?.stats?.total || 0;
+    
+    const mapped = raw.map((d: any, i: number) => ({
+      ...d, color: CHART_COLORS[i % CHART_COLORS.length]
+    }));
 
-  const deportedChart = (deportedJson?.charts?.channel || []).map((d: any, i: number) => ({
-    ...d,
-    color: CHART_COLORS[i % CHART_COLORS.length],
-  }));
+    if (total > sum) {
+      mapped.push({ name: "อื่นๆ", value: total - sum, color: "#737373" });
+    }
+    return mapped;
+  })();
+
+  const deportedChart = (() => {
+    const raw = deportedJson?.charts?.channel || [];
+    const sum = raw.reduce((acc: number, curr: any) => acc + curr.value, 0);
+    const total = deportedJson?.stats?.total || 0;
+
+    const mapped = raw.map((d: any, i: number) => ({
+      ...d, color: CHART_COLORS[i % CHART_COLORS.length]
+    }));
+
+    if (total > sum) {
+      mapped.push({ name: "อื่นๆ", value: total - sum, color: "#737373" });
+    }
+    return mapped;
+  })();
 
   return (
     <div
@@ -291,7 +310,7 @@ function HomeCard({
           style={{ borderBottom: "1px solid var(--shadow)" }}
         />
 
-        <div className="flex flex-1 items-center justify-center px-5 py-3 min-h-0 overflow-hidden">
+        <div className="flex flex-1 items-start justify-center px-5 py-3 min-h-0 overflow-hidden">
           {chartData && chartData.length > 0 ? (
             <DonutChart data={chartData} title={chartTitle} />
           ) : (

@@ -100,14 +100,13 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string; }) {
   }
 
   return (
-    // แก้ไข: ใช้ flex-1 เพื่อให้แบ่งพื้นที่แนวนอนเท่าๆ กัน แทน w-full ที่ทำให้ตกบรรทัด
-    <div className="flex flex-col items-center justify-start gap-3 flex-1 min-w-50 overflow-hidden">
+    <div className="flex flex-col items-center justify-start gap-3 w-full xl:flex-1 xl:min-w-50 overflow-hidden">
       <p className="text-sm font-semibold shrink-0 text-(--header)">{title}</p>
 
-      <div className="flex-1 w-full flex items-center justify-center shrink">
+      <div className="w-full flex items-center justify-center shrink-0 h-55">
         <svg 
           viewBox={`0 0 ${SIZE} ${SIZE}`} 
-          style={{ width: "100%", height: "100%", maxHeight: "230px" }}
+          style={{ width: "100%", height: "100%" }}
         >
           {slices.map((s, i) => (
             <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
@@ -285,18 +284,43 @@ function DashboardContent() {
     }
   })();
 
-  const natChart = (dashboardData?.charts?.nationality || []).map((d, i) => ({
-    ...d, color: CHART_COLORS[i % CHART_COLORS.length]
-  }));
+  const natChart = (() => {
+    const raw = dashboardData?.charts?.nationality || [];
+    const sum = raw.reduce((acc, curr) => acc + curr.value, 0);
+    const total = dashboardData?.stats?.total || 0;
+    
+    const mapped = raw.map((d, i) => ({
+      ...d, color: CHART_COLORS[i % CHART_COLORS.length]
+    }));
+
+    if (total > sum) {
+      mapped.push({ name: "อื่นๆ", value: total - sum, color: "#737373" });
+    }
+    return mapped;
+  })();
+
   const victimChart = (dashboardData?.charts?.victim || []).map((d, i) => ({
     ...d, color: d.name === "เป็นผู้เสียหาย" ? CHART_COLORS[0] : CHART_COLORS[2]
   }));
+
   const passportChart = (dashboardData?.charts?.passport || []).map((d, i) => ({
     ...d, color: d.name === "มีหนังสือเดินทาง" ? CHART_COLORS[1] : CHART_COLORS[3]
   }));
-  const channelChart = (dashboardData?.charts?.channel || []).map((d, i) => ({
-    ...d, color: CHART_COLORS[i % CHART_COLORS.length]
-  }));
+
+  const channelChart = (() => {
+    const raw = dashboardData?.charts?.channel || [];
+    const sum = raw.reduce((acc, curr) => acc + curr.value, 0);
+    const total = dashboardData?.stats?.total || 0;
+
+    const mapped = raw.map((d, i) => ({
+      ...d, color: CHART_COLORS[i % CHART_COLORS.length]
+    }));
+
+    if (total > sum) {
+      mapped.push({ name: "อื่นๆ", value: total - sum, color: "#737373" });
+    }
+    return mapped;
+  })();
 
   const inputClass = "w-full bg-background border border-[var(--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--header)]/40 [&::-webkit-calendar-picker-indicator]:dark:invert";
 
@@ -467,7 +491,7 @@ function DashboardContent() {
               setSortField("");
               setCurrentPage(1);
             }}
-            className="mt-2 w-full py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
+            className="mt-2 w-full py-2 bg-(--wrapper) text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer shadow-sm"
           >
             รีเซ็ตทั้งหมด
           </button>
@@ -514,7 +538,7 @@ function DashboardContent() {
                     ไม่มีข้อมูลแสดงผลตามสัญชาติหรือวันที่ระบุ
                   </div>
                 ) : (
-                  <div className="flex gap-4 flex-nowrap overflow-x-auto pb-2 justify-start lg:justify-center w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-row gap-6 xl:gap-4 pb-2 justify-center items-start w-full">
                     {filterType === "illegal" ? (
                       <>
                         {natChart.length > 0 && <DonutChart data={natChart} title="สัญชาติ (Top 6)" />}
