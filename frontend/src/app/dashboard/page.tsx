@@ -4,7 +4,6 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-// นำเข้าตารางที่แยกจากกันอย่างเด็ดขาดตามโครงสร้างสไตล์เดิม
 import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
 import DeportedTable, { SortField as DeportedSortField } from "@/components/immigrants/DeportedTable";
 
@@ -44,8 +43,6 @@ interface DashboardData {
   tableData: any[];
 }
 
-// ─── คอนสแตนท์สีสำหรับกราฟวงกลม ────────────────────────────────────────────────
-
 const CHART_COLORS = [
   "#6B3A3A",
   "#A0522D",
@@ -55,7 +52,6 @@ const CHART_COLORS = [
   "#8B7355",
 ];
 
-// ✨ ระบบ Cache ข้อมูลหน้าบ้าน (ทำให้กดเปลี่ยนแท็บหรือเปลี่ยนหน้าไวขึ้นทันที)
 const dashboardFetchCache = new Map<string, DashboardData>();
 
 // ─── คอมโพเนนต์กราฟวงกลม Donut Chart (SVG) ───────────────────────────────────
@@ -156,6 +152,11 @@ function DashboardContent() {
   const [filterPassport, setFilterPassport] = useState<string>("ทั้งหมด");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  
+  // ✨ เพิ่ม State สำหรับฟิลเตอร์วันเกิด
+  const [dobStart, setDobStart] = useState<string>("");
+  const [dobEnd, setDobEnd] = useState<string>("");
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
@@ -176,6 +177,12 @@ function DashboardContent() {
       limit: "50"
     });
 
+    // ✨ แนบ Parameter วันเกิดสำหรับ Deported
+    if (filterType === "deported") {
+      if (dobStart) params.append("dobStart", dobStart);
+      if (dobEnd) params.append("dobEnd", dobEnd);
+    }
+
     if (sortField) {
       params.append("sortBy", sortField);
       params.append("sortOrder", sortDirection);
@@ -183,7 +190,6 @@ function DashboardContent() {
 
     const url = `${backendUrl}/api/v1/dashboard?${params.toString()}`;
 
-    // ✨ 1. ดึง Cache มาแสดงก่อนเลยถ้าเคยโหลดแล้ว (Instant Load)
     if (dashboardFetchCache.has(url)) {
       setDashboardData(dashboardFetchCache.get(url)!);
       setLoading(false);
@@ -193,7 +199,6 @@ function DashboardContent() {
       else setIsUpdating(true);
     }
 
-    // ✨ 2. ใช้ AbortController ตัด Request เก่าทิ้ง หากผู้ใช้กดย้ำๆ
     const controller = new AbortController();
     
     fetch(url, { cache: "no-store", signal: controller.signal })
@@ -202,23 +207,21 @@ function DashboardContent() {
         return res.json();
       })
       .then((json) => {
-        dashboardFetchCache.set(url, json); // เซฟลง Cache
+        dashboardFetchCache.set(url, json);
         setDashboardData(json);
         setLoading(false);
         setIsUpdating(false);
       })
       .catch((err) => {
-        if (err.name === "AbortError") return; // ข้ามการแสดง Error หากถูกกดยกเลิก
+        if (err.name === "AbortError") return;
         console.error("Fetch Error:", err);
         setLoading(false);
         setIsUpdating(false);
       });
 
-    // คืนค่าฟังก์ชันเพื่อยกเลิก Request หาก Component อัปเดตก่อนข้อมูลจะมา
     return () => controller.abort();
-
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, currentPage, sortField, sortDirection]);
+  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection]);
 
   // ตรวจจับกรณีเปลี่ยนแท็บประเภทผ่าน URL Parameter 
   useEffect(() => {
@@ -293,12 +296,11 @@ function DashboardContent() {
     ...d, color: CHART_COLORS[i % CHART_COLORS.length]
   }));
 
-  const inputClass = "w-full bg-background border border-[var(--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--header)]/40";
+  const inputClass = "w-full bg-background border border-[var(--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--header)]/40 [&::-webkit-calendar-picker-indicator]:dark:invert";
 
   return (
     <div className="min-h-screen p-6 bg-background text-foreground transition-colors duration-200">
       
-      {/* ปุ่มกดกลับหน้าแรก */}
       <Link
         href="/"
         className="inline-flex items-center gap-1 font-bold mb-6 hover:opacity-80 transition text-(--header) text-2xl"
@@ -327,6 +329,8 @@ function DashboardContent() {
                 setFilterPassport("ทั้งหมด");
                 setStartDate("");
                 setEndDate("");
+                setDobStart("");
+                setDobEnd("");
                 setSortField(""); 
                 setCurrentPage(1);
                 router.replace(`/dashboard?type=${val}`, { scroll: false }); 
@@ -400,8 +404,10 @@ function DashboardContent() {
             </>
           )}
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ตั้งแต่วันที่</label>
+          <div className="flex flex-col gap-2 mt-2">
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">
+              {filterType === "deported" ? "วันที่ส่งกลับ (ตั้งแต่)" : "ตั้งแต่วันที่"}
+            </label>
             <input
               type="date"
               value={startDate}
@@ -411,7 +417,9 @@ function DashboardContent() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ถึงวันที่</label>
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">
+              {filterType === "deported" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่"}
+            </label>
             <input
               type="date"
               value={endDate}
@@ -419,6 +427,31 @@ function DashboardContent() {
               className={inputClass}
             />
           </div>
+
+          {/* ✨ เพิ่มโซนเฉพาะสำหรับฟิลเตอร์วันเกิดเมื่อเป็น Deported */}
+          {filterType === "deported" && (
+            <>
+              <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-(--wrapper)">
+                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">วันเกิดตั้งแต่</label>
+                <input
+                  type="date"
+                  value={dobStart}
+                  onChange={(e) => handleFilterChange(setDobStart, e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ถึงวันที่ (วันเกิด)</label>
+                <input
+                  type="date"
+                  value={dobEnd}
+                  onChange={(e) => handleFilterChange(setDobEnd, e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </>
+          )}
 
           <button
             onClick={() => {
@@ -428,6 +461,8 @@ function DashboardContent() {
               setFilterPassport("ทั้งหมด");
               setStartDate("");
               setEndDate("");
+              setDobStart("");
+              setDobEnd("");
               setSortField("");
               setCurrentPage(1);
             }}

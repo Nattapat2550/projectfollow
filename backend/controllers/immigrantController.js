@@ -12,6 +12,41 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 // ================= ฟังก์ชันช่วยเหลือ (Helpers) =================
 
+// ฟังก์ชันแปลงปี พ.ศ. เป็น ค.ศ. อัตโนมัติ สำหรับช่องค้นหา
+const convertBEtoAD = (dateStr) => {
+  if (!dateStr || String(dateStr).trim() === "") return null;
+  const parts = String(dateStr).split('-');
+  if (parts.length === 3) {
+      let year = parseInt(parts[0], 10);
+      if (year > 2400) {
+          year -= 543;
+          return `${year}-${parts[1]}-${parts[2]}`;
+      }
+  }
+  return dateStr;
+};
+
+// ฟังก์ชันแปลงวันที่ให้ปลอดภัย ป้องกัน Prisma Database Error (Invalid Date)
+const safeParseDate = (dateVal) => {
+  if (!dateVal) return null;
+  const d = new Date(dateVal);
+  if (!isNaN(d.getTime())) return d;
+  
+  if (typeof dateVal === 'string' && dateVal.includes('/')) {
+      const parts = dateVal.split('/');
+      if (parts.length === 3) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10);
+          let year = parseInt(parts[2], 10);
+          if (year > 2400) year -= 543;
+          if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+              return new Date(Date.UTC(year, month - 1, day));
+          }
+      }
+  }
+  return null;
+};
+
 const parseThaiDateToDate = (text) => {
   if (!text) return null;
   const thaiMonths = { "ม.ค.": "01", "ก.พ.": "02", "มี.ค.": "03", "เม.ย.": "04", "พ.ค.": "05", "มิ.ย.": "06", "ก.ค.": "07", "ส.ค.": "08", "ก.ย.": "09", "ต.ค.": "10", "พ.ย.": "11", "ธ.ค.": "12" };
@@ -158,14 +193,8 @@ const normalizeNationality = (rawNat) => {
       "อัลจีเรีย": "อัลจีเรีย", "algeria": "อัลจีเรีย"
   };
 
-  if (countryMap[nat]) {
-      return countryMap[nat];
-  }
-
-  if (/^[a-zA-Z\s]+$/.test(nat)) {
-       return nat.replace(/\b\w/g, c => c.toUpperCase());
-  }
-
+  if (countryMap[nat]) return countryMap[nat];
+  if (/^[a-zA-Z\s]+$/.test(nat)) return nat.replace(/\b\w/g, c => c.toUpperCase());
   return String(rawNat).replace(/^(ประเทศ|ชาว|สัญชาติ|คน)\s*/g, '').trim();
 };
 
@@ -178,18 +207,9 @@ exports.getAllData = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const [illegals, totalIllegals, deporteds, totalDeporteds] = await Promise.all([
-      prisma.illegal_immigrants.findMany({ 
-        orderBy: { detected_date: "desc" },
-        skip: skip,
-        take: limit
-      }),
+      prisma.illegal_immigrants.findMany({ orderBy: { detected_date: "desc" }, skip, take: limit }),
       prisma.illegal_immigrants.count(),
-      
-      prisma.deported_persons.findMany({ 
-        orderBy: { return_date: "desc" },
-        skip: skip,
-        take: limit
-      }),
+      prisma.deported_persons.findMany({ orderBy: { return_date: "desc" }, skip, take: limit }),
       prisma.deported_persons.count()
     ]);
 
@@ -198,12 +218,7 @@ exports.getAllData = async (req, res) => {
       data: { 
         illegals, 
         deporteds,
-        meta: {
-          illegalsTotal: totalIllegals,
-          deportedsTotal: totalDeporteds,
-          currentPage: page,
-          limit: limit
-        }
+        meta: { illegalsTotal: totalIllegals, deportedsTotal: totalDeporteds, currentPage: page, limit: limit }
       } 
     });
   } catch (err) {
@@ -216,13 +231,7 @@ exports.getAllData = async (req, res) => {
 exports.createIllegal = async (req, res) => {
   try {
     const data = req.body;
-
-    if (!data.first_name_th || !data.last_name_th) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "กรุณาระบุชื่อและนามสกุลภาษาไทย (first_name_th, last_name_th)" 
-      });
-    }
+    if (!data.first_name_th || !data.last_name_th) return res.status(400).json({ success: false, message: "กรุณาระบุชื่อและนามสกุลภาษาไทย" });
 
     let photo_url = null;
     if (req.file) {
@@ -246,11 +255,11 @@ exports.createIllegal = async (req, res) => {
         warrant: data.warrant || null,
         screening_details: data.screening_details || null,
         is_victim: data.is_victim === "true" || data.is_victim === true || false,
-        detected_date: data.detected_date ? new Date(data.detected_date) : null,
+        detected_date: safeParseDate(data.detected_date),
         photo_url: photo_url
       }
     });
-    res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลแอบเข้าสำเร็จ" });
+    res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
@@ -262,9 +271,7 @@ exports.updateIllegal = async (req, res) => {
     const data = req.body;
 
     const existingData = await prisma.illegal_immigrants.findUnique({ where: { id: id } });
-    if (!existingData) {
-      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
-    }
+    if (!existingData) return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
 
     let photo_url = existingData.photo_url;
 
@@ -272,11 +279,7 @@ exports.updateIllegal = async (req, res) => {
       if (existingData.photo_url) {
         const oldFileId = extractDriveFileId(existingData.photo_url);
         if (oldFileId) {
-          try {
-            await deleteFromDrive(oldFileId);
-          } catch (delErr) {
-            console.error("Failed to delete old photo:", delErr.message);
-          }
+          try { await deleteFromDrive(oldFileId); } catch (delErr) { console.error(delErr.message); }
         }
       }
       const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
@@ -300,7 +303,7 @@ exports.updateIllegal = async (req, res) => {
         warrant: data.warrant || null,
         screening_details: data.screening_details || null,
         is_victim: data.is_victim === "true" || data.is_victim === true || false,
-        detected_date: data.detected_date ? new Date(data.detected_date) : null,
+        detected_date: safeParseDate(data.detected_date),
         photo_url: photo_url
       }
     });
@@ -317,14 +320,9 @@ exports.deleteIllegal = async (req, res) => {
     
     if (existingData && existingData.photo_url) {
        const fileId = extractDriveFileId(existingData.photo_url);
-       if(fileId) {
-          try { await deleteFromDrive(fileId); } catch(e) { console.error(e); }
-       }
+       if(fileId) { try { await deleteFromDrive(fileId); } catch(e) { console.error(e); } }
     }
-
-    await prisma.illegal_immigrants.delete({
-      where: { id: id }
-    });
+    await prisma.illegal_immigrants.delete({ where: { id: id } });
     res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
@@ -336,22 +334,16 @@ exports.deleteIllegal = async (req, res) => {
 exports.createDeported = async (req, res) => {
   try {
     const data = req.body;
-
-    if (!data.first_name_th || !data.last_name_th || !data.date_of_birth || !data.national_id) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน" 
-      });
-    }
+    if (!data.first_name_th || !data.last_name_th || !data.national_id) return res.status(400).json({ success: false, message: "ข้อมูลไม่ครบถ้วน" });
 
     if (data.national_id) {
-      const existingNational = await prisma.deported_persons.findUnique({ where: { national_id: data.national_id } });
-      if (existingNational) return res.status(400).json({ success: false, message: "เลขประจำตัว (national_id) นี้มีอยู่ในระบบแล้ว" });
+      const existing = await prisma.deported_persons.findUnique({ where: { national_id: data.national_id } });
+      if (existing) return res.status(400).json({ success: false, message: "เลขประจำตัว (national_id) นี้มีอยู่ในระบบแล้ว" });
     }
 
     if (data.passport_id) {
-      const existingPassport = await prisma.deported_persons.findUnique({ where: { passport_id: data.passport_id } });
-      if (existingPassport) return res.status(400).json({ success: false, message: "เลขหนังสือเดินทาง (passport_id) นี้มีอยู่ในระบบแล้ว" });
+      const existing = await prisma.deported_persons.findUnique({ where: { passport_id: data.passport_id } });
+      if (existing) return res.status(400).json({ success: false, message: "เลขหนังสือเดินทาง (passport_id) นี้มีอยู่ในระบบแล้ว" });
     }
 
     let photo_url = null;
@@ -368,7 +360,7 @@ exports.createDeported = async (req, res) => {
         first_name_en: data.first_name_en || null,
         middle_name_en: data.middle_name_en || null,
         last_name_en: data.last_name_en || null,
-        date_of_birth: data.date_of_birth,
+        date_of_birth: safeParseDate(data.date_of_birth),
         national_id: data.national_id,
         passport_id: data.passport_id || null,
         gender: data.gender || null,
@@ -378,11 +370,11 @@ exports.createDeported = async (req, res) => {
         number_of_case: parseInt(data.number_of_case) || 0,
         number_of_warrant: parseInt(data.number_of_warrant) || 0,
         age: parseInt(data.age) || null,
-        return_date: data.return_date ? new Date(data.return_date) : null,
+        return_date: safeParseDate(data.return_date),
         photo_url: photo_url,
       }
     });
-    res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลส่งกลับสำเร็จ" });
+    res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
@@ -392,53 +384,41 @@ exports.updateDeported = async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
-
     const existingData = await prisma.deported_persons.findUnique({ where: { id: id } });
-    if (!existingData) {
-      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
-    }
+    if (!existingData) return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
 
     let photo_url = existingData.photo_url;
-
     if (req.file) {
       if (existingData.photo_url) {
         const oldFileId = extractDriveFileId(existingData.photo_url);
-        if (oldFileId) {
-          try {
-            await deleteFromDrive(oldFileId);
-          } catch (delErr) {
-            console.error("Failed to delete old photo:", delErr.message);
-          }
-        }
+        if (oldFileId) { try { await deleteFromDrive(oldFileId); } catch (e) { } }
       }
       const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
       photo_url = driveRes.webViewLink;
     }
 
-    const updateData = {
-      first_name_th: data.first_name_th,
-      middle_name_th: data.middle_name_th || null,
-      last_name_th: data.last_name_th,
-      first_name_en: data.first_name_en || null,
-      middle_name_en: data.middle_name_en || null,
-      last_name_en: data.last_name_en || null,
-      date_of_birth: data.date_of_birth,
-      national_id: data.national_id,
-      passport_id: data.passport_id || null,
-      gender: data.gender || null,
-      address: data.address || "ไม่ระบุ",
-      channel: data.channel || null,
-      result: data.result || "PENDING",
-      number_of_case: parseInt(data.number_of_case) || 0,
-      number_of_warrant: parseInt(data.number_of_warrant) || 0,
-      age: parseInt(data.age) || null,
-      return_date: data.return_date ? new Date(data.return_date) : null,
-      photo_url: photo_url
-    };
-
     const result = await prisma.deported_persons.update({
       where: { id: id },
-      data: updateData
+      data: {
+        first_name_th: data.first_name_th,
+        middle_name_th: data.middle_name_th || null,
+        last_name_th: data.last_name_th,
+        first_name_en: data.first_name_en || null,
+        middle_name_en: data.middle_name_en || null,
+        last_name_en: data.last_name_en || null,
+        date_of_birth: safeParseDate(data.date_of_birth),
+        national_id: data.national_id,
+        passport_id: data.passport_id || null,
+        gender: data.gender || null,
+        address: data.address || "ไม่ระบุ",
+        channel: data.channel || null,
+        result: data.result || "PENDING",
+        number_of_case: parseInt(data.number_of_case) || 0,
+        number_of_warrant: parseInt(data.number_of_warrant) || 0,
+        age: parseInt(data.age) || null,
+        return_date: safeParseDate(data.return_date),
+        photo_url: photo_url
+      }
     });
     res.status(200).json({ success: true, data: result, message: "แก้ไขข้อมูลสำเร็จ" });
   } catch (err) {
@@ -450,25 +430,18 @@ exports.deleteDeported = async (req, res) => {
   try {
     const { id } = req.params;
     const existingData = await prisma.deported_persons.findUnique({ where: { id: id } });
-    
     if (existingData && existingData.photo_url) {
        const fileId = extractDriveFileId(existingData.photo_url);
-       if(fileId) {
-          try { await deleteFromDrive(fileId); } catch(e) { console.error(e); }
-       }
+       if(fileId) { try { await deleteFromDrive(fileId); } catch(e) {} }
     }
-
-    await prisma.deported_persons.delete({
-      where: { id: id }
-    });
+    await prisma.deported_persons.delete({ where: { id: id } });
     res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
 };
 
-
-// ================= อัปโหลด Excel (Upload Excel) =================
+// ================= อัปโหลด Excel ฝั่งหลบหนีเข้าเมือง =================
 
 if (!global.uploadProgress) {
   global.uploadProgress = {};
@@ -497,10 +470,12 @@ exports.uploadExcelIllegal = async (req, res) => {
       }
     });
 
+    // กรองแถวว่างทิ้งแบบเด็ดขาด
     allJsonData = allJsonData.filter(row => {
         const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
+        const rawPassport = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") || "";
         const { hasName } = processName(rawFullName);
-        return hasName;
+        return hasName || String(rawPassport).trim() !== "";
     });
 
     if (allJsonData.length === 0) return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel หรือไม่มีรายชื่อให้บันทึก (ระวังบรรทัดว่าง)" });
@@ -513,6 +488,10 @@ exports.uploadExcelIllegal = async (req, res) => {
         const { prefix, fname, mname, lname, isThai, hasName } = processName(rawFullName);
         const { isVictim, details } = processVictimStatus(row);
         
+        let rawPass = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
+        let passport = rawPass ? String(rawPass).replace(/\s/g, '').trim() : null;
+        if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null"].includes(passport.toLowerCase())) passport = null;
+
         let dateObj = parseThaiDateToDate(row._sheetName);
 
         preview_data.push({
@@ -524,7 +503,7 @@ exports.uploadExcelIllegal = async (req, res) => {
           middle_name_en: !isThai ? mname : null,
           last_name_en: hasName && !isThai ? lname || null : null,
           nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
-          passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
+          passport_id: passport,
           detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
           workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,
           warrant: findValue(row, "หมายจับ") ? String(findValue(row, "หมายจับ")) : null,
@@ -535,7 +514,7 @@ exports.uploadExcelIllegal = async (req, res) => {
           raw_data_from_excel: row
         });
       }
-      return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวสำเร็จ (ยังไม่ได้บันทึก)", total_rows: preview_data.length, preview_data });
+      return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวสำเร็จ", total_rows: preview_data.length, preview_data });
     }
 
     if (jobId) {
@@ -550,27 +529,50 @@ exports.uploadExcelIllegal = async (req, res) => {
       const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
       const { prefix, fname, mname, lname, isThai, hasName } = processName(rawFullName);
       const { isVictim, details } = processVictimStatus(row);
+      
+      let rawPass = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
+      let passport_id = rawPass ? String(rawPass).replace(/\s/g, '').trim() : null;
+      if (passport_id && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null"].includes(passport_id.toLowerCase())) {
+          passport_id = null;
+      }
 
       try {
-         await prisma.illegal_immigrants.create({
-            data: {
-                first_name_th: hasName && isThai && fname ? fname : "ไม่ระบุ",
-                middle_name_th: isThai ? mname : null,
-                last_name_th: hasName && isThai && lname ? lname : "ไม่ระบุ",
-                first_name_en: hasName && !isThai ? fname || null : null,
-                middle_name_en: !isThai ? mname : null,
-                last_name_en: hasName && !isThai ? lname || null : null,
-                nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
-                passport_id: findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport") ? String(findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport")) : null,
-                detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
-                workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,
-                warrant: findValue(row, "หมายจับ") ? String(findValue(row, "หมายจับ")) : null,
-                gender: determineGender(row, prefix),
-                detected_date: parseThaiDateToDate(row._sheetName),
-                is_victim: isVictim,
-                screening_details: details,
-            }
-         });
+         // ใช้ระบบ Upsert (อัปเดตถ้าเคยมี ป้องกัน Error)
+         let existingIllegal = null;
+         if (passport_id) {
+             existingIllegal = await prisma.illegal_immigrants.findFirst({
+                 where: { passport_id: passport_id }
+             });
+         }
+
+         const dataPayload = {
+            first_name_th: hasName && isThai && fname ? fname : "ไม่ระบุ",
+            middle_name_th: isThai ? mname : null,
+            last_name_th: hasName && isThai && lname ? lname : "ไม่ระบุ",
+            first_name_en: hasName && !isThai ? fname || null : null,
+            middle_name_en: !isThai ? mname : null,
+            last_name_en: hasName && !isThai ? lname || null : null,
+            nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
+            passport_id: passport_id,
+            detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
+            workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,
+            warrant: findValue(row, "หมายจับ") ? String(findValue(row, "หมายจับ")) : null,
+            gender: determineGender(row, prefix),
+            detected_date: parseThaiDateToDate(row._sheetName),
+            is_victim: isVictim,
+            screening_details: details,
+         };
+
+         if (existingIllegal) {
+             await prisma.illegal_immigrants.update({
+                 where: { id: existingIllegal.id },
+                 data: dataPayload
+             });
+         } else {
+             await prisma.illegal_immigrants.create({
+                 data: dataPayload
+             });
+         }
          successCount++;
       } catch (dbErr) {
          errors.push(`แถวที่ ${i+1}: ${dbErr.message}`);
@@ -593,9 +595,9 @@ exports.uploadExcelIllegal = async (req, res) => {
   }
 };
 
-exports.getDashboardData = async (req, res) => {
-  console.log("Query received:", req.query);
+// ================= Dashboard และ ค้นหา =================
 
+exports.getDashboardData = async (req, res) => {
   try {
     const type = req.query.type || "deported";
     const page = parseInt(req.query.page) || 1;
@@ -604,30 +606,37 @@ exports.getDashboardData = async (req, res) => {
     const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
     const search = req.query.search;
     
-    // ดึงค่าวันที่มาจากพารามิเตอร์
-    const startDate = req.query.startDate;
-    const endDate = req.query.endDate;
+    // แปลงค่าวันที่เพื่อรองรับ พ.ศ.
+    const startDate = convertBEtoAD(req.query.startDate);
+    const endDate = convertBEtoAD(req.query.endDate);
     const vStart = startDate && startDate.trim() !== "";
     const vEnd = endDate && endDate.trim() !== "";
 
-    const skip = (page - 1) * limit;
+    const dobStart = convertBEtoAD(req.query.dobStart);
+    const dobEnd = convertBEtoAD(req.query.dobEnd);
+    const vDobStart = dobStart && dobStart.trim() !== "";
+    const vDobEnd = dobEnd && dobEnd.trim() !== "";
 
+    const skip = (page - 1) * limit;
     let whereCondition = { AND: [] };
 
-    // ─── เพิ่มระบบตรวจสอบและกรองช่วงเวลาให้ครอบคลุมแบบ Prisma ───
     if (vStart || vEnd) {
       const dateField = type === "deported" ? "return_date" : "detected_date";
       let dateFilter = {};
-      
       if (vStart) dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`);
       if (vEnd) dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`);
-      
       whereCondition.AND.push({ [dateField]: dateFilter });
+    }
+
+    if (vDobStart || vDobEnd) {
+      let dobFilter = {};
+      if (vDobStart) dobFilter.gte = new Date(`${dobStart}T00:00:00.000Z`);
+      if (vDobEnd) dobFilter.lte = new Date(`${dobEnd}T23:59:59.999Z`);
+      whereCondition.AND.push({ date_of_birth: dobFilter });
     }
 
     if (search && search.trim() !== "") {
       const keywords = search.trim().split(/\s+/);
-
       const searchConditions = keywords.map((keyword) => {
         const searchFields = [
           { first_name_th: { contains: keyword, mode: "insensitive" } },
@@ -636,7 +645,6 @@ exports.getDashboardData = async (req, res) => {
           { last_name_en: { contains: keyword, mode: "insensitive" } },
           { passport_id: { contains: keyword, mode: "insensitive" } },
         ];
-
         if (type === "deported") {
           searchFields.push({ national_id: { contains: keyword, mode: "insensitive" } });
           searchFields.push({ channel: { contains: keyword, mode: "insensitive" } });
@@ -644,32 +652,19 @@ exports.getDashboardData = async (req, res) => {
           searchFields.push({ nationality: { contains: keyword, mode: "insensitive" } });
           searchFields.push({ detected_location: { contains: keyword, mode: "insensitive" } });
         }
-
         return { OR: searchFields };
       });
-      
       whereCondition.AND.push(...searchConditions);
     }
     
-    // ถ้ารายการ AND ว่างเปล่า ให้เคลียร์ทิ้งเพื่อไม่ให้บัค
-    if (whereCondition.AND.length === 0) {
-        whereCondition = {};
-    }
+    if (whereCondition.AND.length === 0) whereCondition = {};
 
     let orderByCondition = {};
     if (sortBy && sortBy.trim() !== "") {
-      if (sortBy === "name") {
-        orderByCondition = [
-          { first_name_th: sortOrder },
-          { last_name_th: sortOrder }
-        ];
-      } else {
-        orderByCondition = { [sortBy]: sortOrder };
-      }
+      if (sortBy === "name") orderByCondition = [{ first_name_th: sortOrder }, { last_name_th: sortOrder }];
+      else orderByCondition = { [sortBy]: sortOrder };
     } else {
-      orderByCondition = type === "deported" 
-        ? { return_date: "desc" } 
-        : { detected_date: "desc" };
+      orderByCondition = type === "deported" ? { return_date: "desc" } : { detected_date: "desc" };
     }
 
     let tableData = [];
@@ -677,83 +672,34 @@ exports.getDashboardData = async (req, res) => {
 
     if (type === "deported") {
       [tableData, totalItems] = await Promise.all([
-        prisma.deported_persons.findMany({
-          where: whereCondition,
-          skip: skip,
-          take: limit,
-          orderBy: orderByCondition,
-        }),
-        prisma.deported_persons.count({
-          where: whereCondition,
-        }),
+        prisma.deported_persons.findMany({ where: whereCondition, skip, take: limit, orderBy: orderByCondition }),
+        prisma.deported_persons.count({ where: whereCondition }),
       ]);
     } else {
       [tableData, totalItems] = await Promise.all([
-        prisma.illegal_immigrants.findMany({
-          where: whereCondition,
-          skip: skip,
-          take: limit,
-          orderBy: orderByCondition,
-        }),
-        prisma.illegal_immigrants.count({
-          where: whereCondition,
-        }),
+        prisma.illegal_immigrants.findMany({ where: whereCondition, skip, take: limit, orderBy: orderByCondition }),
+        prisma.illegal_immigrants.count({ where: whereCondition }),
       ]);
     }
 
-    res.status(200).json({
-      success: true,
-      tableData: tableData,
-      meta: {
-        totalItems: totalItems,
-        totalPages: Math.ceil(totalItems / limit) || 1,
-        currentPage: page,
-        limit: limit,
-      },
-    });
-
+    res.status(200).json({ success: true, tableData, meta: { totalItems, totalPages: Math.ceil(totalItems / limit) || 1, currentPage: page, limit: limit } });
   } catch (err) {
-    console.error("Dashboard API Error:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: "เกิดข้อผิดพลาดในการดึงข้อมูลแดชบอร์ด", 
-      error: err.message 
-    });
+    res.status(500).json({ success: false, message: "Error", error: err.message });
   }
 };
 
-// 🆕 ฟังก์ชันดึงข้อมูลแอบเข้าเมืองรายคนด้วย ID
 exports.getIllegalById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const data = await prisma.illegal_immigrants.findUnique({
-      where: { id: id }
-    });
-    
-    if (!data) {
-      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลผู้หลบหนีเข้าเมืองรายนี้" });
-    }
-    
+    const data = await prisma.illegal_immigrants.findUnique({ where: { id: req.params.id } });
+    if (!data) return res.status(404).json({ success: false, message: "Not found" });
     res.status(200).json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Server Error", error: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
 
-// 🆕 ฟังก์ชันดึงข้อมูลส่งกลับประเทศรายคนด้วย ID
 exports.getDeportedById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const data = await prisma.deported_persons.findUnique({
-      where: { id: id }
-    });
-    
-    if (!data) {
-      return res.status(404).json({ success: false, message: "ไม่พบข้อมูลผู้ถูกส่งกลับรายนี้" });
-    }
-    
+    const data = await prisma.deported_persons.findUnique({ where: { id: req.params.id } });
+    if (!data) return res.status(404).json({ success: false, message: "Not found" });
     res.status(200).json({ success: true, data });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Server Error", error: err.message });
-  }
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };

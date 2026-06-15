@@ -47,7 +47,6 @@ export default function DeportedTable({ data, sortField, sortDirection, onSort }
         border: "1px solid var(--wrapper)",
       }}
     >
-      {/* ใส่ table-fixed เพื่อช่วยบังคับให้การตัดคำ (truncate) ทำงานได้เสถียรขึ้น */}
       <table className="w-full text-left border-collapse text-sm">
         <thead>
           <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
@@ -82,19 +81,20 @@ export default function DeportedTable({ data, sortField, sortDirection, onSort }
                     (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--background)";
                   }}
                 >
-                  {/* กำหนด max-w-[ขนาด] และ truncate เพื่อตัดคำเป็น ... */}
                   <td
                     className="px-4 py-3 border-r truncate max-w-37.5"
                     style={{ borderColor: "var(--wrapper)" }}
-                    title={fullName} // เมื่อชี้เมาส์จะแสดงข้อความเต็ม
+                    title={fullName} 
                   >
                     {fullName}
                   </td>
+                  {/* ✨ แก้ไขการแสดงผล Date ของ date_of_birth ให้ฟอร์แมตถูกต้อง */}
                   <td
                     className="px-4 py-3 border-r truncate max-w-30"
                     style={{ borderColor: "var(--wrapper)" }}
                   >
-                    {person.date_of_birth || "ไม่ระบุ"}{person.age ? ` (${person.age} ปี)` : ""}
+                    {person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString("th-TH", { day: '2-digit', month: '2-digit', year: 'numeric' }) : "ไม่ระบุ"}
+                    {person.age ? ` (${person.age} ปี)` : ""}
                   </td>
                   <td
                     className="px-4 py-3 border-r truncate max-w-32.5"

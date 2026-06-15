@@ -21,14 +21,26 @@ export async function getDeportData(
 		// Map ข้อมูลให้ตรงกับ UI
 		const mappedData = rawData.map((item: any) => {
 			
-			// จัดการแปลงวันเกิด
+			// ✨ จัดการแปลงวันเกิด (รองรับทั้งแบบ String เดิม และ Date แบบใหม่ที่แก้ล่าสุด)
 			let birth_day = 1, birth_month = 0, birth_year = 2000;
-			if (item.date_of_birth && item.date_of_birth.includes('/')) {
-				const parts = item.date_of_birth.split('/');
-				birth_day = parseInt(parts[0]) || 1;
-				birth_month = (parseInt(parts[1]) || 1) - 1; 
-				birth_year = parseInt(parts[2]) || 2000;
-				if (birth_year > 2500) birth_year -= 543; 
+			
+			if (item.date_of_birth) {
+				if (typeof item.date_of_birth === 'string' && item.date_of_birth.includes('/')) {
+					// แบบเก่า
+					const parts = item.date_of_birth.split('/');
+					birth_day = parseInt(parts[0]) || 1;
+					birth_month = (parseInt(parts[1]) || 1) - 1; 
+					birth_year = parseInt(parts[2]) || 2000;
+					if (birth_year > 2500) birth_year -= 543; 
+				} else {
+					// แบบใหม่ (DATE type ของ DB จะออกมาเป็น ISO String / Date Object)
+					const d = new Date(item.date_of_birth);
+					if (!isNaN(d.getTime())) {
+						birth_day = d.getDate();
+						birth_month = d.getMonth();
+						birth_year = d.getFullYear();
+					}
+				}
 			}
 
 			return {
@@ -40,7 +52,6 @@ export async function getDeportData(
 				middle_name_en: item.middle_name_en || null,
 				last_name_en: item.last_name_en || null,
 				
-				// ตรวจสอบข้อมูลเพศเหมือนกับฝั่งแอบเข้า
 				gender: item.gender === "หญิง" ? "female" : "male", 
 				
 				national_id: item.national_id || "ไม่ระบุ",

@@ -1,14 +1,30 @@
 // backend/controllers/dashboardController.js
 const pool = require("../config/db");
 
+// ✨ ฟังก์ชันแปลงปี พ.ศ. เป็น ค.ศ. อัตโนมัติ กรณีพิมพ์ปี 25xx เข้ามา
+const convertBEtoAD = (dateStr) => {
+    if (!dateStr || String(dateStr).trim() === "") return null;
+    const parts = String(dateStr).split('-');
+    if (parts.length === 3) {
+        let year = parseInt(parts[0], 10);
+        if (year > 2400) {
+            year -= 543;
+            return `${year}-${parts[1]}-${parts[2]}`;
+        }
+    }
+    return dateStr;
+};
+
 exports.getDashboardStats = async (req, res) => {
   try {
     const { 
       type = "illegal", 
       nationality = "ทั้งหมด", 
       gender = "ทั้งหมด", 
-      startDate, 
-      endDate,
+      startDate: rawStartDate, 
+      endDate: rawEndDate,
+      dobStart: rawDobStart, 
+      dobEnd: rawDobEnd,   
       isVictim = "ทั้งหมด",
       hasPassport = "ทั้งหมด",
       page = 1,
@@ -17,24 +33,29 @@ exports.getDashboardStats = async (req, res) => {
       sortOrder = "asc"   
     } = req.query;
 
+    // ✨ แปลงวันที่ที่รับมาก่อนนำไปใช้งาน (แปลง พ.ศ. -> ค.ศ.)
+    const startDate = convertBEtoAD(rawStartDate);
+    const endDate = convertBEtoAD(rawEndDate);
+    const dobStart = convertBEtoAD(rawDobStart);
+    const dobEnd = convertBEtoAD(rawDobEnd);
+
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || 50;
     const offset = (pageNum - 1) * limitNum;
 
     // เช็คว่ามีค่าวันที่ส่งมาจริงๆ
-    const vStart = startDate && startDate.trim() !== "";
-    const vEnd = endDate && endDate.trim() !== "";
+    const vStart = !!startDate;
+    const vEnd = !!endDate;
+    const vDobStart = !!dobStart;
+    const vDobEnd = !!dobEnd;
 
     let tableName = type === "deported" ? "deported_persons" : "illegal_immigrants";
-    
-    // 🌟 เปลี่ยนให้ของ Deported อ้างอิง date_of_birth เป็นหลักในการกรองวันที่
-    let dateField = type === "deported" ? "date_of_birth" : "detected_date";
+    let dateField = type === "deported" ? "return_date" : "detected_date";
 
     let conditions = [];
     let queryParams = [];
     let paramIndex = 1;
 
-    // ─── ใช้ DATE() เพื่อกรองวันที่ได้อย่างแม่นยำ ───
     if (vStart && vEnd) {
       conditions.push(`DATE(${dateField}) >= $${paramIndex} AND DATE(${dateField}) <= $${paramIndex + 1}`);
       queryParams.push(startDate, endDate);
@@ -47,6 +68,22 @@ exports.getDashboardStats = async (req, res) => {
       conditions.push(`DATE(${dateField}) <= $${paramIndex}`);
       queryParams.push(endDate);
       paramIndex++;
+    }
+
+    if (type === "deported") {
+      if (vDobStart && vDobEnd) {
+        conditions.push(`DATE(date_of_birth) >= $${paramIndex} AND DATE(date_of_birth) <= $${paramIndex + 1}`);
+        queryParams.push(dobStart, dobEnd);
+        paramIndex += 2;
+      } else if (vDobStart) {
+        conditions.push(`DATE(date_of_birth) >= $${paramIndex}`);
+        queryParams.push(dobStart);
+        paramIndex++;
+      } else if (vDobEnd) {
+        conditions.push(`DATE(date_of_birth) <= $${paramIndex}`);
+        queryParams.push(dobEnd);
+        paramIndex++;
+      }
     }
 
     if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
@@ -75,7 +112,6 @@ exports.getDashboardStats = async (req, res) => {
 
     let whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    // ─── เรียงลำดับ โดยให้รายการที่เป็น NULL อยู่ท้ายสุด ───
     let orderClause = `ORDER BY ${dateField} DESC NULLS LAST, id DESC`; 
     if (sortBy) {
       const dir = sortOrder.toLowerCase() === "desc" ? "DESC" : "ASC";
@@ -89,21 +125,17 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
 
-    // ─── ดึงข้อมูลตาราง ───
     const dataQuery = `SELECT * FROM ${tableName} ${whereClause} ${orderClause} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     const tableData = await pool.query(dataQuery, [...queryParams, limitNum, offset]);
 
-    // ─── นับจำนวนแถวทั้งหมด ───
     const totalCountQuery = `SELECT COUNT(*) FROM ${tableName} ${whereClause}`;
     const totalCountResult = await pool.query(totalCountQuery, queryParams);
     const totalItems = parseInt(totalCountResult.rows[0].count);
 
-    // ─── ดึงข้อมูลสถิติ/กราฟ ───
     let baseConditions = [];
     let baseParams = [];
     let baseIdx = 1;
 
-    // ใช้ Logic กรองวันที่ตัวเดียวกันกับกราฟ
     if (vStart && vEnd) {
       baseConditions.push(`DATE(${dateField}) >= $${baseIdx} AND DATE(${dateField}) <= $${baseIdx + 1}`);
       baseParams.push(startDate, endDate);
@@ -116,6 +148,22 @@ exports.getDashboardStats = async (req, res) => {
       baseConditions.push(`DATE(${dateField}) <= $${baseIdx}`);
       baseParams.push(endDate);
       baseIdx++;
+    }
+
+    if (type === "deported") {
+      if (vDobStart && vDobEnd) {
+        baseConditions.push(`DATE(date_of_birth) >= $${baseIdx} AND DATE(date_of_birth) <= $${baseIdx + 1}`);
+        baseParams.push(dobStart, dobEnd);
+        baseIdx += 2;
+      } else if (vDobStart) {
+        baseConditions.push(`DATE(date_of_birth) >= $${baseIdx}`);
+        baseParams.push(dobStart);
+        baseIdx++;
+      } else if (vDobEnd) {
+        baseConditions.push(`DATE(date_of_birth) <= $${baseIdx}`);
+        baseParams.push(dobEnd);
+        baseIdx++;
+      }
     }
 
     if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
