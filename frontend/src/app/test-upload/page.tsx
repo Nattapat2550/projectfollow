@@ -120,12 +120,12 @@ export default function TestUploadPage() {
 
       <form onSubmit={handlePreview} className="mb-8 p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm max-w-xl">
         <div className="flex flex-col gap-4">
-          <label className="font-semibold text-sm text-zinc-800 dark:text-zinc-200">เลือกไฟล์ Excel ของคุณ (.xlsx, .xls)</label>
+          <label className="font-semibold text-sm text-blue-900 dark:text-blue-100">เลือกไฟล์ Excel ของคุณ (.xlsx, .xls)</label>
           <input 
             type="file" 
             accept=".xlsx, .xls" 
             onChange={handleFileChange}
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-zinc-200 dark:border-zinc-700 p-2 rounded-md bg-white dark:bg-zinc-950 text-zinc-800 dark:text-zinc-200 cursor-pointer w-full text-sm"
+            className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-zinc-200 dark:border-zinc-700 p-2 rounded-md bg-white dark:bg-zinc-950 text-blue-900 dark:text-blue-100 cursor-pointer w-full text-sm"
           />
           <button 
             type="submit" 
@@ -178,17 +178,17 @@ export default function TestUploadPage() {
           </div>
 
           <div>
-            <h3 className="font-bold text-xl mb-4 text-zinc-800 dark:text-zinc-200">
+            <h3 className="font-bold text-xl mb-4 text-blue-900 dark:text-blue-100">
               🔍 ตารางพรีวิวข้อมูล
             </h3>
 
             {totalPages > 1 && (
               <div className="flex justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-xl mb-4 shadow-sm">
-                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition">
+                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-blue-900 dark:text-blue-100 transition">
                   ก่อนหน้า
                 </button>
-                <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">หน้า {currentPage} จาก {totalPages}</span>
-                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition">
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">หน้า {currentPage} จาก {totalPages}</span>
+                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md disabled:opacity-50 text-sm font-medium hover:bg-zinc-200 dark:hover:bg-zinc-700 text-blue-900 dark:text-blue-100 transition">
                   ถัดไป
                 </button>
               </div>
@@ -215,7 +215,7 @@ export default function TestUploadPage() {
                         {row.ลำดับที่อ่านได้}
                       </td>
                       
-                      <td className="p-4 border-r border-zinc-200 dark:border-zinc-800 bg-blue-50/10 dark:bg-blue-950/5 align-top text-zinc-800 dark:text-zinc-200">
+                      <td className="p-4 border-r border-zinc-200 dark:border-zinc-800 bg-blue-50/10 dark:bg-blue-950/5 align-top text-blue-900 dark:text-blue-100">
                         
                         <div className="grid grid-cols-2 gap-4 mb-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
                           <div>
@@ -302,7 +302,7 @@ export default function TestUploadPage() {
                             <span className="text-purple-600 dark:text-purple-400 text-xs font-semibold block mb-1">
                               [DB: screening_details] รายละเอียดผลคัดกรอง:
                             </span>
-                            <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-950 p-2 border border-zinc-200 dark:border-zinc-800 rounded-md min-h-10 whitespace-pre-wrap">
+                            <div className="text-sm font-medium text-blue-900 dark:text-blue-100 bg-white dark:bg-zinc-950 p-2 border border-zinc-200 dark:border-zinc-800 rounded-md min-h-10 whitespace-pre-wrap">
                               {row.screening_details || renderNull()}
                             </div>
                           </div>
@@ -310,7 +310,7 @@ export default function TestUploadPage() {
                       </td>
 
                       <td className="p-4 align-top bg-amber-50/10 dark:bg-amber-950/5">
-                        <pre className="text-xs font-mono bg-slate-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-200 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg max-h-screen overflow-y-auto shadow-inner whitespace-pre-wrap sticky top-4">
+                        <pre className="text-xs font-mono bg-slate-100 dark:bg-zinc-900 text-blue-900 dark:text-blue-100 p-3 border border-zinc-200 dark:border-zinc-800 rounded-lg max-h-screen overflow-y-auto shadow-inner whitespace-pre-wrap sticky top-4">
                           {JSON.stringify(row.raw_data_from_excel, null, 2)}
                         </pre>
                       </td>

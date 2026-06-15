@@ -22,11 +22,11 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return null;
 
-  const SIZE = 180;
+  const SIZE = 240; // ขนาดพื้นที่ SVG ใหญ่ขึ้น
   const cx = SIZE / 2;
   const cy = SIZE / 2;
-  const R = 70;
-  const r = 42;
+  const R = 100; // รัศมีวงนอก ใหญ่เต็มตา
+  const r = 60;  // รัศมีวงใน
 
   let cumulative = 0;
   const slices = data.map((d) => {
@@ -62,22 +62,28 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 flex-1 min-w-50">
-      <p className="text-sm font-semibold" style={{ color: "var(--header)" }}>{title}</p>
+    <div className="flex flex-col items-center justify-center gap-3 w-full h-full min-h-0 overflow-hidden">
+      <p className="text-sm font-semibold shrink-0" style={{ color: "var(--header)" }}>{title}</p>
 
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-        {slices.map((s, i) => (
-          <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
-        ))}
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="20" fontWeight="bold" fill="currentColor" style={{ color: "var(--header)" }}>
-          {total.toLocaleString("th-TH")}
-        </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="currentColor" className="opacity-60" style={{ color: "var(--foreground)" }}>
-          ทั้งหมด
-        </text>
-      </svg>
+      {/* บังคับให้ SVG ยืดหดตามกล่อง แต่ใหญ่เต็มที่ถึง 230px */}
+      <div className="flex-1 min-h-0 w-full flex items-center justify-center shrink">
+        <svg 
+          viewBox={`0 0 ${SIZE} ${SIZE}`} 
+          style={{ width: "100%", height: "100%", maxHeight: "230px" }}
+        >
+          {slices.map((s, i) => (
+            <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
+          ))}
+          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="24" fontWeight="bold" fill="currentColor" style={{ color: "var(--header)" }}>
+            {total.toLocaleString("th-TH")}
+          </text>
+          <text x={cx} y={cy + 16} textAnchor="middle" fontSize="12" fill="currentColor" className="opacity-60" style={{ color: "var(--foreground)" }}>
+            ทั้งหมด
+          </text>
+        </svg>
+      </div>
 
-      <div className="flex flex-col gap-1 w-full max-w-45">
+      <div className="flex flex-col gap-1 w-full max-w-65 shrink-0 mt-1">
         {data.map((d, i) => {
           const pct = ((d.value / total) * 100).toFixed(1);
           return (
@@ -95,11 +101,10 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
   );
 }
 
-// ─── ดึงข้อมูลแบบ Server-Side พร้อมระบบ Cache ตัวเลขเบื้องหลัง (ไวขึ้นมาก) ─────
+// ─── ดึงข้อมูลแบบ Server-Side ────────────────────────────────────────────────
 async function fetchDashboardStats(type: string) {
   try {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-    // ใช้ revalidate ให้ Next.js อัปเดต Cache หลังบ้านทุกๆ 10 วินาที ช่วยให้โหลดหน้าแรกไวดุจสายฟ้า
     const res = await fetch(`${backendUrl}/api/v1/dashboard?type=${type}&limit=1`, { 
       next: { revalidate: 10 } 
     });
@@ -112,8 +117,6 @@ async function fetchDashboardStats(type: string) {
 
 // ─── หน้าเพจหลัก (Server Component) ──────────────────────────────────────
 export default async function Home() {
-  
-  // โหลดข้อมูลคู่ขนานกันบนเซิร์ฟเวอร์
   const [illegalJson, deportedJson] = await Promise.all([
     fetchDashboardStats("illegal"),
     fetchDashboardStats("deported")
@@ -125,7 +128,6 @@ export default async function Home() {
   const countDisplay = (n: number | null) =>
     n === null ? "XX" : n.toLocaleString("th-TH");
 
-  // เตรียมข้อมูลกราฟ (แมปสีใส่ให้ข้อมูล)
   const illegalChart = (illegalJson?.charts?.nationality || []).map((d: any, i: number) => ({
     ...d,
     color: CHART_COLORS[i % CHART_COLORS.length],
@@ -138,10 +140,14 @@ export default async function Home() {
 
   return (
     <div
-      className="flex flex-1 justify-center items-start gap-6 px-6 py-8 flex-wrap"
-      style={{ backgroundColor: "var(--wrapper)" }}
+      className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 w-full"
+      style={{
+        backgroundColor: "var(--wrapper)",
+        boxSizing: "border-box",
+        height: "calc(100vh - 80px)", // พอดีจอ ไม่มี Scroll
+        overflow: "hidden" 
+      }}
     >
-      {/* การ์ด ผู้แอบเข้า */}
       <HomeCard
         title="ผู้แอบเข้า"
         count={countDisplay(illegalCount)}
@@ -152,7 +158,6 @@ export default async function Home() {
         chartTitle="สัญชาติ (Top 6)"
       />
 
-      {/* การ์ด ผู้ถูกส่งกลับ */}
       <HomeCard
         title="ผู้ถูกส่งกลับ"
         count={countDisplay(deportedCount)}
@@ -187,129 +192,143 @@ function HomeCard({
 }: HomeCardProps) {
   return (
     <div
-      className="flex flex-col rounded-2xl shadow-md overflow-hidden"
       style={{
-        backgroundColor: "var(--container)",
-        border: "1px solid var(--shadow)",
-        width: "350px", 
-        minHeight: "560px",
+        backgroundColor: "var(--wrapper)",
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: "0.2rem",
+        boxShadow: "4px 4px 0px rgba(0, 0, 0, 0.25)",
+        color: "var(--header)",
+        flex: 1, // แบ่งคนละครึ่ง
+        height: "100%", 
+        minHeight: 0,
+        boxSizing: "border-box",
+        overflow: "hidden"
       }}
     >
-      {/* Header: ไอคอน + ชื่อ + จำนวน */}
       <div
-        className="flex items-center gap-4 px-5 py-4"
-        style={{ borderBottom: "1px solid var(--shadow)" }}
+        style={{
+          backgroundColor: "var(--container)",
+          fontSize: "1rem",
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 0,
+          boxSizing: "border-box",
+          overflow: "hidden"
+        }}
       >
         <div
-          className="rounded-lg shrink-0 flex items-center justify-center"
-          style={{
-            width: 80,
-            height: 64,
-            backgroundColor: "var(--wrapper)",
-            border: "1px solid var(--shadow)",
-          }}
+          className="flex items-center gap-4 px-5 py-4 shrink-0"
+          style={{ borderBottom: "1px solid var(--shadow)" }}
         >
-          <Image
-            src="/police.png"
-            alt="icon"
-            width={40}
-            height={40}
-            className="opacity-40"
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <span
-            className="font-bold leading-tight"
-            style={{ color: "var(--header)", fontSize: "1.35rem" }}
-          >
-            {title}
-          </span>
-          <span
-            className="font-bold"
-            style={{ color: "var(--header)", fontSize: "1.15rem" }}
-          >
-            จำนวน <span>{count}</span> คน
-          </span>
-        </div>
-      </div>
-
-      {/* ปุ่ม ดูข้อมูลทั้งหมด */}
-      <div className="px-5 pt-4">
-        <Link href={viewAllHref} className="block w-full">
-          <button
-            className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
-            style={{
-              backgroundColor: "var(--button)",
-              border: "1px solid var(--shadow)",
-              color: "var(--foreground)",
-            }}
-          >
-            ดูข้อมูลทั้งหมด
-          </button>
-        </Link>
-      </div>
-
-      {/* ปุ่ม แดชบอร์ด */}
-      <div className="px-5 pt-2">
-        <Link href={dashboardHref} className="block w-full">
-          <button
-            className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
-            style={{
-              backgroundColor: "var(--button)",
-              border: "1px solid var(--shadow)",
-              color: "var(--foreground)",
-            }}
-          >
-            แดชบอร์ด
-          </button>
-        </Link>
-      </div>
-
-      <div
-        className="mx-5 mt-4"
-        style={{ borderBottom: "1px solid var(--shadow)" }}
-      />
-
-      {/* ส่วนแสดง Chart */}
-      <div className="flex flex-1 items-center justify-center px-5 py-6">
-        {chartData && chartData.length > 0 ? (
-          <DonutChart data={chartData} title={chartTitle} />
-        ) : (
           <div
-            className="rounded-full flex items-center justify-center font-medium"
+            className="rounded-lg shrink-0 flex items-center justify-center"
             style={{
-              width: 180,
-              height: 180,
-              border: "24px solid var(--wrapper)",
-              backgroundColor: "var(--container)",
-              color: "var(--foreground)",
-            }}
-          >
-            ไม่มีข้อมูล
-          </div>
-        )}
-      </div>
-
-      <div
-        className="mx-5"
-        style={{ borderBottom: "1px solid var(--shadow)" }}
-      />
-
-      {/* ปุ่ม เพิ่มข้อมูล */}
-      <div className="px-5 py-4">
-        <Link href={addHref} className="block w-full">
-          <button
-            className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
-            style={{
-              backgroundColor: "var(--button)",
+              width: 80,
+              height: 64,
+              backgroundColor: "var(--wrapper)",
               border: "1px solid var(--shadow)",
-              color: "var(--foreground)",
             }}
           >
-            เพิ่มข้อมูล
-          </button>
-        </Link>
+            <Image
+              src="/police.png"
+              alt="icon"
+              width={40}
+              height={40}
+              className="opacity-40"
+            />
+          </div>
+
+          <div className="flex flex-col shrink-0">
+            <span
+              className="font-bold leading-tight"
+              style={{ color: "var(--header)", fontSize: "1.35rem" }}
+            >
+              {title}
+            </span>
+            <span
+              className="font-bold"
+              style={{ color: "var(--header)", fontSize: "1.15rem" }}
+            >
+              จำนวน <span>{count}</span> คน
+            </span>
+          </div>
+        </div>
+
+        <div className="px-5 pt-3 shrink-0">
+          <Link href={viewAllHref} className="block w-full">
+            <button
+              className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
+              style={{
+                backgroundColor: "var(--button)",
+                border: "1px solid var(--shadow)",
+                color: "var(--foreground)",
+              }}
+            >
+              ดูข้อมูลทั้งหมด
+            </button>
+          </Link>
+        </div>
+
+        <div className="px-5 pt-2 shrink-0">
+          <Link href={dashboardHref} className="block w-full">
+            <button
+              className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
+              style={{
+                backgroundColor: "var(--button)",
+                border: "1px solid var(--shadow)",
+                color: "var(--foreground)",
+              }}
+            >
+              แดชบอร์ด
+            </button>
+          </Link>
+        </div>
+
+        <div
+          className="mx-5 mt-3 shrink-0"
+          style={{ borderBottom: "1px solid var(--shadow)" }}
+        />
+
+        <div className="flex flex-1 items-center justify-center px-5 py-3 min-h-0 overflow-hidden">
+          {chartData && chartData.length > 0 ? (
+            <DonutChart data={chartData} title={chartTitle} />
+          ) : (
+            <div
+              className="rounded-full flex items-center justify-center font-medium shrink-0"
+              style={{
+                width: 160,
+                height: 160,
+                border: "20px solid var(--wrapper)",
+                backgroundColor: "var(--container)",
+                color: "var(--foreground)",
+              }}
+            >
+              ไม่มีข้อมูล
+            </div>
+          )}
+        </div>
+
+        <div
+          className="mx-5 shrink-0"
+          style={{ borderBottom: "1px solid var(--shadow)" }}
+        />
+
+        <div className="px-5 py-3 shrink-0">
+          <Link href={addHref} className="block w-full">
+            <button
+              className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
+              style={{
+                backgroundColor: "var(--button)",
+                border: "1px solid var(--shadow)",
+                color: "var(--foreground)",
+              }}
+            >
+              เพิ่มข้อมูล
+            </button>
+          </Link>
+        </div>
       </div>
     </div>
   );

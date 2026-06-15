@@ -60,11 +60,11 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string; }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return null;
 
-  const SIZE = 180;
+  const SIZE = 240; 
   const cx = SIZE / 2;
   const cy = SIZE / 2;
-  const R = 70;
-  const r = 42;
+  const R = 100; // รัศมีวงนอก ใหญ่ขึ้น
+  const r = 60;  // รัศมีวงใน
 
   let cumulative = 0;
   const slices = data.map((d) => {
@@ -100,22 +100,28 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string; }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 flex-1 min-w-50">
-      <p className="text-sm font-semibold text-(--header)">{title}</p>
+    // แก้ไข: ใช้ flex-1 เพื่อให้แบ่งพื้นที่แนวนอนเท่าๆ กัน แทน w-full ที่ทำให้ตกบรรทัด
+    <div className="flex flex-col items-center justify-start gap-3 flex-1 min-w-50 overflow-hidden">
+      <p className="text-sm font-semibold shrink-0 text-(--header)">{title}</p>
 
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-        {slices.map((s, i) => (
-          <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
-        ))}
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="20" fontWeight="bold" fill="currentColor" className="text-(--header)">
-          {total.toLocaleString("th-TH")}
-        </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="currentColor" className="text-muted-foreground">
-          ทั้งหมด
-        </text>
-      </svg>
+      <div className="flex-1 w-full flex items-center justify-center shrink">
+        <svg 
+          viewBox={`0 0 ${SIZE} ${SIZE}`} 
+          style={{ width: "100%", height: "100%", maxHeight: "230px" }}
+        >
+          {slices.map((s, i) => (
+            <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
+          ))}
+          <text x={cx} y={cy - 8} textAnchor="middle" fontSize="24" fontWeight="bold" fill="currentColor" className="text-(--header)">
+            {total.toLocaleString("th-TH")}
+          </text>
+          <text x={cx} y={cy + 16} textAnchor="middle" fontSize="12" fill="currentColor" className="opacity-60 text-foreground">
+            ทั้งหมด
+          </text>
+        </svg>
+      </div>
 
-      <div className="flex flex-col gap-1 w-full max-w-45">
+      <div className="flex flex-col gap-1 w-full max-w-65 shrink-0 mt-1">
         {data.map((d, i) => {
           const pct = ((d.value / total) * 100).toFixed(1);
           return (
@@ -153,7 +159,6 @@ function DashboardContent() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   
-  // ✨ เพิ่ม State สำหรับฟิลเตอร์วันเกิด
   const [dobStart, setDobStart] = useState<string>("");
   const [dobEnd, setDobEnd] = useState<string>("");
   
@@ -161,7 +166,6 @@ function DashboardContent() {
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
-  // ฟังก์ชันดึงข้อมูลแบบ Optimize ความเร็วขั้นสุด
   useEffect(() => {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
     
@@ -177,7 +181,6 @@ function DashboardContent() {
       limit: "50"
     });
 
-    // ✨ แนบ Parameter วันเกิดสำหรับ Deported
     if (filterType === "deported") {
       if (dobStart) params.append("dobStart", dobStart);
       if (dobEnd) params.append("dobEnd", dobEnd);
@@ -223,7 +226,6 @@ function DashboardContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection]);
 
-  // ตรวจจับกรณีเปลี่ยนแท็บประเภทผ่าน URL Parameter 
   useEffect(() => {
     if (typeParam !== filterType) {
       setFilterType(typeParam);
@@ -299,7 +301,7 @@ function DashboardContent() {
   const inputClass = "w-full bg-background border border-[var(--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--header)]/40 [&::-webkit-calendar-picker-indicator]:dark:invert";
 
   return (
-    <div className="min-h-screen p-6 bg-background text-foreground transition-colors duration-200">
+    <div className="w-full p-4 sm:p-6 transition-colors duration-200" style={{ backgroundColor: "var(--wrapper)", minHeight: "calc(100vh - 80px)" }}>
       
       <Link
         href="/"
@@ -308,10 +310,10 @@ function DashboardContent() {
         {"< แดชบอร์ด"}
       </Link>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start max-w-7xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
         
         {/* ── โซนฝั่งซ้าย: แผงควบคุม Filters ──────────────────────────── */}
-        <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm shrink-0 flex flex-col gap-5 w-full lg:w-72">
+        <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] shadow-[4px_4px_0px_rgba(0,0,0,0.25)] p-6 shrink-0 flex flex-col gap-5 w-full lg:w-72">
           <span className="font-bold text-lg text-(--header)">
             ฟิลเตอร์ตัวเลือก
           </span>
@@ -428,7 +430,6 @@ function DashboardContent() {
             />
           </div>
 
-          {/* ✨ เพิ่มโซนเฉพาะสำหรับฟิลเตอร์วันเกิดเมื่อเป็น Deported */}
           {filterType === "deported" && (
             <>
               <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-(--wrapper)">
@@ -476,17 +477,17 @@ function DashboardContent() {
         <div className="flex flex-col gap-6 flex-1 min-w-0 w-full relative">
           
           {loading && !dashboardData ? (
-            <div className="flex flex-col items-center justify-center h-64 bg-(--container) border border-(--wrapper) rounded-2xl shadow-sm">
-               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-(--header) mb-4"></div>
+            <div className="flex flex-col items-center justify-center h-64 bg-(--container) border border-(--wrapper) rounded-[0.2rem] shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
+               <div className="animate-spin rounded-full h-10 w-10 border-4 border-(--wrapper) border-t-(--header) mb-4"></div>
                <span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูลแดชบอร์ดล่าสุด...</span>
             </div>
           ) : (
             <div className={`flex flex-col gap-6 w-full transition-opacity duration-300 ${isUpdating ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
               {/* ส่วนที่ 1: การแสดงตัวเลขสถิติภาพรวม */}
-              <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
+              <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
                 <span className="font-bold text-lg block mb-4 text-(--header) justify-between">
                   <span>สถิติเบื้องต้น</span>
-                  {isUpdating && <span className="text-xs animate-pulse opacity-70">กำลังอัปเดต...</span>}
+                  {isUpdating && <span className="text-xs animate-pulse opacity-70 ml-4">กำลังอัปเดต...</span>}
                 </span>
                 <div className="flex gap-10 flex-wrap">
                   {stats.map((s) => (
@@ -502,8 +503,8 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* ส่วนที่ 2: การแสดงผลกราฟ Donut สรุปสัดส่วนข้อมูล */}
-              <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm">
+              {/* ส่วนที่ 2: การแสดงผลกราฟ Donut */}
+              <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
                 <span className="font-bold text-lg block mb-6 text-(--header)">
                   กราฟสรุปจำนวนคนทั้งหมด
                 </span>
@@ -513,7 +514,7 @@ function DashboardContent() {
                     ไม่มีข้อมูลแสดงผลตามสัญชาติหรือวันที่ระบุ
                   </div>
                 ) : (
-                  <div className="flex gap-8 flex-wrap justify-center">
+                  <div className="flex gap-4 flex-nowrap overflow-x-auto pb-2 justify-start lg:justify-center w-full">
                     {filterType === "illegal" ? (
                       <>
                         {natChart.length > 0 && <DonutChart data={natChart} title="สัญชาติ (Top 6)" />}
@@ -529,7 +530,7 @@ function DashboardContent() {
                 )}
               </div>
 
-              {/* ส่วนที่ 3: ตารางแสดงผลรายการข้อมูลพร้อมปุ่มกดเรียงลำดับหัวข้อตาราง */}
+              {/* ส่วนที่ 3: ตารางแสดงผล */}
               <div className="bg-transparent mb-10">
                  <div className="flex justify-between items-center mb-6">
                    <span className="font-bold text-lg text-(--header)">
@@ -537,21 +538,23 @@ function DashboardContent() {
                    </span>
                  </div>
                  
-                 {filterType === "illegal" ? (
-                   <IllegalTable 
-                     data={tableRows} 
-                     sortField={sortField as IllegalSortField}
-                     sortDirection={sortDirection} 
-                     onSort={handleSort} 
-                   />
-                 ) : (
-                   <DeportedTable 
-                     data={tableRows} 
-                     sortField={sortField as DeportedSortField}
-                     sortDirection={sortDirection} 
-                     onSort={handleSort} 
-                   />
-                 )}
+                 <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] shadow-[4px_4px_0px_rgba(0,0,0,0.25)] overflow-hidden">
+                   {filterType === "illegal" ? (
+                     <IllegalTable 
+                       data={tableRows} 
+                       sortField={sortField as IllegalSortField}
+                       sortDirection={sortDirection} 
+                       onSort={handleSort} 
+                     />
+                   ) : (
+                     <DeportedTable 
+                       data={tableRows} 
+                       sortField={sortField as DeportedSortField}
+                       sortDirection={sortDirection} 
+                       onSort={handleSort} 
+                     />
+                   )}
+                 </div>
 
                  {/* แถบควบคุมเปลี่ยนหน้าเพจ (Pagination) */}
                  {(dashboardData?.meta?.totalPages || 0) > 1 && (() => {
@@ -574,7 +577,7 @@ function DashboardContent() {
                     }
 
                     return (
-                      <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-zinc-900 p-4 border border-zinc-200 dark:border-zinc-800 rounded-sm mt-6 shadow-sm gap-4">
+                      <div className="flex flex-col md:flex-row justify-between items-center bg-(--container) p-4 border border-(--wrapper) rounded-[0.2rem] shadow-[4px_4px_0px_rgba(0,0,0,0.25)] mt-6 gap-4">
                         
                         <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
                           หน้า {currentPage} จาก {totalPages}
@@ -648,7 +651,7 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-muted-foreground font-medium"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-500 mr-3"></div>กำลังโหลดระบบแดชบอร์ด...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-muted-foreground font-medium"><div className="animate-spin rounded-full h-8 w-8 border-4 border-zinc-200 dark:border-zinc-800 border-t-zinc-500 mr-3"></div>กำลังโหลดระบบแดชบอร์ด...</div>}>
       <DashboardContent />
     </Suspense>
   );
