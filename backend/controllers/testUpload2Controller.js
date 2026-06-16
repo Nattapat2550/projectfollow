@@ -2,19 +2,11 @@ const xlsx = require("xlsx");
 const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
-
-const { PrismaClient } = require("@prisma/client");
-const { Pool } = require("pg");
-const { PrismaPg } = require("@prisma/adapter-pg");
-
-const connectionString = process.env.DATABASE_URL;
-const isLocalhost = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
-
-const pool = new Pool({ connectionString, ssl: isLocalhost ? false : { rejectUnauthorized: false } });
-const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
-
+const pool = require("../config/db");
+const { v4: uuidv4 } = require("uuid"); // 🟢 ใช้สร้าง ID
 const { uploadToDrive } = require("../services/googleDriveService"); 
 
+// Helper functions คงเดิม
 const removePrefix = (fullName) => {
     if (!fullName || typeof fullName !== "string") return fullName;
     const prefixRegex = /^(พล\.ต\.อ\.|พล\.ต\.ท\.|พล\.ต\.ต\.|พ\.ต\.อ\.|พ\.ต\.ท\.|พ\.ต\.ต\.|ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|ด\.ต\.|จ\.ส\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ว่าที่ ร\.ต\.|นางสาว|น\.ส\.|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|Mr\.|Mrs\.|Ms\.|Miss\s*)/i;
@@ -22,9 +14,7 @@ const removePrefix = (fullName) => {
 };
 
 const splitName = (fullName) => {
-    if (!fullName || typeof fullName !== "string") {
-        return { first: null, middle: null, last: null };
-    }
+    if (!fullName || typeof fullName !== "string") return { first: null, middle: null, last: null };
     const nameWithoutPrefix = removePrefix(fullName);
     const parts = nameWithoutPrefix.split(/\s+/);
     
@@ -43,7 +33,6 @@ const determineGenderFromName = (fullName) => {
     if (!fullName || typeof fullName !== "string") return null;
     const prefixRegex = /^(นาย|นางสาว|น\.ส\.|นาง|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|Mr\.|Mrs\.|Ms\.|Miss)/i;
     const match = fullName.match(prefixRegex);
-    
     if (match) {
         const prefix = match[1].toLowerCase().replace(/\s+/g, '');
         if (["นาย", "เด็กชาย", "ด.ช.", "mr."].includes(prefix)) return "ชาย";
@@ -54,9 +43,7 @@ const determineGenderFromName = (fullName) => {
 
 const parseThaiDOBToDate = (dobStr) => {
     if (dobStr == null || dobStr === '') return null;
-    if (typeof dobStr === 'number') {
-        return new Date(Math.round((dobStr - 25569) * 86400 * 1000));
-    }
+    if (typeof dobStr === 'number') return new Date(Math.round((dobStr - 25569) * 86400 * 1000));
     const str = String(dobStr).trim();
     if (str === "ไม่ระบุ" || str === "-") return null;
     const parts = str.split('/');
@@ -65,43 +52,32 @@ const parseThaiDOBToDate = (dobStr) => {
         const month = parseInt(parts[1], 10);
         let year = parseInt(parts[2], 10);
         if (year > 2400) year -= 543;
-        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-            return new Date(Date.UTC(year, month - 1, day));
-        }
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year)) return new Date(Date.UTC(year, month - 1, day));
     }
     const d = new Date(str);
     return isNaN(d.getTime()) ? null : d;
 };
 
-if (!global.uploadProgress) {
-    global.uploadProgress = {};
-}
+if (!global.uploadProgress) { global.uploadProgress = {}; }
   
 exports.getUploadProgress = (req, res) => {
     const jobId = req.params.jobId;
-    const progress = global.uploadProgress[jobId] || { current: 0, total: 0, status: 'pending' };
-    res.json(progress);
+    res.json(global.uploadProgress[jobId] || { current: 0, total: 0, status: 'pending' });
 };
 
 exports.uploadExcel = async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel" });
-        }
+        if (!req.file) return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel" });
 
         const action = req.query.action || "upload";
         const jobId = req.query.jobId;
-
         const uploadsDir = path.join(__dirname, "../uploads");
-        if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-        }
+        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
         const workbookXlsx = xlsx.readFile(req.file.path);
         const sheetName = workbookXlsx.SheetNames[0];
         let rawData = xlsx.utils.sheet_to_json(workbookXlsx.Sheets[sheetName], { defval: null });
 
-        // ✨ 1. แก้บัค: กรองแถวว่างทิ้งทั้งหมด (ป้องกัน Ghost Rows)
         rawData = rawData.filter(row => {
             const thName = row["ชื่อ สกุล (ไทย)"];
             const enName = row["ชื่อ สกุล (อังกฤษ)"];
@@ -118,32 +94,25 @@ exports.uploadExcel = async (req, res) => {
         for (const image of worksheetExt.getImages()) {
             const rowIdx = image.range.tl.nativeRow; 
             const imgInfo = workbookExt.getImage(image.imageId);
-            
             if (imgInfo && imgInfo.buffer) {
-                imagesMap[rowIdx] = {
-                    buffer: imgInfo.buffer,
-                    extension: imgInfo.extension || 'jpeg'
-                };
+                imagesMap[rowIdx] = { buffer: imgInfo.buffer, extension: imgInfo.extension || 'jpeg' };
             }
         }
 
-        // ================= โหมดพรีวิว =================
+        // ================= โหมดพรีวิว (ไม่ต้องแก้ DB โค้ดเดิมใช้ได้เลย) =================
         if (action === "preview") {
             const preview_data = [];
             for (let i = 0; i < rawData.length; i++) {
                 const row = rawData[i];
                 const rawThName = row["ชื่อ สกุล (ไทย)"];
                 const rawEnName = row["ชื่อ สกุล (อังกฤษ)"];
-                
                 const thName = splitName(rawThName);
                 const enName = splitName(rawEnName);
                 const autoGender = determineGenderFromName(rawThName) || determineGenderFromName(rawEnName) || (row["เพศ"] ? String(row["เพศ"]).trim() : null);
 
                 const raw_id = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"];
                 const id_card = raw_id ? String(raw_id).replace(/[^0-9a-zA-Z]/g, '') : `NO_ID_${i}`;
-                
                 const dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
-                const dobDisplay = dobDate ? dobDate.toISOString().split('T')[0] : "ไม่ระบุ";
                 
                 let photo_url_preview = null;
                 if (imagesMap[i + 1]) {
@@ -161,7 +130,7 @@ exports.uploadExcel = async (req, res) => {
                     first_name_en: enName.first || null,
                     last_name_en: enName.last || null,
                     age: parseInt(row["อายุ(ปี)"]) || null,
-                    dob: dobDisplay,
+                    dob: dobDate ? dobDate.toISOString().split('T')[0] : "ไม่ระบุ",
                     gender: autoGender,
                     id_card: id_card,
                     passport: row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).trim() : null,
@@ -172,64 +141,42 @@ exports.uploadExcel = async (req, res) => {
                 });
             }
             if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); 
-            return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวและรูปภาพสำเร็จ", total_rows: preview_data.length, preview_data });
+            return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวสำเร็จ", total_rows: preview_data.length, preview_data });
         }
 
         // ================= โหมดอัปโหลด =================
         let successCount = 0;
         let errors = [];
-
-        if (jobId) {
-            global.uploadProgress[jobId] = { current: 0, total: rawData.length, status: 'processing' };
-        }
+        if (jobId) global.uploadProgress[jobId] = { current: 0, total: rawData.length, status: 'processing' };
 
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
             const rawThName = row["ชื่อ สกุล (ไทย)"];
             const rawEnName = row["ชื่อ สกุล (อังกฤษ)"];
-            
             const thName = splitName(rawThName);
             const enName = splitName(rawEnName);
             const autoGender = determineGenderFromName(rawThName) || determineGenderFromName(rawEnName) || (row["เพศ"] ? String(row["เพศ"]).trim() : null);
 
-            const excelRowIndex = i + 1; 
-
             let drivePhotoUrl = null;
-            const imgData = imagesMap[excelRowIndex];
-
-            if (imgData) {
+            if (imagesMap[i + 1]) {
                 try {
-                    const tempFileName = `temp_${Date.now()}_${Math.floor(Math.random() * 1000)}.${imgData.extension}`;
+                    const tempFileName = `temp_${Date.now()}_${Math.floor(Math.random() * 1000)}.${imagesMap[i + 1].extension}`;
                     const tempFilePath = path.join(uploadsDir, tempFileName);
+                    fs.writeFileSync(tempFilePath, imagesMap[i + 1].buffer);
                     
-                    fs.writeFileSync(tempFilePath, imgData.buffer);
-                    
-                    const fileObject = {
-                        originalname: tempFileName,
-                        mimetype: `image/${imgData.extension}`,
-                        path: tempFilePath
-                    };
-                    
-                    const driveResult = await uploadToDrive(fileObject, process.env.GOOGLE_DRIVE_FOLDER_ID);
+                    const driveResult = await uploadToDrive({ originalname: tempFileName, mimetype: `image/${imagesMap[i + 1].extension}`, path: tempFilePath }, process.env.GOOGLE_DRIVE_FOLDER_ID);
                     drivePhotoUrl = driveResult.webViewLink; 
-                    
                     if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-                } catch (uploadErr) {
-                    console.error("Drive Upload Error:", uploadErr);
-                }
+                } catch (e) { console.error("Drive Upload Error:", e); }
             } else if (row["รูปจาก ทร.14"]) {
                 drivePhotoUrl = String(row["รูปจาก ทร.14"]);
             }
 
-            // ✨ 2. แก้บัค: จัดการเรื่องบัตรปชช./พาสปอร์ต ซ้ำซ้อน หรือมีอักขระเว้นวรรค
             const raw_id = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"];
-            let id_card = raw_id ? String(raw_id).replace(/[^0-9a-zA-Z]/g, '') : `NO_ID_${Date.now()}_${i}`;
+            const id_card = raw_id ? String(raw_id).replace(/[^0-9a-zA-Z]/g, '') : `NO_ID_${Date.now()}_${i}`;
             
-            const raw_pass = row["เลขพาสปอร์ต"];
-            let passport = raw_pass ? String(raw_pass).replace(/\s/g, '').trim() : null;
-            if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null", "ไม่มีหนังสือเดินทาง"].includes(passport.toLowerCase())) {
-                passport = null; // ป้องกัน Database ชนกันด้วยเครื่องหมาย -
-            }
+            let passport = row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).replace(/\s/g, '').trim() : null;
+            if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null", "ไม่มีหนังสือเดินทาง"].includes(passport.toLowerCase())) passport = null;
 
             const dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
             const caseCount = parseInt(row["จำนวน Case ID"]);
@@ -237,93 +184,81 @@ exports.uploadExcel = async (req, res) => {
             const parsedAge = parseInt(row["อายุ(ปี)"]);
 
             try {
-                // ✨ 3. แก้บัค: ใช้ระบบหาข้อมูลเก่า ถ้ามีให้อัปเดตทับ (ป้องกัน Error Duplicate Key)
-                let existingPerson = null;
-                
+                // 🟢 ใช้ SQL ค้นหาข้อมูลเก่า
+                let existingId = null;
                 if (!id_card.startsWith("NO_ID_")) {
-                    existingPerson = await prisma.deported_persons.findUnique({
-                        where: { national_id: id_card }
-                    });
+                    const natCheck = await pool.query("SELECT id FROM deported_persons WHERE national_id = $1", [id_card]);
+                    if (natCheck.rows.length > 0) existingId = natCheck.rows[0].id;
                 }
-                
-                if (!existingPerson && passport) {
-                    existingPerson = await prisma.deported_persons.findUnique({
-                        where: { passport_id: passport }
-                    });
+                if (!existingId && passport) {
+                    const passCheck = await pool.query("SELECT id FROM deported_persons WHERE passport_id = $1", [passport]);
+                    if (passCheck.rows.length > 0) existingId = passCheck.rows[0].id;
                 }
 
-                const dataPayload = {
-                    first_name_th: thName.first || "ไม่ระบุ",
-                    middle_name_th: thName.middle || null,
-                    last_name_th: thName.last || "ไม่ระบุ",
-                    first_name_en: enName.first || null,
-                    middle_name_en: enName.middle || null,
-                    last_name_en: enName.last || null,
-                    
-                    date_of_birth: dobDate, 
-                    gender: autoGender,
-                    age: isNaN(parsedAge) ? null : parsedAge,
-                    national_id: id_card,
-                    passport_id: passport,
-                    address: row["ที่อยู่"] ? String(row["ที่อยู่"]) : "ไม่ระบุ",
-                    
-                    building: row["ตึก ที่ทำงาน"] ? String(row["ตึก ที่ทำงาน"]) : null,
-                    floor: row["ชั้น ที่ทำงาน"] ? String(row["ชั้น ที่ทำงาน"]) : null,
-                    room: row["ห้อง ที่ทำงาน"] ? String(row["ห้อง ที่ทำงาน"]) : null,
-                    job_type: row["ประเภทงาน"] ? String(row["ประเภทงาน"]) : null,
-                    role: row["ทำหน้าที่"] ? String(row["ทำหน้าที่"]) : null,
-                    
-                    salary: row["เงินเดือนที่ได้รับ(บาท)"] ? String(row["เงินเดือนที่ได้รับ(บาท)"]) : null,
-                    paid_by: row["รับเงินเดือนจากใคร"] ? String(row["รับเงินเดือนจากใคร"]) : null,
-                    payment_method: row["ช่องทางการรับเงินเดือน"] ? String(row["ช่องทางการรับเงินเดือน"]) : null,
-                    
-                    number_of_case: isNaN(caseCount) ? 0 : caseCount,
-                    number_of_warrant: isNaN(warrantCount) ? 0 : warrantCount,
-                    victim_indicator: row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
-                    responsible_agency: row["หน่วยงานที่รับผิดชอบ"] ? String(row["หน่วยงานที่รับผิดชอบ"]) : null,
-                    note: row["หมายเหตุ"] ? String(row["หมายเหตุ"]) : null,
-                };
+                const values = [
+                    thName.first || "ไม่ระบุ", thName.middle || null, thName.last || "ไม่ระบุ",
+                    enName.first || null, enName.middle || null, enName.last || null,
+                    dobDate, autoGender, isNaN(parsedAge) ? null : parsedAge, id_card, passport,
+                    row["ที่อยู่"] ? String(row["ที่อยู่"]) : "ไม่ระบุ",
+                    row["ตึก ที่ทำงาน"] ? String(row["ตึก ที่ทำงาน"]) : null,
+                    row["ชั้น ที่ทำงาน"] ? String(row["ชั้น ที่ทำงาน"]) : null,
+                    row["ห้อง ที่ทำงาน"] ? String(row["ห้อง ที่ทำงาน"]) : null,
+                    row["ประเภทงาน"] ? String(row["ประเภทงาน"]) : null,
+                    row["ทำหน้าที่"] ? String(row["ทำหน้าที่"]) : null,
+                    row["เงินเดือนที่ได้รับ(บาท)"] ? String(row["เงินเดือนที่ได้รับ(บาท)"]) : null,
+                    row["รับเงินเดือนจากใคร"] ? String(row["รับเงินเดือนจากใคร"]) : null,
+                    row["ช่องทางการรับเงินเดือน"] ? String(row["ช่องทางการรับเงินเดือน"]) : null,
+                    isNaN(caseCount) ? 0 : caseCount,
+                    isNaN(warrantCount) ? 0 : warrantCount,
+                    row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
+                    row["หน่วยงานที่รับผิดชอบ"] ? String(row["หน่วยงานที่รับผิดชอบ"]) : null,
+                    row["หมายเหตุ"] ? String(row["หมายเหตุ"]) : null
+                ];
 
-                // อัปเดตรูปใหม่เฉพาะกรณีที่ดึงรูปจาก Excel มาได้สำเร็จ
-                if (drivePhotoUrl) {
-                    dataPayload.photo_url = drivePhotoUrl;
-                }
-
-                if (existingPerson) {
-                    // ถ้าเคยมีอยู่แล้ว ให้อัปเดตข้อมูลทับของเดิม
-                    await prisma.deported_persons.update({
-                        where: { id: existingPerson.id },
-                        data: dataPayload
-                    });
+                if (existingId) {
+                    let updateQ = `UPDATE deported_persons SET 
+                        first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
+                        date_of_birth=$7, gender=$8, age=$9, national_id=$10, passport_id=$11, address=$12,
+                        building=$13, floor=$14, room=$15, job_type=$16, role=$17, salary=$18, paid_by=$19, payment_method=$20,
+                        number_of_case=$21, number_of_warrant=$22, victim_indicator=$23, responsible_agency=$24, note=$25`;
+                    
+                    const updateVals = [...values];
+                    if (drivePhotoUrl) {
+                        updateQ += `, photo_url=$26 WHERE id=$27`;
+                        updateVals.push(drivePhotoUrl, existingId);
+                    } else {
+                        updateQ += ` WHERE id=$26`;
+                        updateVals.push(existingId);
+                    }
+                    await pool.query(updateQ, updateVals);
                 } else {
-                    // ถ้ายังไม่เคยมี ให้สร้างใหม่
-                    await prisma.deported_persons.create({
-                        data: dataPayload
-                    });
+                    const insertQ = `INSERT INTO deported_persons (
+                        id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
+                        date_of_birth, gender, age, national_id, passport_id, address,
+                        building, floor, room, job_type, role, salary, paid_by, payment_method,
+                        number_of_case, number_of_warrant, victim_indicator, responsible_agency, note, photo_url
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)`;
+                    await pool.query(insertQ, [uuidv4(), ...values, drivePhotoUrl || null]);
                 }
 
                 successCount++;
             } catch (dbErr) {
-                errors.push(`แถวที่ ${i + 1} (${thName.first || "ไม่ระบุ"}): ${dbErr.message}`);
+                errors.push(`แถวที่ ${i + 1}: ${dbErr.message}`);
             }
 
-            if (jobId && global.uploadProgress[jobId]) {
-                global.uploadProgress[jobId].current = i + 1;
-            }
+            if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].current = i + 1;
         }
 
         if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
-
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
         res.status(200).json({
             success: true,
-            message: `อัปโหลดและบันทึกข้อมูลลง DB สำเร็จ ${successCount} จาก ${rawData.length} รายการ`,
+            message: `อัปโหลดและบันทึกข้อมูลสำเร็จ ${successCount} จาก ${rawData.length} รายการ`,
             errors: errors.length > 0 ? errors : undefined
         });
-
     } catch (error) {
         if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-        res.status(500).json({ success: false, message: "เกิดข้อผิดพลาดในการประมวลผลระบบ: " + error.message });
+        res.status(500).json({ success: false, message: "เกิดข้อผิดพลาด: " + error.message });
     }
 };

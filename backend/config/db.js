@@ -1,25 +1,24 @@
 const { Pool } = require("pg");
 
-// ดึง Connection String จาก DATABASE_URL ที่โหลดมาจากเซิร์ฟเวอร์หลัก
 const connectionString = process.env.DATABASE_URL;
-
-// เช็คว่าถ้าต่อ Localhost ไม่ต้องใช้ SSL แต่ถ้าต่อ Cloud (เช่น Render) ต้องใช้ SSL
 const isLocalhost = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
 
 const pool = new Pool({
   connectionString: connectionString,
-  ssl: isLocalhost ? false : { rejectUnauthorized: false } // Render บังคับใช้ SSL
+  ssl: isLocalhost ? false : { rejectUnauthorized: false },
+  // ⚡ เพิ่มเพื่อประสิทธิภาพการดึงและอัพโหลดข้อมูลที่ไวที่สุด
+  max: 25,                 // จำนวน Client สูงสุดใน Pool
+  idleTimeoutMillis: 30000, // ปิด Connection ที่ไม่ได้ใช้งานภายใน 30 วินาที
+  connectionTimeoutMillis: 10000, // Timeout ถ้าต่อฐานข้อมูลไม่ได้ภายใน 10 วินาที (ช่วยให้เซิร์ฟเวอร์ตอบกลับไวขึ้นเมื่อมีปัญหา)
 });
 
-// รับ client มาเพื่อเช็คสถานะ จากนั้นทำการ release ทันทีเพื่อป้องกัน Connection Leak
 pool.connect()
   .then((client) => {
-    console.log("✅ PostgreSQL Connected Successfully");
+    console.log("✅ PostgreSQL Connected Successfully & Pool Optimized");
     client.release();
   })
   .catch((err) => {
-    console.error("❌ PostgreSQL Connection error:");
-    console.error(err.message);
+    console.error("❌ PostgreSQL Connection error:", err.message);
   });
 
 module.exports = pool;
