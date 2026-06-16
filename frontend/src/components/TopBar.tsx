@@ -35,6 +35,15 @@ export default function TopBar() {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 
+                // ✅ เพิ่มการเช็ค 401 (Unauthorized) เพื่อล้าง Token ทิ้ง
+                if (res.status === 401) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("user_id");
+                    setUser(null);
+                    throw new Error("Unauthorized: Token is invalid or expired");
+                }
+
                 if (!res.ok) {
                     throw new Error(`HTTP error! status: ${res.status}`);
                 }
@@ -44,8 +53,11 @@ export default function TopBar() {
                 if (data.success) {
                     setUser(data.data);
                 } else {
+                    // ลบของเก่าทิ้งถ้า Token ไม่ผ่าน
                     localStorage.removeItem("token");
                     localStorage.removeItem("user");
+                    localStorage.removeItem("user_id");
+                    setUser(null);
                 }
             } catch (err) {
                 console.error("Failed to fetch user", err);
