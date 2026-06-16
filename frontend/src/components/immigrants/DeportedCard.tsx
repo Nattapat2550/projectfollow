@@ -35,7 +35,9 @@ export default function DeportedCard({ data }: DeportedCardProps) {
       <div className="absolute inset-0 flex flex-col p-[4%]">
         <div className="flex items-start justify-between mb-[3%]">
           <div className="flex items-center gap-[3%]">
-            <div className="bg-white rounded-full shrink-0 shadow-inner" style={{ width: "11%", aspectRatio: "1/1" }} />
+            <div className="bg-white rounded-full shrink-0 shadow-inner overflow-hidden" style={{ width: "11%", aspectRatio: "1/1" }} >
+            <img src={"/return.png"} className="translate-y-[-0px]"></img>
+            </div>
             <div>
               <p className="font-bold text-slate-900 leading-tight" style={{ fontSize: "clamp(10px, 3.2vw, 28px)" }}>ผู้ถูกส่งตัวกลับ</p>
               <p className="text-slate-700 font-medium" style={{ fontSize: "clamp(7px, 1.6vw, 14px)" }}>เลขประจำตัวประชาชน</p>

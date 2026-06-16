@@ -164,8 +164,7 @@ export default function IllegalCard({ data }: IllegalCardProps) {
                />
             ) : (
               <div className="flex flex-col items-center justify-end w-full h-full pb-[8%]">
-                <div className="bg-[#BDBDBD] rounded-full" style={{ width: "42%", aspectRatio: "1/1", marginBottom: "4%" }} />
-                <div className="bg-[#BDBDBD] rounded-t-full" style={{ width: "72%", height: "38%" }} />
+                <img src={"/enter.png"} className="opacity-40"></img>
               </div>
             )}
           </div>

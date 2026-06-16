@@ -177,6 +177,7 @@ export default async function Home() {
         addHref="/immigrants/illegal/create"
         chartData={illegalChart}
         chartTitle="สัญชาติ (Top 6)"
+        imageSrc="/enter.png"
       />
 
       <HomeCard
@@ -187,6 +188,7 @@ export default async function Home() {
         addHref="/immigrants/deported/create"
         chartData={deportedChart}
         chartTitle="ช่องทางการส่งกลับ"
+        imageSrc="return.png"
       />
     </div>
   );
@@ -200,6 +202,7 @@ interface HomeCardProps {
   addHref: string;
   chartData: ChartItem[];
   chartTitle: string;
+  imageSrc: string;
 }
 
 function HomeCard({
@@ -210,6 +213,7 @@ function HomeCard({
   addHref,
   chartData,
   chartTitle,
+  imageSrc
 }: HomeCardProps) {
   return (
     <div
@@ -241,7 +245,7 @@ function HomeCard({
           style={{ borderBottom: "1px solid var(--shadow)" }}
         >
           <div
-            className="rounded-lg shrink-0 flex items-center justify-center"
+            className="rounded-lg shrink-0 flex items-center justify-center overflow-hidden"
             style={{
               width: 80,
               height: 64,
@@ -249,15 +253,10 @@ function HomeCard({
               border: "1px solid var(--shadow)",
             }}
           >
-            <Image
-              src="/police.png"
-              alt="icon"
-              width={40}
-              height={40}
-              className="opacity-40"
-            />
-          </div>
-
+              <img src={imageSrc} className="ratio-[1/1] dark:invert"></img>
+            
+            </div>
+          
           <div className="flex flex-col shrink-0">
             <span
               className="font-bold leading-tight"
