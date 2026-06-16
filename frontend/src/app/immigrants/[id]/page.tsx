@@ -8,6 +8,31 @@ import DeportedCard from "@/components/immigrants/DeportedCard";
 import IllegalCard from "@/components/immigrants/IllegalCard";
 import RightPanel from "@/components/immigrants/RightPanel";
 
+// 🛠️ เพิ่มฟังก์ชันดึง Direct URL จาก Google Drive แบบเดียวกับหน้า Card
+const getValidImageUrl = (url: string | null) => {
+  if (!url) return null;
+  if (url.startsWith("blob:")) return url;
+
+  if (url.includes("drive.google.com/file/d/")) {
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+    }
+  } else if (url.includes("id=")) {
+    const match = url.match(/id=([^&]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+    }
+  }
+
+  if (url.startsWith("/")) {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    return `${backendUrl}${url}`;
+  }
+
+  return url;
+};
+
 export default function ImmigrantDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -27,7 +52,7 @@ export default function ImmigrantDetailPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // 🛠️ แก้ไข fetchData ให้ยิงหา API แบบรายคนโดยตรง
+  // 🛠️ แก้ไข fetchData ให้เชื่อมต่อฟังก์ชันดึง URL ที่ถูกต้อง
   const fetchData = async () => {
     if (!id) return;
     
@@ -49,7 +74,9 @@ export default function ImmigrantDetailPage() {
             date_of_birth: foundDep.date_of_birth ? foundDep.date_of_birth.split("T")[0] : "",
             return_date: foundDep.return_date ? foundDep.return_date.split("T")[0] : "",
           });
-          setImagePreview(foundDep.photo_url || null);
+
+          // ใช้ฟังก์ชันแปลง URL
+          setImagePreview(getValidImageUrl(foundDep.photo_url));
           return; // เจอแล้ว หยุดการทำงานเลย
         }
       }
@@ -67,7 +94,9 @@ export default function ImmigrantDetailPage() {
             ...foundIll,
             detected_date: foundIll.detected_date ? foundIll.detected_date.split("T")[0] : "",
           });
-          setImagePreview(foundIll.photo_url || null);
+
+          // ใช้ฟังก์ชันแปลง URL
+          setImagePreview(getValidImageUrl(foundIll.photo_url));
           return; // เจอแล้ว หยุดการทำงานเลย
         }
       }
@@ -204,6 +233,7 @@ export default function ImmigrantDetailPage() {
               <img 
                 src={imagePreview} 
                 alt="Preview" 
+                referrerPolicy="no-referrer" /* 🛠️ เพิ่ม no-referrer เพื่อไม่ให้ Google Drive บล็อกภาพ */
                 className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" 
               />
             )}
@@ -211,7 +241,7 @@ export default function ImmigrantDetailPage() {
               type="file"
               accept="image/*"
               onChange={handleImageChange}
-              className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-stone-200 dark:file:bg-stone-800 file:text-foreground hover:file:opacity-80 cursor-pointer"
+              className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-stone-200 dark:file:bg-stone-800 file:text-slate-800 dark:file:text-slate-200 hover:file:opacity-80 cursor-pointer"
             />
           </div>
 
@@ -513,7 +543,7 @@ export default function ImmigrantDetailPage() {
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-foreground font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer"
             >
               <X size={16} />
               <span>ยกเลิก</span>
