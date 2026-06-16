@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const fs = require('fs');
+const { Readable } = require('stream'); // 🟢 นำเข้าเครื่องมือแปลง Buffer เป็น Stream
 
-// ดึงค่าการตั้งค่าจากไฟล์ .env
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
@@ -26,15 +26,25 @@ const uploadToDrive = async (fileObject, folderId) => {
       fileMetadata.parents = [folderId];
     }
 
+    // 🟢 ถ้ามีไฟล์แบบ Buffer (อ่านตรงจาก Excel) ให้แปลงเป็น Stream แบบไม่ผ่าน Harddisk
+    let bodyStream;
+    if (fileObject.buffer) {
+        bodyStream = Readable.from(fileObject.buffer);
+    } else {
+        bodyStream = fs.createReadStream(fileObject.path);
+    }
+
     const media = {
       mimeType: fileObject.mimetype,
-      body: fs.createReadStream(fileObject.path)
+      body: bodyStream
     };
 
     const response = await driveService.files.create({
       resource: fileMetadata,
       media: media,
       fields: 'id, webViewLink, webContentLink'
+    }, {
+        timeout: 60000 // 🟢 เพิ่มเวลา Timeout เป็น 60 วินาทีป้องกัน Google ปิดหนี
     });
 
     const fileId = response.data.id;

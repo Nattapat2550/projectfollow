@@ -3,7 +3,7 @@ const ExcelJS = require("exceljs");
 const fs = require("fs");
 const path = require("path");
 const pool = require("../config/db");
-const { v4: uuidv4 } = require("uuid"); // 🟢 ใช้สร้าง ID
+const { v4: uuidv4 } = require("uuid"); 
 const { uploadToDrive } = require("../services/googleDriveService"); 
 
 // Helper functions คงเดิม
@@ -58,6 +58,22 @@ const parseThaiDOBToDate = (dobStr) => {
     return isNaN(d.getTime()) ? null : d;
 };
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const uploadWithRetry = async (fileObj, folderId, maxRetries = 5) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            return await uploadToDrive(fileObj, folderId);
+        } catch (error) {
+            console.error(`[Drive Upload Attempt ${attempt}/${maxRetries} Failed]:`, error.message);
+            if (attempt === maxRetries) {
+                throw new Error(`อัปโหลดล้มเหลวหลังจากพยายาม ${maxRetries} ครั้ง (${error.message})`);
+            }
+            await delay(attempt * 2000); 
+        }
+    }
+};
+
 if (!global.uploadProgress) { global.uploadProgress = {}; }
   
 exports.getUploadProgress = (req, res) => {
@@ -83,7 +99,7 @@ exports.uploadExcel = async (req, res) => {
             const enName = row["ชื่อ สกุล (อังกฤษ)"];
             const idCard = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"];
             const pass = row["เลขพาสปอร์ต"];
-            return (thName && thName.trim() !== "") || (enName && enName.trim() !== "") || idCard || pass;
+            return (thName && String(thName).trim() !== "") || (enName && String(enName).trim() !== "") || idCard || pass;
         });
 
         const workbookExt = new ExcelJS.Workbook();
@@ -99,7 +115,7 @@ exports.uploadExcel = async (req, res) => {
             }
         }
 
-        // ================= โหมดพรีวิว (ไม่ต้องแก้ DB โค้ดเดิมใช้ได้เลย) =================
+        // ================= โหมดพรีวิว =================
         if (action === "preview") {
             const preview_data = [];
             for (let i = 0; i < rawData.length; i++) {
@@ -158,16 +174,25 @@ exports.uploadExcel = async (req, res) => {
             const autoGender = determineGenderFromName(rawThName) || determineGenderFromName(rawEnName) || (row["เพศ"] ? String(row["เพศ"]).trim() : null);
 
             let drivePhotoUrl = null;
+
             if (imagesMap[i + 1]) {
                 try {
-                    const tempFileName = `temp_${Date.now()}_${Math.floor(Math.random() * 1000)}.${imagesMap[i + 1].extension}`;
-                    const tempFilePath = path.join(uploadsDir, tempFileName);
-                    fs.writeFileSync(tempFilePath, imagesMap[i + 1].buffer);
+                    // 🟢 ไม่เขียนไฟล์ลงเครื่องแล้ว โยน Buffer ส่ง Google Drive Service ดื้อๆ เลย
+                    const tempFileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${imagesMap[i + 1].extension}`;
                     
-                    const driveResult = await uploadToDrive({ originalname: tempFileName, mimetype: `image/${imagesMap[i + 1].extension}`, path: tempFilePath }, process.env.GOOGLE_DRIVE_FOLDER_ID);
-                    drivePhotoUrl = driveResult.webViewLink; 
-                    if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
-                } catch (e) { console.error("Drive Upload Error:", e); }
+                    const driveResult = await uploadWithRetry({ 
+                        originalname: tempFileName, 
+                        mimetype: `image/${imagesMap[i + 1].extension}`, 
+                        buffer: imagesMap[i + 1].buffer // 🟢 คีย์หัวใจอยู่ที่ตรงนี้
+                    }, process.env.GOOGLE_DRIVE_FOLDER_ID);
+                    
+                    if (driveResult && driveResult.webViewLink) {
+                        drivePhotoUrl = driveResult.webViewLink; 
+                    }
+                } catch (e) { 
+                    console.error("Drive Upload Final Error:", e);
+                    errors.push(`แถวที่ ${i + 1}: อัปโหลดรูปภาพไม่สำเร็จ (${e.message})`);
+                }
             } else if (row["รูปจาก ทร.14"]) {
                 drivePhotoUrl = String(row["รูปจาก ทร.14"]);
             }
@@ -184,7 +209,6 @@ exports.uploadExcel = async (req, res) => {
             const parsedAge = parseInt(row["อายุ(ปี)"]);
 
             try {
-                // 🟢 ใช้ SQL ค้นหาข้อมูลเก่า
                 let existingId = null;
                 if (!id_card.startsWith("NO_ID_")) {
                     const natCheck = await pool.query("SELECT id FROM deported_persons WHERE national_id = $1", [id_card]);
@@ -247,6 +271,8 @@ exports.uploadExcel = async (req, res) => {
             }
 
             if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].current = i + 1;
+            
+            await delay(200); 
         }
 
         if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';

@@ -1,10 +1,12 @@
 // backend/controllers/illegalController.js
 
-const pool = require("../config/db"); // ใช้ Pool ที่จูนออปชันแล้ว
-const { v4: uuidv4 } = require("uuid"); // ใช้สร้าง ID แทน Prisma
+const pool = require("../config/db"); 
+const { v4: uuidv4 } = require("uuid"); 
 const xlsx = require("xlsx");
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
 const { safeParseDate, normalizeNationality, processName, processVictimStatus, findValue, determineGender, parseThaiDateToDate } = require("../utils/immigrantHelpers");
+
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 if (!global.uploadProgress) {
   global.uploadProgress = {};
@@ -154,6 +156,7 @@ exports.uploadExcelIllegal = async (req, res) => {
     if (action === "preview") {
       const preview_data = [];
       for (let i = 0; i < allJsonData.length; i++) {
+        // ... (ส่วน Preview คงเดิม)
         const row = allJsonData[i];
         const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
         const { prefix, fname, mname, lname, isThai, hasName } = processName(rawFullName);
@@ -192,7 +195,9 @@ exports.uploadExcelIllegal = async (req, res) => {
        global.uploadProgress[jobId] = { current: 0, total: allJsonData.length, status: 'processing' };
     }
 
-    let successCount = 0;
+    // 🟢 แยกตัวนับ Insert (เพิ่มใหม่) และ Update (แก้ไขของเดิม)
+    let insertedCount = 0;
+    let updatedCount = 0;
     let errors = [];
 
     for (let i = 0; i < allJsonData.length; i++) {
@@ -215,51 +220,59 @@ exports.uploadExcelIllegal = async (req, res) => {
          }
 
          const values = [
-            hasName && isThai && fname ? fname : "ไม่ระบุ", // 1
-            isThai ? mname : null, // 2
-            hasName && isThai && lname ? lname : "ไม่ระบุ", // 3
-            hasName && !isThai ? fname || null : null, // 4
-            !isThai ? mname : null, // 5
-            hasName && !isThai ? lname || null : null, // 6
-            findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, // 7
-            passport_id, // 8
-            findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ", // 9
-            findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null, // 10
-            findValue(row, "หมายจับ") ? String(findValue(row, "หมายจับ")) : null, // 11
-            determineGender(row, prefix), // 12
-            parseThaiDateToDate(row._sheetName), // 13
-            isVictim, // 14
-            details // 15
+            (hasName && isThai && fname ? fname : "ไม่ระบุ") || null,
+            (isThai ? mname : null) || null,
+            (hasName && isThai && lname ? lname : "ไม่ระบุ") || null,
+            (hasName && !isThai ? fname : null) || null,
+            (!isThai ? mname : null) || null,
+            (hasName && !isThai ? lname : null) || null,
+            findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null,
+            passport_id,
+            findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")) : "ไม่ระบุ",
+            findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")) : null,
+            findValue(row, "หมายจับ") ? String(findValue(row, "หมายจับ")) : null,
+            determineGender(row, prefix) || null,
+            parseThaiDateToDate(row._sheetName) || null,
+            isVictim,
+            details || null
          ];
 
          if (existingId) {
+             // 🟢 ถ้าเจอพาสปอร์ตซ้ำ ทำการ UPDATE และบวกเลข updatedCount
              const updateQ = `UPDATE illegal_immigrants SET 
                 first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
                 nationality=$7, passport_id=$8, detected_location=$9, workplace=$10, warrant=$11, gender=$12, detected_date=$13, 
                 is_victim=$14, screening_details=$15 WHERE id=$16`;
              await pool.query(updateQ, [...values, existingId]);
+             updatedCount++;
          } else {
+             // 🟢 ถ้าไม่ซ้ำ ทำการ INSERT และบวกเลข insertedCount
              const insertQ = `INSERT INTO illegal_immigrants 
                 (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
                 nationality, passport_id, detected_location, workplace, warrant, gender, detected_date, is_victim, screening_details) 
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`;
              await pool.query(insertQ, [uuidv4(), ...values]);
+             insertedCount++;
          }
-         successCount++;
       } catch (dbErr) {
+         console.error(`\n❌ [DB Error] แถวที่ ${i+1} ข้ามการบันทึก: ${dbErr.message}`);
          errors.push(`แถวที่ ${i+1}: ${dbErr.message}`);
       }
 
       if (jobId && global.uploadProgress[jobId]) {
          global.uploadProgress[jobId].current = i + 1;
       }
+
+      // 🟢 หน่วงเวลาทุกๆ 1 แถวเพื่อความชัวร์ที่สุด (ป้องกัน Connection Pool เต็มแบบ 100%)
+      await delay(20);
     }
 
     if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
 
+    // 🟢 ส่งข้อความกลับไปอธิบายให้ผู้ใช้งานเข้าใจว่าทำไมตารางถึงขยับไม่เท่ากัน
     res.status(200).json({ 
         success: true, 
-        message: `บันทึกข้อมูลแอบเข้าสำเร็จ ${successCount} จาก ${allJsonData.length} รายการ`,
+        message: `ประมวลผลสำเร็จ ${insertedCount + updatedCount} รายการ (เพิ่มลง DB ใหม่: ${insertedCount} คน, อัปเดตข้อมูลเดิม: ${updatedCount} คน) จากทั้งหมด ${allJsonData.length} รายการ`,
         errors: errors.length > 0 ? errors : undefined 
     });
   } catch (err) {
