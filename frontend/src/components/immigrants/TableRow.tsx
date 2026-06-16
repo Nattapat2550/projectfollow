@@ -3,11 +3,7 @@ import { Eye } from "lucide-react";
 
 export default function TableRow({ person, isMock, type }: { person: any, isMock: boolean, type: "deported" | "illegal" }) {
   
-  // สร้างปุ่มกดเข้าไปดูรายละเอียดโดยลิงก์ให้ตรงกับประเภทที่เลือก
   const ActionButtons = () => {
-    // ถ้าเป็น illegal ไปที่ /immigrants/illegal/[id]
-    // ถ้าเป็น deported ไปที่ /deport/[id] 
-    // (เปลี่ยนพาร์ทให้ตรงกับโครงสร้าง Folder ในแอปของคุณ)
     const detailUrl = type === "illegal" 
         ? `/immigrant/${person.id}` 
         : `/deport/${person.id}`;
@@ -25,23 +21,22 @@ export default function TableRow({ person, isMock, type }: { person: any, isMock
     );
   };
 
-  // ─── 1. ข้อมูลในตาราง แอบเข้าเมือง (Illegal) ───
   if (type === "illegal") {
     return (
       <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-        <td className="p-4 align-middle font-medium text-foreground">
+        <td className="p-4 align-middle font-medium text-foreground truncate" title={`${person.first_name_th} ${person.last_name_th}`}>
            {person.first_name_th} {person.last_name_th}
         </td>
-        <td className="p-4 align-middle text-muted-foreground">
+        <td className="p-4 align-middle text-muted-foreground truncate" title={person.nationality || "ไม่ระบุ"}>
           {person.nationality || "ไม่ระบุ"}
         </td>
-        <td className="p-4 align-middle text-muted-foreground">
+        <td className="p-4 align-middle text-muted-foreground truncate">
           {person.detected_date ? new Date(person.detected_date).toLocaleDateString('th-TH') : "ไม่ระบุ"}
         </td>
-        <td className="p-4 align-middle text-muted-foreground max-w-50 truncate" title={person.detected_location}>
+        <td className="p-4 align-middle text-muted-foreground truncate" title={person.detected_location}>
           {person.detected_location || "ไม่ระบุสถานที่"}
         </td>
-        <td className="p-4 align-middle">
+        <td className="p-4 align-middle truncate">
           {person.is_victim ? (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
               เป็นผู้เสียหาย
@@ -59,25 +54,24 @@ export default function TableRow({ person, isMock, type }: { person: any, isMock
     );
   }
 
-  // ─── 2. ข้อมูลในตาราง ผู้ถูกส่งกลับ (Deported) ───
   return (
     <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-        <td className="p-4 align-middle font-medium text-foreground">
+        <td className="p-4 align-middle font-medium text-foreground truncate" title={`${person.first_name_th} ${person.last_name_th}`}>
            {person.first_name_th} {person.last_name_th}
         </td>
-        <td className="p-4 align-middle text-muted-foreground">
+        <td className="p-4 align-middle text-muted-foreground truncate">
           {person.date_of_birth || "ไม่ระบุ"} {person.age ? `(${person.age} ปี)` : ""}
         </td>
-        <td className="p-4 align-middle text-muted-foreground">
+        <td className="p-4 align-middle text-muted-foreground truncate" title={person.national_id || person.passport_id || "ไม่ระบุ"}>
           {person.national_id || person.passport_id || "ไม่ระบุ"}
         </td>
-        <td className="p-4 align-middle text-muted-foreground max-w-50 truncate" title={person.address}>
+        <td className="p-4 align-middle text-muted-foreground truncate" title={person.address}>
           {person.address || "ไม่ระบุสถานที่"}
         </td>
-        <td className="p-4 align-middle text-muted-foreground">
+        <td className="p-4 align-middle text-muted-foreground truncate">
           {person.return_date ? new Date(person.return_date).toLocaleDateString('th-TH') : "รอการส่งกลับ"}
         </td>
-        <td className="p-4 align-middle text-sm">
+        <td className="p-4 align-middle text-sm truncate">
            {person.result === "SUCCESS" && <span className="text-emerald-600 font-semibold bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">สำเร็จ</span>}
            {person.result === "FAILED" && <span className="text-red-600 font-semibold bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">ล้มเหลว</span>}
            {(!person.result || person.result === "PENDING") && <span className="text-amber-600 font-semibold bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">รอดำเนินการ</span>}

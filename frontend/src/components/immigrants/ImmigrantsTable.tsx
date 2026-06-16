@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import TableHeader, { SortField } from "./TableHeader";
+import TableHeader from "./TableHeader";
 import TableRow from "./TableRow";
+import { useTableSort } from "@/hooks/useTableSort"; // 🟢 ดึง hook ใหม่มาใช้ (แก้ไข path ตามจริง)
 
 interface ImmigrantsTableProps {
   data: any[]; 
@@ -11,66 +11,8 @@ interface ImmigrantsTableProps {
 }
 
 export default function ImmigrantsTable({ data, isMock, type }: ImmigrantsTableProps) {
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  };
-
-  const sortedData = useMemo(() => {
-    if (!sortField) return data;
-
-    return [...data].sort((a: any, b: any) => {
-      // จัดการเรียงลำดับคอลัมน์ที่เป็นวันที่
-      const dateFields = ["date_of_birth", "detected_date", "return_date"];
-      if (dateFields.includes(sortField as string)) {
-        const parseDateToTimestamp = (val: any) => {
-          if (!val || val === "ไม่ระบุ") return 0;
-          const dateStr = String(val).trim();
-          
-          // ตรวจสอบกรณีรูปแบบ DD/MM/YYYY
-          if (dateStr.includes("/")) {
-            const parts = dateStr.split("/");
-            if (parts.length === 3) {
-              const [day, month, year] = parts;
-              // รองรับกรณีเป็นปี พ.ศ.
-              const parsedYear = parseInt(year) > 2500 ? parseInt(year) - 543 : year;
-              return new Date(`${parsedYear}-${month}-${day}`).getTime() || 0;
-            }
-          }
-          // สำหรับ ISO String หรือรูปแบบวันที่มาตรฐาน
-          const parsed = new Date(dateStr).getTime();
-          return isNaN(parsed) ? 0 : parsed;
-        };
-
-        const aTime = parseDateToTimestamp(a[sortField]);
-        const bTime = parseDateToTimestamp(b[sortField]);
-
-        return sortDirection === "asc" ? aTime - bTime : bTime - aTime;
-      }
-
-      // จัดการคอลัมน์ข้อความทั่วไป
-      let aValue = "";
-      let bValue = "";
-
-      if (sortField === "name") {
-        aValue = `${a.first_name_th || ""} ${a.last_name_th || ""}`.trim();
-        bValue = `${b.first_name_th || ""} ${b.last_name_th || ""}`.trim();
-      } else {
-        aValue = (a[sortField] || "").toString();
-        bValue = (b[sortField] || "").toString();
-      }
-
-      const compareResult = aValue.localeCompare(bValue, "th", { sensitivity: "base" });
-      return sortDirection === "asc" ? compareResult : -compareResult;
-    });
-  }, [data, sortField, sortDirection]);
+  // 🟢 ย้ายตรรกะทั้งหมดออกไปใน Custom Hook
+  const { sortField, sortDirection, handleSort, sortedData } = useTableSort(data);
 
   return (
     <div className="w-full border rounded-lg shadow-sm overflow-hidden" style={{ borderColor: "var(--wrapper)" }}>

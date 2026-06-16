@@ -3,7 +3,7 @@
 const { PrismaClient } = require("@prisma/client");
 const { Pool } = require("pg");
 const { PrismaPg } = require("@prisma/adapter-pg");
-const { convertBEtoAD } = require("../utils/immigrantHelpers");
+const dashboardService = require("../services/dashboardService"); // 🟢 เรียกใช้ Service
 
 const connectionString = process.env.DATABASE_URL;
 const isLocalhost = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
@@ -42,69 +42,10 @@ exports.getDashboardData = async (req, res) => {
     const type = req.query.type || "deported";
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
-    const sortBy = req.query.sortBy;
-    const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
-    const search = req.query.search;
-    
-    const startDate = convertBEtoAD(req.query.startDate);
-    const endDate = convertBEtoAD(req.query.endDate);
-    const vStart = startDate && startDate.trim() !== "";
-    const vEnd = endDate && endDate.trim() !== "";
-
-    const dobStart = convertBEtoAD(req.query.dobStart);
-    const dobEnd = convertBEtoAD(req.query.dobEnd);
-    const vDobStart = dobStart && dobStart.trim() !== "";
-    const vDobEnd = dobEnd && dobEnd.trim() !== "";
-
     const skip = (page - 1) * limit;
-    let whereCondition = { AND: [] };
 
-    if (vStart || vEnd) {
-      const dateField = type === "deported" ? "return_date" : "detected_date";
-      let dateFilter = {};
-      if (vStart) dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`);
-      if (vEnd) dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`);
-      whereCondition.AND.push({ [dateField]: dateFilter });
-    }
-
-    if (vDobStart || vDobEnd) {
-      let dobFilter = {};
-      if (vDobStart) dobFilter.gte = new Date(`${dobStart}T00:00:00.000Z`);
-      if (vDobEnd) dobFilter.lte = new Date(`${dobEnd}T23:59:59.999Z`);
-      whereCondition.AND.push({ date_of_birth: dobFilter });
-    }
-
-    if (search && search.trim() !== "") {
-      const keywords = search.trim().split(/\s+/);
-      const searchConditions = keywords.map((keyword) => {
-        const searchFields = [
-          { first_name_th: { contains: keyword, mode: "insensitive" } },
-          { last_name_th: { contains: keyword, mode: "insensitive" } },
-          { first_name_en: { contains: keyword, mode: "insensitive" } },
-          { last_name_en: { contains: keyword, mode: "insensitive" } },
-          { passport_id: { contains: keyword, mode: "insensitive" } },
-        ];
-        if (type === "deported") {
-          searchFields.push({ national_id: { contains: keyword, mode: "insensitive" } });
-          searchFields.push({ channel: { contains: keyword, mode: "insensitive" } });
-        } else {
-          searchFields.push({ nationality: { contains: keyword, mode: "insensitive" } });
-          searchFields.push({ detected_location: { contains: keyword, mode: "insensitive" } });
-        }
-        return { OR: searchFields };
-      });
-      whereCondition.AND.push(...searchConditions);
-    }
-    
-    if (whereCondition.AND.length === 0) whereCondition = {};
-
-    let orderByCondition = {};
-    if (sortBy && sortBy.trim() !== "") {
-      if (sortBy === "name") orderByCondition = [{ first_name_th: sortOrder }, { last_name_th: sortOrder }];
-      else orderByCondition = { [sortBy]: sortOrder };
-    } else {
-      orderByCondition = type === "deported" ? { return_date: "desc" } : { detected_date: "desc" };
-    }
+    // 🟢 ให้ Service จัดการสร้าง Query Conditions ทั้งหมด
+    const { whereCondition, orderByCondition } = dashboardService.buildDashboardQuery(req.query, type);
 
     let tableData = [];
     let totalItems = 0;
@@ -121,7 +62,16 @@ exports.getDashboardData = async (req, res) => {
       ]);
     }
 
-    res.status(200).json({ success: true, tableData, meta: { totalItems, totalPages: Math.ceil(totalItems / limit) || 1, currentPage: page, limit: limit } });
+    res.status(200).json({ 
+      success: true, 
+      tableData, 
+      meta: { 
+        totalItems, 
+        totalPages: Math.ceil(totalItems / limit) || 1, 
+        currentPage: page, 
+        limit: limit 
+      } 
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: "Error", error: err.message });
   }

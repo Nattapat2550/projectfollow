@@ -22,11 +22,11 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   if (total === 0) return null;
 
-  const SIZE = 240; // ขนาดพื้นที่ SVG ใหญ่ขึ้น
+  const SIZE = 240; 
   const cx = SIZE / 2;
   const cy = SIZE / 2;
-  const R = 100; // รัศมีวงนอก ใหญ่เต็มตา
-  const r = 60;  // รัศมีวงใน
+  const R = 100; 
+  const r = 60;  
 
   let cumulative = 0;
   const slices = data.map((d) => {
@@ -62,7 +62,8 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
   }
 
   return (
-    <div className="flex flex-col items-center justify-start gap-3 w-full h-full min-h-0 overflow-hidden">
+    // ✨ เอา min-h-0 และ overflow-hidden ออก เพื่อให้กราฟและรายการยืดได้เต็มที่
+    <div className="flex flex-col items-center justify-start gap-3 w-full h-full">
       <p className="text-sm font-semibold shrink-0" style={{ color: "var(--header)" }}>{title}</p>
 
       <div className="w-full flex items-center justify-center shrink-0 h-55">
@@ -82,7 +83,7 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
         </svg>
       </div>
 
-      <div className="flex flex-col gap-1 w-full max-w-65 shrink-0 mt-1">
+      <div className="flex flex-col gap-1 w-full max-w-65 shrink-0 mt-1 pb-4">
         {data.map((d, i) => {
           const pct = ((d.value / total) * 100).toFixed(1);
           return (
@@ -159,12 +160,13 @@ export default async function Home() {
 
   return (
     <div
-      className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 w-full"
+      // ✨ เพิ่ม overflow-y-auto ให้เลื่อนแนวตั้งได้
+      className="flex flex-col lg:flex-row gap-6 p-4 sm:p-6 w-full overflow-y-auto overflow-x-hidden"
       style={{
         backgroundColor: "var(--wrapper)",
         boxSizing: "border-box",
-        height: "calc(100vh - 80px)", // พอดีจอ ไม่มี Scroll
-        overflow: "hidden" 
+        // ✨ เปลี่ยนจาก height เป็น minHeight เพื่อให้ยืดตามเนื้อหา และสร้าง Scrollbar เมื่อทะลุจอ
+        minHeight: "calc(100vh - 80px)", 
       }}
     >
       <HomeCard
@@ -218,11 +220,9 @@ function HomeCard({
         borderRadius: "0.2rem",
         boxShadow: "4px 4px 0px rgba(0, 0, 0, 0.25)",
         color: "var(--header)",
-        flex: 1, // แบ่งคนละครึ่ง
-        height: "100%", 
-        minHeight: 0,
+        flex: 1, 
+        // ✨ ลบ height: 100%, minHeight: 0 และ overflow: hidden ทิ้ง เพื่อให้การ์ดขยายตามความยาวกราฟได้
         boxSizing: "border-box",
-        overflow: "hidden"
       }}
     >
       <div
@@ -232,9 +232,8 @@ function HomeCard({
           display: "flex",
           flexDirection: "column",
           flex: 1,
-          minHeight: 0,
           boxSizing: "border-box",
-          overflow: "hidden"
+          // ✨ ลบ overflow: hidden ตรงนี้ด้วย
         }}
       >
         <div
@@ -310,7 +309,8 @@ function HomeCard({
           style={{ borderBottom: "1px solid var(--shadow)" }}
         />
 
-        <div className="flex flex-1 items-start justify-center px-5 py-3 min-h-0 overflow-hidden">
+        {/* ✨ เอา overflow-hidden ออกตรงนี้ด้วย */}
+        <div className="flex flex-1 items-start justify-center px-5 py-3 pt-5">
           {chartData && chartData.length > 0 ? (
             <DonutChart data={chartData} title={chartTitle} />
           ) : (
@@ -334,7 +334,7 @@ function HomeCard({
           style={{ borderBottom: "1px solid var(--shadow)" }}
         />
 
-        <div className="px-5 py-3 shrink-0">
+        <div className="px-5 py-4 shrink-0 pb-5">
           <Link href={addHref} className="block w-full">
             <button
               className="w-full py-2 rounded-lg font-medium text-center transition-opacity hover:opacity-80 cursor-pointer"
