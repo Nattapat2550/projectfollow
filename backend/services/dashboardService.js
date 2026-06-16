@@ -1,67 +1,84 @@
 const { convertBEtoAD } = require("../utils/immigrantHelpers");
 
-exports.buildDashboardQuery = (query, type) => {
+exports.buildDashboardQuerySQL = (query, type) => {
   const { search, sortBy, sortOrder, startDate, endDate, dobStart, dobEnd } = query;
   
   const sDate = convertBEtoAD(startDate);
   const eDate = convertBEtoAD(endDate);
-  const vStart = sDate && sDate.trim() !== "";
-  const vEnd = eDate && eDate.trim() !== "";
-
   const dStart = convertBEtoAD(dobStart);
   const dEnd = convertBEtoAD(dobEnd);
-  const vDobStart = dStart && dStart.trim() !== "";
-  const vDobEnd = dEnd && dEnd.trim() !== "";
 
-  let whereCondition = { AND: [] };
+  let conditions = [];
+  let params = [];
+  let paramIdx = 1;
 
-  if (vStart || vEnd) {
+  if (sDate || eDate) {
     const dateField = type === "deported" ? "return_date" : "detected_date";
-    let dateFilter = {};
-    if (vStart) dateFilter.gte = new Date(`${sDate}T00:00:00.000Z`);
-    if (vEnd) dateFilter.lte = new Date(`${eDate}T23:59:59.999Z`);
-    whereCondition.AND.push({ [dateField]: dateFilter });
+    if (sDate && eDate) {
+      conditions.push(`DATE(${dateField}) >= $${paramIdx} AND DATE(${dateField}) <= $${paramIdx + 1}`);
+      params.push(sDate, eDate);
+      paramIdx += 2;
+    } else if (sDate) {
+      conditions.push(`DATE(${dateField}) >= $${paramIdx}`);
+      params.push(sDate);
+      paramIdx++;
+    } else if (eDate) {
+      conditions.push(`DATE(${dateField}) <= $${paramIdx}`);
+      params.push(eDate);
+      paramIdx++;
+    }
   }
 
-  if (vDobStart || vDobEnd) {
-    let dobFilter = {};
-    if (vDobStart) dobFilter.gte = new Date(`${dStart}T00:00:00.000Z`);
-    if (vDobEnd) dobFilter.lte = new Date(`${dEnd}T23:59:59.999Z`);
-    whereCondition.AND.push({ date_of_birth: dobFilter });
+  if (dStart || dEnd) {
+    if (dStart && dEnd) {
+      conditions.push(`DATE(date_of_birth) >= $${paramIdx} AND DATE(date_of_birth) <= $${paramIdx + 1}`);
+      params.push(dStart, dEnd);
+      paramIdx += 2;
+    } else if (dStart) {
+      conditions.push(`DATE(date_of_birth) >= $${paramIdx}`);
+      params.push(dStart);
+      paramIdx++;
+    } else if (dEnd) {
+      conditions.push(`DATE(date_of_birth) <= $${paramIdx}`);
+      params.push(dEnd);
+      paramIdx++;
+    }
   }
 
   if (search && search.trim() !== "") {
     const keywords = search.trim().split(/\s+/);
     const searchConditions = keywords.map((keyword) => {
-      const searchFields = [
-        { first_name_th: { contains: keyword, mode: "insensitive" } },
-        { last_name_th: { contains: keyword, mode: "insensitive" } },
-        { first_name_en: { contains: keyword, mode: "insensitive" } },
-        { last_name_en: { contains: keyword, mode: "insensitive" } },
-        { passport_id: { contains: keyword, mode: "insensitive" } },
-      ];
+      const kw = `%${keyword}%`;
+      let fields = `first_name_th ILIKE $${paramIdx} OR last_name_th ILIKE $${paramIdx} OR first_name_en ILIKE $${paramIdx} OR last_name_en ILIKE $${paramIdx} OR passport_id ILIKE $${paramIdx}`;
+      
       if (type === "deported") {
-        searchFields.push({ national_id: { contains: keyword, mode: "insensitive" } });
-        searchFields.push({ channel: { contains: keyword, mode: "insensitive" } });
+        fields += ` OR national_id ILIKE $${paramIdx} OR channel ILIKE $${paramIdx}`;
       } else {
-        searchFields.push({ nationality: { contains: keyword, mode: "insensitive" } });
-        searchFields.push({ detected_location: { contains: keyword, mode: "insensitive" } });
+        fields += ` OR nationality ILIKE $${paramIdx} OR detected_location ILIKE $${paramIdx}`;
       }
-      return { OR: searchFields };
+      
+      params.push(kw);
+      const str = `(${fields})`;
+      paramIdx++;
+      return str;
     });
-    whereCondition.AND.push(...searchConditions);
+    conditions.push(`(${searchConditions.join(" AND ")})`);
   }
   
-  if (whereCondition.AND.length === 0) whereCondition = {};
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-  let orderByCondition = {};
-  const order = sortOrder === "desc" ? "desc" : "asc";
+  let orderClause = "";
+  const dir = sortOrder === "desc" ? "DESC" : "ASC";
   if (sortBy && sortBy.trim() !== "") {
-    if (sortBy === "name") orderByCondition = [{ first_name_th: order }, { last_name_th: order }];
-    else orderByCondition = { [sortBy]: order };
+    if (sortBy === "name") {
+        orderClause = `ORDER BY first_name_th ${dir} NULLS LAST, last_name_th ${dir} NULLS LAST, id DESC`;
+    } else {
+        orderClause = `ORDER BY ${sortBy} ${dir} NULLS LAST, id DESC`;
+    }
   } else {
-    orderByCondition = type === "deported" ? { return_date: "desc" } : { detected_date: "desc" };
+    const defaultField = type === "deported" ? "return_date" : "detected_date";
+    orderClause = `ORDER BY ${defaultField} DESC NULLS LAST, id DESC`;
   }
 
-  return { whereCondition, orderByCondition };
+  return { whereClause, params, orderClause };
 };

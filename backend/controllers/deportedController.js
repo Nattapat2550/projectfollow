@@ -1,38 +1,37 @@
 // backend/controllers/deportedController.js
 
-const { PrismaClient } = require("@prisma/client");
-const { Pool } = require("pg");
-const { PrismaPg } = require("@prisma/adapter-pg");
+const pool = require("../config/db"); // ใช้ Pool ที่จูนออปชันแล้ว
+const { v4: uuidv4 } = require("uuid"); // ใช้สร้าง ID
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
 const { safeParseDate } = require("../utils/immigrantHelpers");
 
-const connectionString = process.env.DATABASE_URL;
-const isLocalhost = !connectionString || connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
-
-const pool = new Pool({ connectionString, ssl: isLocalhost ? false : { rejectUnauthorized: false } });
-const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
-
 exports.getDeportedById = async (req, res) => {
   try {
-    const data = await prisma.deported_persons.findUnique({ where: { id: req.params.id } });
-    if (!data) return res.status(404).json({ success: false, message: "Not found" });
-    res.status(200).json({ success: true, data });
-  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
+    const { rows } = await pool.query("SELECT * FROM deported_persons WHERE id = $1", [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ success: false, message: "Not found" });
+    
+    res.status(200).json({ success: true, data: rows[0] });
+  } catch (err) { 
+    res.status(500).json({ success: false, error: err.message }); 
+  }
 };
 
 exports.createDeported = async (req, res) => {
   try {
     const data = req.body;
-    if (!data.first_name_th || !data.last_name_th || !data.national_id) return res.status(400).json({ success: false, message: "ข้อมูลไม่ครบถ้วน" });
+    if (!data.first_name_th || !data.last_name_th || !data.national_id) {
+      return res.status(400).json({ success: false, message: "ข้อมูลไม่ครบถ้วน" });
+    }
 
+    // ตรวจสอบข้อมูลซ้ำ
     if (data.national_id) {
-      const existing = await prisma.deported_persons.findUnique({ where: { national_id: data.national_id } });
-      if (existing) return res.status(400).json({ success: false, message: "เลขประจำตัว (national_id) นี้มีอยู่ในระบบแล้ว" });
+      const existingNat = await pool.query("SELECT id FROM deported_persons WHERE national_id = $1", [data.national_id]);
+      if (existingNat.rows.length > 0) return res.status(400).json({ success: false, message: "เลขประจำตัว (national_id) นี้มีอยู่ในระบบแล้ว" });
     }
 
     if (data.passport_id) {
-      const existing = await prisma.deported_persons.findUnique({ where: { passport_id: data.passport_id } });
-      if (existing) return res.status(400).json({ success: false, message: "เลขหนังสือเดินทาง (passport_id) นี้มีอยู่ในระบบแล้ว" });
+      const existingPass = await pool.query("SELECT id FROM deported_persons WHERE passport_id = $1", [data.passport_id]);
+      if (existingPass.rows.length > 0) return res.status(400).json({ success: false, message: "เลขหนังสือเดินทาง (passport_id) นี้มีอยู่ในระบบแล้ว" });
     }
 
     let photo_url = null;
@@ -41,29 +40,25 @@ exports.createDeported = async (req, res) => {
       photo_url = driveRes.webViewLink;
     }
 
-    const result = await prisma.deported_persons.create({
-      data: {
-        first_name_th: data.first_name_th,
-        middle_name_th: data.middle_name_th || null,
-        last_name_th: data.last_name_th,
-        first_name_en: data.first_name_en || null,
-        middle_name_en: data.middle_name_en || null,
-        last_name_en: data.last_name_en || null,
-        date_of_birth: safeParseDate(data.date_of_birth),
-        national_id: data.national_id,
-        passport_id: data.passport_id || null,
-        gender: data.gender || null,
-        address: data.address || "ไม่ระบุ",
-        channel: data.channel || null,
-        result: data.result || "PENDING",
-        number_of_case: parseInt(data.number_of_case) || 0,
-        number_of_warrant: parseInt(data.number_of_warrant) || 0,
-        age: parseInt(data.age) || null,
-        return_date: safeParseDate(data.return_date),
-        photo_url: photo_url,
-      }
-    });
-    res.status(201).json({ success: true, data: result, message: "บันทึกข้อมูลสำเร็จ" });
+    const id = uuidv4();
+    const query = `
+      INSERT INTO deported_persons 
+      (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
+       date_of_birth, national_id, passport_id, gender, address, channel, result, number_of_case, number_of_warrant, age, return_date, photo_url)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      RETURNING *;
+    `;
+    const values = [
+      id, data.first_name_th, data.middle_name_th || null, data.last_name_th,
+      data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
+      safeParseDate(data.date_of_birth), data.national_id, data.passport_id || null, data.gender || null,
+      data.address || "ไม่ระบุ", data.channel || null, data.result || "PENDING",
+      parseInt(data.number_of_case) || 0, parseInt(data.number_of_warrant) || 0,
+      parseInt(data.age) || null, safeParseDate(data.return_date), photo_url
+    ];
+
+    const result = await pool.query(query, values);
+    res.status(201).json({ success: true, data: result.rows[0], message: "บันทึกข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
@@ -73,8 +68,10 @@ exports.updateDeported = async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
-    const existingData = await prisma.deported_persons.findUnique({ where: { id: id } });
-    if (!existingData) return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
+    
+    const existingDataRes = await pool.query("SELECT * FROM deported_persons WHERE id = $1", [id]);
+    if (existingDataRes.rows.length === 0) return res.status(404).json({ success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" });
+    const existingData = existingDataRes.rows[0];
 
     let photo_url = existingData.photo_url;
     if (req.file) {
@@ -86,30 +83,24 @@ exports.updateDeported = async (req, res) => {
       photo_url = driveRes.webViewLink;
     }
 
-    const result = await prisma.deported_persons.update({
-      where: { id: id },
-      data: {
-        first_name_th: data.first_name_th,
-        middle_name_th: data.middle_name_th || null,
-        last_name_th: data.last_name_th,
-        first_name_en: data.first_name_en || null,
-        middle_name_en: data.middle_name_en || null,
-        last_name_en: data.last_name_en || null,
-        date_of_birth: safeParseDate(data.date_of_birth),
-        national_id: data.national_id,
-        passport_id: data.passport_id || null,
-        gender: data.gender || null,
-        address: data.address || "ไม่ระบุ",
-        channel: data.channel || null,
-        result: data.result || "PENDING",
-        number_of_case: parseInt(data.number_of_case) || 0,
-        number_of_warrant: parseInt(data.number_of_warrant) || 0,
-        age: parseInt(data.age) || null,
-        return_date: safeParseDate(data.return_date),
-        photo_url: photo_url
-      }
-    });
-    res.status(200).json({ success: true, data: result, message: "แก้ไขข้อมูลสำเร็จ" });
+    const query = `
+      UPDATE deported_persons SET 
+        first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
+        date_of_birth=$7, national_id=$8, passport_id=$9, gender=$10, address=$11, channel=$12, result=$13, 
+        number_of_case=$14, number_of_warrant=$15, age=$16, return_date=$17, photo_url=$18
+      WHERE id=$19 RETURNING *;
+    `;
+    const values = [
+      data.first_name_th, data.middle_name_th || null, data.last_name_th,
+      data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
+      safeParseDate(data.date_of_birth), data.national_id, data.passport_id || null, data.gender || null,
+      data.address || "ไม่ระบุ", data.channel || null, data.result || "PENDING",
+      parseInt(data.number_of_case) || 0, parseInt(data.number_of_warrant) || 0,
+      parseInt(data.age) || null, safeParseDate(data.return_date), photo_url, id
+    ];
+
+    const result = await pool.query(query, values);
+    res.status(200).json({ success: true, data: result.rows[0], message: "แก้ไขข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
   }
@@ -118,12 +109,14 @@ exports.updateDeported = async (req, res) => {
 exports.deleteDeported = async (req, res) => {
   try {
     const { id } = req.params;
-    const existingData = await prisma.deported_persons.findUnique({ where: { id: id } });
-    if (existingData && existingData.photo_url) {
-       const fileId = extractDriveFileId(existingData.photo_url);
+    const existingDataRes = await pool.query("SELECT photo_url FROM deported_persons WHERE id = $1", [id]);
+    
+    if (existingDataRes.rows.length > 0 && existingDataRes.rows[0].photo_url) {
+       const fileId = extractDriveFileId(existingDataRes.rows[0].photo_url);
        if(fileId) { try { await deleteFromDrive(fileId); } catch(e) {} }
     }
-    await prisma.deported_persons.delete({ where: { id: id } });
+    
+    await pool.query("DELETE FROM deported_persons WHERE id = $1", [id]);
     res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });

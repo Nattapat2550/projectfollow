@@ -16,11 +16,9 @@ const LoginForm = () => {
         e.preventDefault();
         setLoading(true);
 
-        // เปลี่ยน port สำรองให้ตรงกับ backend ของเรา (8000)
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
         try {
-            // 💡 นำ /v1 กลับมาใส่ไว้ใน Path เหมือนเดิม
             const response = await fetch(`${backendUrl}/api/v1/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -30,13 +28,13 @@ const LoginForm = () => {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                // บันทึก Token ลง Cookie
-                document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict; Secure`;
+                // บันทึก Token ลง Cookie (ใช้ SameSite=Lax หรือ Strict ตามเหมาะสม)
+                document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure' : ''}`;
                 
-                // บันทึก Token และ User ลง LocalStorage ให้ระบบอื่นๆ ดึงไปใช้ได้ (เช่น TopBar)
+                // บันทึก Token และ User ลง LocalStorage
                 localStorage.setItem("user_id", data.user.id);
                 localStorage.setItem("token", data.token);
-                localStorage.setItem("user", JSON.stringify(data.user)); // เพิ่มการเซฟ object user ด้วย
+                localStorage.setItem("user", JSON.stringify(data.user));
 
                 await Swal.fire({
                     icon: 'success',
@@ -45,13 +43,22 @@ const LoginForm = () => {
                     timer: 1500
                 });
 
-                // ไปหน้า Dashboard ของ projectfollow
-                window.location.href = '/dashboard';
+                // ✨ ตรวจสอบว่ามี callbackUrl (หน้าก่อนหน้าที่ถูกเด้งมา) อยู่ใน Address Bar หรือไม่
+                const searchParams = new URLSearchParams(window.location.search);
+                const callbackUrl = searchParams.get('callbackUrl');
+
+                // ถ้ามี URL เดิมติดมาด้วย ให้พากลับไปหน้าเดิม แต่ถ้าไม่มีให้พากลับหน้า /dashboard
+                if (callbackUrl) {
+                    window.location.href = decodeURIComponent(callbackUrl);
+                } else {
+                    window.location.href = '/dashboard';
+                }
+
             } else {
                 Swal.fire({
                     icon: 'error',
                     title: 'เข้าสู่ระบบไม่สำเร็จ',
-                    text: data.msg || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+                    text: data.msg || data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
                 });
             }
         } catch (error) {
@@ -96,7 +103,7 @@ const LoginForm = () => {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="text-foreground opacity-50 hover:opacity-100 transition-opacity"
+                            className="text-foreground opacity-50 hover:opacity-100 transition-opacity cursor-pointer"
                         >
                             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </button>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Save, X } from "lucide-react";
+import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
 
 export default function CreateDeportedImmigrant() {
   const router = useRouter();
@@ -84,6 +84,11 @@ export default function CreateDeportedImmigrant() {
           <ChevronLeft size={32} />
           <span>เพิ่มข้อมูลใหม่ (ผู้ถูกส่งตัวกลับ)</span>
         </button>
+      <Link href="/test-upload2">
+          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/50 rounded-lg hover:bg-emerald-500/20 font-bold transition text-sm cursor-pointer">
+            <FileSpreadsheet size={18} /> อัพโหลดจากไฟล์ Excel
+          </button>
+        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">

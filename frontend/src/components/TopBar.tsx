@@ -86,6 +86,9 @@ export default function TopBar() {
                 headers: token ? { Authorization: `Bearer ${token}` } : undefined
             });
             
+            // 🚨 แก้บัค Cookie ค้าง: บังคับลบ Cookie ด้วยสคริปต์ฝั่ง Client ทิ้งทั้งหมด
+            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            
             // ล้างข้อมูลออกจาก LocalStorage
             localStorage.removeItem("token");
             localStorage.removeItem("user");
@@ -93,7 +96,7 @@ export default function TopBar() {
 
             setUser(null);
             router.push('/login');
-            router.refresh();
+            router.refresh(); // บังคับรีเฟรช 1 รอบเพื่อให้ Layout อัปเดตใหม่ทั้งหมด
         } catch (err) {
             console.error("Logout error", err);
         }

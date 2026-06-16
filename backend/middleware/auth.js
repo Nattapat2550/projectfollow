@@ -1,10 +1,5 @@
 const jwt = require("jsonwebtoken");
-const { PrismaClient } = require("@prisma/client");
-const { PrismaPg } = require("@prisma/adapter-pg");
 const pool = require("../config/db");
-
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 
 // Protect routes
 exports.protect = async (req, res, next) => {
@@ -16,7 +11,7 @@ exports.protect = async (req, res, next) => {
   ) {
     token = req.headers.authorization.split(" ")[1];
   } else if (req.cookies && req.cookies.token) {
-    token = req.cookies.token; // รองรับการอ่าน Token จาก Cookie
+    token = req.cookies.token; 
   }
 
   if (!token || token === "null") {
@@ -27,13 +22,11 @@ exports.protect = async (req, res, next) => {
   }
 
   try {
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallbacksecret");
     
-    // ค้นหา User ผ่าน Prisma
-    req.user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-    });
+    // ค้นหา User ผ่าน Native Pool แทน Prisma
+    const result = await pool.query("SELECT id, name, role, color FROM users WHERE id = $1", [decoded.id]);
+    req.user = result.rows[0];
 
     if (!req.user) {
         return res.status(401).json({
