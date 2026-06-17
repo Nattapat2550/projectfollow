@@ -28,6 +28,10 @@ export function useDashboard() {
   const [filterGender, setFilterGender] = useState<string>("ทั้งหมด");
   const [filterVictim, setFilterVictim] = useState<string>("ทั้งหมด");
   const [filterPassport, setFilterPassport] = useState<string>("ทั้งหมด");
+  
+  // 🟢 เพิ่ม State สำหรับฟิลเตอร์ "ผู้เพิ่มข้อมูล"
+  const [filterCreator, setFilterCreator] = useState<string>("ทั้งหมด");
+  
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [dobStart, setDobStart] = useState<string>("");
@@ -48,6 +52,11 @@ export function useDashboard() {
       page: currentPage.toString(),
       limit: "50"
     });
+
+    // 🟢 แนบพารามิเตอร์ creator (ผู้เพิ่มข้อมูล) ไปให้ Backend ถ้าไม่ได้เลือก "ทั้งหมด"
+    if (filterCreator && filterCreator !== "ทั้งหมด") {
+      params.append("creator", filterCreator);
+    }
 
     if (filterType === "deported") {
       if (dobStart) params.append("dobStart", dobStart);
@@ -85,7 +94,7 @@ export function useDashboard() {
       });
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection]);
+  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection]);
 
   useEffect(() => {
     if (typeParam !== filterType) {
@@ -102,7 +111,9 @@ export function useDashboard() {
   };
   const resetFilters = () => {
     setFilterNat("ทั้งหมด"); setFilterGender("ทั้งหมด"); setFilterVictim("ทั้งหมด");
-    setFilterPassport("ทั้งหมด"); setStartDate(""); setEndDate(""); setDobStart("");
+    setFilterPassport("ทั้งหมด"); 
+    setFilterCreator("ทั้งหมด"); // 🟢 รีเซ็ตฟิลเตอร์ผู้เพิ่มข้อมูลด้วย
+    setStartDate(""); setEndDate(""); setDobStart("");
     setDobEnd(""); setSortField(""); setCurrentPage(1);
   };
   const handleTypeChange = (val: "illegal" | "deported") => {
@@ -139,8 +150,8 @@ export function useDashboard() {
   const passportChart = (dashboardData?.charts?.passport || []).map(d => ({ ...d, color: d.name === "มีหนังสือเดินทาง" ? CHART_COLORS[1] : CHART_COLORS[3] }));
 
   return {
-    states: { filterType, filterNat, filterGender, filterVictim, filterPassport, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection, loading, isUpdating, dashboardData },
-    actions: { handleFilterChange, handleSort, resetFilters, handleTypeChange, setCurrentPage, setFilterNat, setFilterGender, setFilterVictim, setFilterPassport, setStartDate, setEndDate, setDobStart, setDobEnd },
+    states: { filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection, loading, isUpdating, dashboardData },
+    actions: { handleFilterChange, handleSort, resetFilters, handleTypeChange, setCurrentPage, setFilterNat, setFilterGender, setFilterVictim, setFilterPassport, setFilterCreator, setStartDate, setEndDate, setDobStart, setDobEnd },
     derived: { nationalitiesOptions, gendersOptions, tableRows, stats, natChart, channelChart, victimChart, passportChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
   };
 }

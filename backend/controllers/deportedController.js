@@ -1,13 +1,13 @@
 // backend/controllers/deportedController.js
 
-const pool = require("../config/db"); // ใช้ Pool ที่จูนออปชันแล้ว
-const { v4: uuidv4 } = require("uuid"); // ใช้สร้าง ID
+const pool = require("../config/db"); 
+const { v4: uuidv4 } = require("uuid"); 
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
 const { safeParseDate } = require("../utils/immigrantHelpers");
 
 exports.getDeportedById = async (req, res) => {
   try {
-    const { rows } = await pool.query("SELECT * FROM deported_persons WHERE id = $1", [req.params.id]);
+    const { rows } = await pool.query("SELECT t.*, u.name AS creator_name, u.color AS creator_color FROM deported_persons t LEFT JOIN users u ON t.created_by = u.id WHERE t.id = $1", [req.params.id]);
     if (rows.length === 0) return res.status(404).json({ success: false, message: "Not found" });
     
     res.status(200).json({ success: true, data: rows[0] });
@@ -23,7 +23,6 @@ exports.createDeported = async (req, res) => {
       return res.status(400).json({ success: false, message: "ข้อมูลไม่ครบถ้วน" });
     }
 
-    // ตรวจสอบข้อมูลซ้ำ
     if (data.national_id) {
       const existingNat = await pool.query("SELECT id FROM deported_persons WHERE national_id = $1", [data.national_id]);
       if (existingNat.rows.length > 0) return res.status(400).json({ success: false, message: "เลขประจำตัว (national_id) นี้มีอยู่ในระบบแล้ว" });
@@ -40,12 +39,15 @@ exports.createDeported = async (req, res) => {
       photo_url = driveRes.webViewLink;
     }
 
+    // เอา User ID มาจาก Token ที่แนบมากับ Request
+    const created_by = req.user ? req.user.id : null;
     const id = uuidv4();
+
     const query = `
       INSERT INTO deported_persons 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       date_of_birth, national_id, passport_id, gender, address, channel, result, number_of_case, number_of_warrant, age, return_date, photo_url)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+       date_of_birth, national_id, passport_id, gender, address, channel, result, number_of_case, number_of_warrant, age, return_date, photo_url, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *;
     `;
     const values = [
@@ -54,7 +56,7 @@ exports.createDeported = async (req, res) => {
       safeParseDate(data.date_of_birth), data.national_id, data.passport_id || null, data.gender || null,
       data.address || "ไม่ระบุ", data.channel || null, data.result || "PENDING",
       parseInt(data.number_of_case) || 0, parseInt(data.number_of_warrant) || 0,
-      parseInt(data.age) || null, safeParseDate(data.return_date), photo_url
+      parseInt(data.age) || null, safeParseDate(data.return_date), photo_url, created_by
     ];
 
     const result = await pool.query(query, values);
@@ -83,11 +85,12 @@ exports.updateDeported = async (req, res) => {
       photo_url = driveRes.webViewLink;
     }
 
+    // อัปเดตข้อมูล และปรับ updated_at เป็นเวลาปัจจุบัน
     const query = `
       UPDATE deported_persons SET 
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
         date_of_birth=$7, national_id=$8, passport_id=$9, gender=$10, address=$11, channel=$12, result=$13, 
-        number_of_case=$14, number_of_warrant=$15, age=$16, return_date=$17, photo_url=$18
+        number_of_case=$14, number_of_warrant=$15, age=$16, return_date=$17, photo_url=$18, updated_at=NOW()
       WHERE id=$19 RETURNING *;
     `;
     const values = [

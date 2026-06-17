@@ -22,9 +22,10 @@ export default function TopBar() {
             try {
                 const token = localStorage.getItem("token");
                 
-                if (!token) {
+                // 🟢 ดักจับกรณี token เป็นคำว่า "null" ด้วย
+                if (!token || token === "null") {
                     const savedUser = localStorage.getItem("user");
-                    if (savedUser) {
+                    if (savedUser && savedUser !== "null") {
                         setUser(JSON.parse(savedUser));
                     }
                     return;
@@ -32,7 +33,8 @@ export default function TopBar() {
 
                 // ยิงไปที่ /api/v1/auth/me
                 const res = await fetch(`${backendUrl}/api/v1/auth/me`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { Authorization: `Bearer ${token}` },
+                    credentials: "include" // 🟢 จำเป็นมาก เพื่อให้ยอมรับการอ่าน/เขียน Cookie จาก Backend
                 });
                 
                 // ✅ เพิ่มการเช็ค 401 (Unauthorized) เพื่อล้าง Token ทิ้ง
@@ -81,15 +83,16 @@ export default function TopBar() {
         try {
             const token = localStorage.getItem("token");
             
-            // ยิงไปที่ /api/v1/auth/logout
+            // ยิงไปที่ /api/v1/auth/logout เพื่อให้ Backend ลบ HttpOnly Cookie ให้
             await fetch(`${backendUrl}/api/v1/auth/logout`, {
-                headers: token ? { Authorization: `Bearer ${token}` } : undefined
+                headers: token && token !== "null" ? { Authorization: `Bearer ${token}` } : undefined,
+                credentials: "include" // 🟢 จำเป็นมาก เพื่อให้คำสั่งเคลียร์ Cookie ของ Backend ทำงานสำเร็จ
             });
             
-            // 🚨 แก้บัค Cookie ค้าง: บังคับลบ Cookie ด้วยสคริปต์ฝั่ง Client ทิ้งทั้งหมด
+            // 🚨 บังคับลบ Cookie ฝั่ง Client (ในกรณีที่ Cookie ไม่ใช่ HttpOnly)
             document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             
-            // ล้างข้อมูลออกจาก LocalStorage
+            // ล้างข้อมูลออกจาก LocalStorage ให้เกลี้ยง
             localStorage.removeItem("token");
             localStorage.removeItem("user");
             localStorage.removeItem("user_id");

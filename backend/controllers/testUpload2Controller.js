@@ -165,6 +165,9 @@ exports.uploadExcel = async (req, res) => {
         let errors = [];
         if (jobId) global.uploadProgress[jobId] = { current: 0, total: rawData.length, status: 'processing' };
 
+        // 🟢 ดึง ID ของคนที่กำลังล็อกอินจาก Middleware
+        const created_by = req.user ? req.user.id : null;
+
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
             const rawThName = row["ชื่อ สกุล (ไทย)"];
@@ -177,13 +180,12 @@ exports.uploadExcel = async (req, res) => {
 
             if (imagesMap[i + 1]) {
                 try {
-                    // 🟢 ไม่เขียนไฟล์ลงเครื่องแล้ว โยน Buffer ส่ง Google Drive Service ดื้อๆ เลย
                     const tempFileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${imagesMap[i + 1].extension}`;
                     
                     const driveResult = await uploadWithRetry({ 
                         originalname: tempFileName, 
                         mimetype: `image/${imagesMap[i + 1].extension}`, 
-                        buffer: imagesMap[i + 1].buffer // 🟢 คีย์หัวใจอยู่ที่ตรงนี้
+                        buffer: imagesMap[i + 1].buffer 
                     }, process.env.GOOGLE_DRIVE_FOLDER_ID);
                     
                     if (driveResult && driveResult.webViewLink) {
@@ -244,7 +246,7 @@ exports.uploadExcel = async (req, res) => {
                         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
                         date_of_birth=$7, gender=$8, age=$9, national_id=$10, passport_id=$11, address=$12,
                         building=$13, floor=$14, room=$15, job_type=$16, role=$17, salary=$18, paid_by=$19, payment_method=$20,
-                        number_of_case=$21, number_of_warrant=$22, victim_indicator=$23, responsible_agency=$24, note=$25`;
+                        number_of_case=$21, number_of_warrant=$22, victim_indicator=$23, responsible_agency=$24, note=$25, updated_at=NOW()`;
                     
                     const updateVals = [...values];
                     if (drivePhotoUrl) {
@@ -256,13 +258,14 @@ exports.uploadExcel = async (req, res) => {
                     }
                     await pool.query(updateQ, updateVals);
                 } else {
+                    // 🟢 เพิ่ม created_by
                     const insertQ = `INSERT INTO deported_persons (
                         id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
                         date_of_birth, gender, age, national_id, passport_id, address,
                         building, floor, room, job_type, role, salary, paid_by, payment_method,
-                        number_of_case, number_of_warrant, victim_indicator, responsible_agency, note, photo_url
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)`;
-                    await pool.query(insertQ, [uuidv4(), ...values, drivePhotoUrl || null]);
+                        number_of_case, number_of_warrant, victim_indicator, responsible_agency, note, photo_url, created_by
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)`;
+                    await pool.query(insertQ, [uuidv4(), ...values, drivePhotoUrl || null, created_by]);
                 }
 
                 successCount++;

@@ -12,4 +12,8 @@ interface ImmigrantData {
 	detected_date?: string | null;
 
 	is_victim?: boolean | null;
+
+	// เพิ่มข้อมูลคนอัพโหลด
+	creator_name?: string | null;
+	creator_color?: string | null;
 }

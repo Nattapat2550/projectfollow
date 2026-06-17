@@ -35,11 +35,17 @@ export default function TestUploadPage() {
 
     const formData = new FormData();
     formData.append('file', file);
+    
+    // 🟢 ดึง Token จาก LocalStorage
+    const token = localStorage.getItem("token");
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const response = await fetch(`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`, {
         method: 'POST',
+        headers: {
+           ...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: formData,
       });
 
@@ -77,9 +83,15 @@ export default function TestUploadPage() {
     const formData = new FormData();
     formData.append('file', file);
 
+    // 🟢 ดึง Token จาก LocalStorage
+    const token = localStorage.getItem("token");
+
     try {
       const response = await fetch(`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`, {
         method: 'POST',
+        headers: {
+           ...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: formData,
       });
 

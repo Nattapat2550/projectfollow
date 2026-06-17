@@ -1,7 +1,7 @@
 const { convertBEtoAD } = require("../utils/immigrantHelpers");
 
 exports.buildDashboardQuerySQL = (query, type) => {
-  const { search, sortBy, sortOrder, startDate, endDate, dobStart, dobEnd } = query;
+  const { search, sortBy, sortOrder, startDate, endDate, dobStart, dobEnd, creator } = query;
   
   const sDate = convertBEtoAD(startDate);
   const eDate = convertBEtoAD(endDate);
@@ -13,7 +13,7 @@ exports.buildDashboardQuerySQL = (query, type) => {
   let paramIdx = 1;
 
   if (sDate || eDate) {
-    const dateField = type === "deported" ? "return_date" : "detected_date";
+    const dateField = type === "deported" ? "t.return_date" : "t.detected_date";
     if (sDate && eDate) {
       conditions.push(`DATE(${dateField}) >= $${paramIdx} AND DATE(${dateField}) <= $${paramIdx + 1}`);
       params.push(sDate, eDate);
@@ -31,30 +31,37 @@ exports.buildDashboardQuerySQL = (query, type) => {
 
   if (dStart || dEnd) {
     if (dStart && dEnd) {
-      conditions.push(`DATE(date_of_birth) >= $${paramIdx} AND DATE(date_of_birth) <= $${paramIdx + 1}`);
+      conditions.push(`DATE(t.date_of_birth) >= $${paramIdx} AND DATE(t.date_of_birth) <= $${paramIdx + 1}`);
       params.push(dStart, dEnd);
       paramIdx += 2;
     } else if (dStart) {
-      conditions.push(`DATE(date_of_birth) >= $${paramIdx}`);
+      conditions.push(`DATE(t.date_of_birth) >= $${paramIdx}`);
       params.push(dStart);
       paramIdx++;
     } else if (dEnd) {
-      conditions.push(`DATE(date_of_birth) <= $${paramIdx}`);
+      conditions.push(`DATE(t.date_of_birth) <= $${paramIdx}`);
       params.push(dEnd);
       paramIdx++;
     }
+  }
+
+  // เพิ่มเงื่อนไขค้นหาด้วยชื่อผู้เพิ่มข้อมูล
+  if (creator && creator !== "ทั้งหมด" && creator.trim() !== "") {
+    conditions.push(`u.name = $${paramIdx}`);
+    params.push(creator);
+    paramIdx++;
   }
 
   if (search && search.trim() !== "") {
     const keywords = search.trim().split(/\s+/);
     const searchConditions = keywords.map((keyword) => {
       const kw = `%${keyword}%`;
-      let fields = `first_name_th ILIKE $${paramIdx} OR last_name_th ILIKE $${paramIdx} OR first_name_en ILIKE $${paramIdx} OR last_name_en ILIKE $${paramIdx} OR passport_id ILIKE $${paramIdx}`;
+      let fields = `t.first_name_th ILIKE $${paramIdx} OR t.last_name_th ILIKE $${paramIdx} OR t.first_name_en ILIKE $${paramIdx} OR t.last_name_en ILIKE $${paramIdx} OR t.passport_id ILIKE $${paramIdx}`;
       
       if (type === "deported") {
-        fields += ` OR national_id ILIKE $${paramIdx} OR channel ILIKE $${paramIdx}`;
+        fields += ` OR t.national_id ILIKE $${paramIdx} OR t.channel ILIKE $${paramIdx}`;
       } else {
-        fields += ` OR nationality ILIKE $${paramIdx} OR detected_location ILIKE $${paramIdx}`;
+        fields += ` OR t.nationality ILIKE $${paramIdx} OR t.detected_location ILIKE $${paramIdx}`;
       }
       
       params.push(kw);
@@ -71,13 +78,13 @@ exports.buildDashboardQuerySQL = (query, type) => {
   const dir = sortOrder === "desc" ? "DESC" : "ASC";
   if (sortBy && sortBy.trim() !== "") {
     if (sortBy === "name") {
-        orderClause = `ORDER BY first_name_th ${dir} NULLS LAST, last_name_th ${dir} NULLS LAST, id DESC`;
+        orderClause = `ORDER BY t.first_name_th ${dir} NULLS LAST, t.last_name_th ${dir} NULLS LAST, t.id DESC`;
     } else {
-        orderClause = `ORDER BY ${sortBy} ${dir} NULLS LAST, id DESC`;
+        orderClause = `ORDER BY t.${sortBy} ${dir} NULLS LAST, t.id DESC`;
     }
   } else {
-    const defaultField = type === "deported" ? "return_date" : "detected_date";
-    orderClause = `ORDER BY ${defaultField} DESC NULLS LAST, id DESC`;
+    const defaultField = type === "deported" ? "t.return_date" : "t.detected_date";
+    orderClause = `ORDER BY ${defaultField} DESC NULLS LAST, t.id DESC`;
   }
 
   return { whereClause, params, orderClause };
