@@ -11,14 +11,15 @@ CREATE TABLE illegal_immigrants (
     middle_name_en VARCHAR(255),
     last_name_en VARCHAR(255),
     nationality VARCHAR(255),
-    passport_id VARCHAR(255) UNIQUE,
+    passport_id VARCHAR(255),
     detected_location TEXT NOT NULL,
     is_victim BOOLEAN,
     gender VARCHAR(50),
     detected_date DATE,
     workplace VARCHAR(255),
     screening_details TEXT,
-    photo_url TEXT
+    photo_url TEXT,
+    warrant TEXT
 );
 
 -- ตาราง ส่งกลับ (Deported Persons)
