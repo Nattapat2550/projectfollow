@@ -8,15 +8,64 @@ interface RightPanelProps {
   data: any;
   note: string;
   setNote: (value: string) => void;
-  onEditClick: () => void; // รับฟังก์ชันเปิดโหมดแก้ไขข้อมูลจากหน้าหลัก
+  onEditClick: () => void; 
 }
 
 export default function RightPanel({ type, data, note, setNote, onEditClick }: RightPanelProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   
-  const handleSaveNote = () => {
-    alert(`บันทึกหมายเหตุเรียบร้อยแล้ว!`);
+  const handleSaveNote = async () => {
+    try {
+      setIsSavingNote(true);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const endpoint = type === "deported" ? "deported" : "illegal";
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
+      // 🟢 กลับมาใช้ FormData เพื่อให้เข้ากับ Multer ของ Backend
+      const submitData = new FormData();
+      const payload = { ...data, note: note };
+
+      // ฟอร์แมตวันที่และตัวเลข
+      if (type === "deported") {
+        payload.number_of_case = parseInt(payload.number_of_case) || 0;
+        payload.number_of_warrant = parseInt(payload.number_of_warrant) || 0;
+        payload.age = parseInt(payload.age) || "";
+        if (payload.date_of_birth) payload.date_of_birth = String(payload.date_of_birth).split("T")[0];
+        if (payload.return_date) payload.return_date = String(payload.return_date).split("T")[0];
+      } else {
+        if (payload.detected_date) payload.detected_date = String(payload.detected_date).split("T")[0];
+      }
+
+      // นำข้อมูลเข้า FormData อย่างปลอดภัย (ตัด null/undefined ออก)
+      Object.keys(payload).forEach(key => {
+        if (payload[key] !== null && payload[key] !== undefined && typeof payload[key] !== 'object') {
+          submitData.append(key, String(payload[key]));
+        }
+      });
+
+      // 🟢 ส่งข้อมูลแบบไร้ Content-Type (ให้ Browser ตั้งค่า Boundary เองสำหรับ FormData)
+      const res = await fetch(`${backendUrl}/api/v1/immigrants/${endpoint}/${data.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: submitData
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(()=>({}));
+        throw new Error(err.message || err.error || "Failed to save note to database");
+      }
+
+      alert(`บันทึกหมายเหตุระบบเรียบร้อยแล้ว!`);
+    } catch (error: any) {
+      console.error("Error saving note:", error);
+      alert(`เกิดข้อผิดพลาดในการบันทึกหมายเหตุ: ${error.message}`);
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -27,12 +76,10 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const endpoint = type === "deported" ? "deported" : "illegal";
       
-      // 🟢 ดึง Token จาก Cookie
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
 
       const res = await fetch(`${backendUrl}/api/v1/immigrants/${endpoint}/${data.id}`, {
         method: 'DELETE',
-        // 🟢 แนบ Token ไปกับ Headers เพื่อยืนยันตัวตนกับ Backend
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -43,7 +90,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
       }
 
       alert("ลบข้อมูลออกจากระบบเสร็จสิ้น");
-      router.back(); // พาย้อนกลับไปยังหน้าแสดงตารางรวมก่อนหน้านี้
+      router.back(); 
       
     } catch (error) {
       console.error("Error deleting record:", error);
@@ -113,9 +160,10 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
           />
           <button
             onClick={handleSaveNote}
-            className="w-full py-2 bg-(--wrapper) text-foreground hover:opacity-90 font-bold rounded-md active:scale-[0.99] transition text-xs shadow-sm cursor-pointer mt-1"
+            disabled={isSavingNote}
+            className="w-full py-2 bg-(--wrapper) text-foreground hover:opacity-90 font-bold rounded-md active:scale-[0.99] transition text-xs shadow-sm cursor-pointer mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            บันทึก/อัปเดตหมายเหตุ
+            {isSavingNote ? "กำลังบันทึก..." : "บันทึก/อัปเดตหมายเหตุ"}
           </button>
         </div>
       </div>

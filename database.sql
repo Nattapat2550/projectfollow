@@ -28,8 +28,7 @@ CREATE TABLE illegal_immigrants (
     workplace VARCHAR(255),
     screening_details TEXT,
     photo_url TEXT,
-    warrant TEXT,
-    
+    note TEXT,
     -- ส่วนที่เก็บข้อมูลคนที่เพิ่มและเวลาที่เพิ่ม
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),

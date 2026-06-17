@@ -9,7 +9,7 @@ const getSignedJwtToken = (id) => {
   });
 };
 
-// ฟังก์ชันส่ง Token กลับไปทาง Cookie และ JSON (ปรับปรุงแก้บัค Cookie)
+// ฟังก์ชันส่ง Token กลับไปทาง Cookie และ JSON
 const sendTokenResponse = (user, statusCode, res) => {
   const token = getSignedJwtToken(user.id);
 
@@ -18,7 +18,7 @@ const sendTokenResponse = (user, statusCode, res) => {
   const options = {
     expires: new Date(Date.now() + expireDays * 24 * 60 * 60 * 1000),
     httpOnly: true,
-    path: "/", // แก้บัคให้ Cookie เข้าถึงได้จากทุก Path หน้าบ้าน
+    path: "/", 
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
   };
@@ -36,7 +36,7 @@ const sendTokenResponse = (user, statusCode, res) => {
 };
 
 // @desc    Register user
-// @route   POST /api/auth/register
+// @route   POST /api/v1/auth/register
 exports.register = async (req, res) => {
   try {
     const { name, password, role, color } = req.body;
@@ -45,20 +45,17 @@ exports.register = async (req, res) => {
       return res.status(400).json({ success: false, msg: "Please provide a name and password" });
     }
 
-    // เช็คว่ามีผู้ใช้นี้อยู่แล้วหรือไม่
     const existingUserResult = await pool.query("SELECT id FROM users WHERE name = $1", [name]);
     if (existingUserResult.rows.length > 0) {
       return res.status(400).json({ success: false, msg: "Name already in use" });
     }
 
-    // ใช้สิทธิ์ user และสีเป็นค่าเริ่มต้นหากไม่ได้ระบุมา
     const userRole = role || "user";
     const userColor = color || "#3B82F6";
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // สร้าง User ใหม่
     const insertQuery = `
       INSERT INTO users (name, password, role, color) 
       VALUES ($1, $2, $3, $4) 
@@ -75,7 +72,7 @@ exports.register = async (req, res) => {
 };
 
 // @desc    Login user
-// @route   POST /api/auth/login
+// @route   POST /api/v1/auth/login
 exports.login = async (req, res) => {
   try {
     const { name, password } = req.body;
@@ -84,7 +81,6 @@ exports.login = async (req, res) => {
       return res.status(400).json({ success: false, msg: "Please provide a name and password" });
     }
 
-    // ค้นหา User
     const userResult = await pool.query("SELECT * FROM users WHERE name = $1", [name]);
     const user = userResult.rows[0];
 
@@ -105,9 +101,8 @@ exports.login = async (req, res) => {
 };
 
 // @desc    Log user out / clear cookie
-// @route   GET /api/auth/logout
+// @route   GET /api/v1/auth/logout
 exports.logout = async (req, res) => {
-  // ล้างข้อมูล Cookie แบบเบ็ดเสร็จ
   res.cookie("token", "none", {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true,
@@ -116,17 +111,14 @@ exports.logout = async (req, res) => {
     secure: process.env.NODE_ENV === "production"
   });
 
-  // บังคับเคลียร์ Storage
   res.setHeader("Clear-Site-Data", '"cookies", "storage"');
-
   res.status(200).json({ success: true, data: {} });
 };
 
 // @desc    Get current logged in user
-// @route   GET /api/auth/me
+// @route   GET /api/v1/auth/me
 exports.getMe = async (req, res) => {
   try {
-    // req.user.id ได้มาจาก Middleware auth
     const userResult = await pool.query("SELECT id, name, role, color FROM users WHERE id = $1", [req.user.id]);
     const user = userResult.rows[0];
     
@@ -135,6 +127,38 @@ exports.getMe = async (req, res) => {
     }
 
     res.status(200).json({ success: true, data: user });
+  } catch (err) {
+    res.status(500).json({ success: false, msg: err.message });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/v1/auth/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, color } = req.body;
+    const userResult = await pool.query(
+      "UPDATE users SET name = $1, color = $2 WHERE id = $3 RETURNING id, name, role, color",
+      [name, color, req.user.id]
+    );
+    res.status(200).json({ success: true, data: userResult.rows[0] });
+  } catch (err) {
+    res.status(500).json({ success: false, msg: err.message });
+  }
+};
+
+// @desc    Update password
+// @route   PUT /api/v1/auth/password
+exports.updatePassword = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    await pool.query(
+      "UPDATE users SET password = $1 WHERE id = $2",
+      [hashedPassword, req.user.id]
+    );
+    res.status(200).json({ success: true, msg: "อัปเดตรหัสผ่านสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, msg: err.message });
   }

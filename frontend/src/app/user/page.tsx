@@ -12,9 +12,13 @@ export default function UserProfilePage() {
     const router = useRouter();
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
+    const getToken = () => {
+        return document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    };
+
     useEffect(() => {
         const fetchUserData = async () => {
-            const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+            const token = getToken();
             if (!token) {
                 router.push('/login');
                 return;
@@ -24,10 +28,11 @@ export default function UserProfilePage() {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const data = await res.json();
-                if (data.success) {
-                    setName(data.data.name);
+                if (res.ok && data.success) {
+                    setName(data.data.name || '');
                     setColor(data.data.color || '#ffffff');
                 } else {
+                    console.error("Error from API:", data.message);
                     router.push('/login');
                 }
             } catch (err) {
@@ -41,9 +46,12 @@ export default function UserProfilePage() {
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+        const token = getToken();
+        if(!token) return alert('Token expired. Please login again.');
+
         try {
-            const res = await fetch(`${backendUrl}/api/v1/users/profile`, {
+            // เรียกไปยัง /api/v1/auth/profile
+            const res = await fetch(`${backendUrl}/api/v1/auth/profile`, {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -51,19 +59,28 @@ export default function UserProfilePage() {
                 },
                 body: JSON.stringify({ name, color })
             });
-            if (res.ok) {
-                alert('อัปเดตโปรไฟล์เรียบร้อยแล้ว (รีเฟรชเพื่อดูการเปลี่ยนแปลง)');
+            const data = await res.json().catch(() => ({}));
+            
+            if (res.ok && data.success) {
+                alert('อัปเดตโปรไฟล์เรียบร้อยแล้ว');
+                window.location.reload(); 
+            } else {
+                alert(`เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ${data.msg || data.message || 'Unknown error'}`);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            alert(`เกิดข้อผิดพลาด: ${err.message}`);
         }
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+        const token = getToken();
+        if(!token) return alert('Token expired. Please login again.');
+
         try {
-            const res = await fetch(`${backendUrl}/api/v1/users/password`, {
+            // เรียกไปยัง /api/v1/auth/password
+            const res = await fetch(`${backendUrl}/api/v1/auth/password`, {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -71,12 +88,17 @@ export default function UserProfilePage() {
                 },
                 body: JSON.stringify({ password })
             });
-            if (res.ok) {
+            const data = await res.json().catch(() => ({}));
+
+            if (res.ok && data.success) {
                 alert('เปลี่ยนรหัสผ่านสำเร็จ');
                 setPassword('');
+            } else {
+                alert(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${data.msg || data.message || 'Unknown error'}`);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
+            alert(`เกิดข้อผิดพลาด: ${err.message}`);
         }
     };
 
