@@ -29,7 +29,9 @@ export default function DonutChart({ data, title }: { data: ChartItem[]; title: 
       <p className="text-sm font-semibold shrink-0 text-(--header)">{title}</p>
       <div className="w-full flex items-center justify-center shrink-0 h-55">
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ width: "100%", height: "100%" }}>
-          {slices.map((s, i) => <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />)}
+          {slices.map((s, i) => (
+            <path key={i} d={arcPath(s.startAngle, s.endAngle)} style={{ fill: s.color }} />
+          ))}
           <text x={cx} y={cy - 8} textAnchor="middle" fontSize="24" fontWeight="bold" fill="currentColor" className="text-(--header)">{total.toLocaleString("th-TH")}</text>
           <text x={cx} y={cy + 16} textAnchor="middle" fontSize="12" fill="currentColor" className="opacity-60 text-foreground">ทั้งหมด</text>
         </svg>

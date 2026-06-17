@@ -13,19 +13,23 @@ export default function CreateDeportedImmigrant() {
   const [formData, setFormData] = useState({
     first_name_th: "", middle_name_th: "", last_name_th: "",
     first_name_en: "", middle_name_en: "", last_name_en: "",
-    passport_id: "", nationality: "", national_id: "",
+    passport_id: "", nationality: "", national_id: "", gender: "",
     date_of_birth: "", age: "", return_date: "",
     number_of_case: "", number_of_warrant: "", channel: "",
-    result: "PENDING", address: "", photo_url: "",
+    result: "PENDING", address: "", building: "", floor: "", room: "",
+    job_type: "", role: "", salary: "", paid_by: "", payment_method: "",
+    victim_indicator: false, responsible_agency: "", note: "", photo_url: "",
   });
 
-  // States สำหรับจัดการไฟล์รูปภาพและการพรีวิว
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    setFormData((prev) => ({ 
+      ...prev, 
+      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value 
+    }));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +48,6 @@ export default function CreateDeportedImmigrant() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       
-      // แปลงข้อมูลเป็น FormData เพื่อรองรับไฟล์รูป
       const submitData = new FormData();
       Object.keys(formData).forEach((key) => {
         const val = (formData as any)[key];
@@ -53,17 +56,25 @@ export default function CreateDeportedImmigrant() {
         }
       });
 
-      // ถ้ามีการเลือกไฟล์ ให้เพิ่มเข้าไปใน FormData
       if (selectedImage) {
         submitData.append("photo", selectedImage);
       }
 
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
       const res = await fetch(`${backendUrl}/api/v1/immigrants/deported`, {
         method: "POST", 
-        body: submitData, // ส่งเป็น FormData
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: submitData, 
       });
 
-      if (!res.ok) throw new Error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+      
       alert("เพิ่มข้อมูลผู้ถูกส่งตัวกลับสำเร็จ!");
       router.push("/immigrants/deported"); 
       router.refresh();
@@ -85,7 +96,7 @@ export default function CreateDeportedImmigrant() {
           <span>เพิ่มข้อมูลใหม่ (ผู้ถูกส่งตัวกลับ)</span>
         </button>
       <Link href="/test-upload2">
-          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/50 rounded-lg hover:bg-emerald-500/20 font-bold transition text-sm cursor-pointer">
+          <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/50 rounded-lg hover:bg-emerald-500/20 font-bold transition text-sm cursor-pointer mt-4">
             <FileSpreadsheet size={18} /> อัพโหลดจากไฟล์ Excel
           </button>
         </Link>
@@ -108,8 +119,7 @@ export default function CreateDeportedImmigrant() {
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            // แก้สี text ของปุ่มอัพโหลดไฟล์ให้ชัดเจนขึ้น
-            className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-stone-200 dark:file:bg-stone-800 file:text-slate-800 dark:file:text-slate-200 hover:file:opacity-80 cursor-pointer"
+            className="w-full bg-background border border-(--wrapper) text-black! dark:text-white! rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-800 dark:file:bg-slate-600 file:text-white! hover:file:opacity-80 cursor-pointer"
           />
         </div>
 
@@ -126,18 +136,44 @@ export default function CreateDeportedImmigrant() {
           <div><label className={labelClass}>นามสกุลภาษาอังกฤษ (Last Name)</label><input type="text" name="last_name_en" value={formData.last_name_en} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>เลขหนังสือเดินทาง (Passport ID)</label><input type="text" name="passport_id" value={formData.passport_id} onChange={handleInputChange} className={inputClass} /></div>
           <div><label className={labelClass}>สัญชาติ (Nationality)</label><input type="text" name="nationality" value={formData.nationality} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>เพศ</label>
+            <select name="gender" value={formData.gender} onChange={handleInputChange} className={inputClass}>
+              <option value="">ไม่ระบุ</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>วันเดือนปีเกิด</label><input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>อายุปัจจุบัน (ปี)</label><input type="number" name="age" value={formData.age} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>เลขประจำตัวประชาชน (National ID) *</label><input required type="text" name="national_id" value={formData.national_id} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดที่อยู่และการทำงาน</h3>
+        <div className="mb-5">
+          <label className={labelClass}>ภูมิลำเนา / ที่อยู่</label>
+          <textarea name="address" value={formData.address} onChange={handleInputChange} rows={2} className={inputClass} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>อาคาร (Building)</label><input type="text" name="building" value={formData.building} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>ชั้น (Floor)</label><input type="text" name="floor" value={formData.floor} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>ห้อง (Room)</label><input type="text" name="room" value={formData.room} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div><label className={labelClass}>ประเภทงาน (Job Type)</label><input type="text" name="job_type" value={formData.job_type} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>หน้าที่ (Role)</label><input type="text" name="role" value={formData.role} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>เงินเดือน (Salary)</label><input type="number" name="salary" value={formData.salary} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>จ่ายโดย (Paid By)</label><input type="text" name="paid_by" value={formData.paid_by} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>วิธีชำระเงิน (Payment Method)</label><input type="text" name="payment_method" value={formData.payment_method} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดการส่งตัวและคดีความ</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-          <div><label className={labelClass}>เลขประจำตัวประชาชน (National ID) *</label><input required type="text" name="national_id" value={formData.national_id} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>วันเดือนปีเกิด</label><input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>อายุปัจจุบัน (ปี)</label><input type="number" name="age" value={formData.age} onChange={handleInputChange} className={inputClass} /></div>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>วันที่ส่งกลับประเทศ</label><input type="date" name="return_date" value={formData.return_date} onChange={handleInputChange} className={inputClass} /></div>
           <div><label className={labelClass}>จำนวนเคสคดี (Case ID)</label><input type="number" name="number_of_case" value={formData.number_of_case} onChange={handleInputChange} className={inputClass} /></div>
@@ -146,16 +182,25 @@ export default function CreateDeportedImmigrant() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div><label className={labelClass}>ช่องทางส่งกลับ</label><input type="text" name="channel" value={formData.channel} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>สถานะผลลัพธ์คดี</label>
+          <div><label className={labelClass}>หน่วยงานที่รับผิดชอบ</label><input type="text" name="responsible_agency" value={formData.responsible_agency} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">
+           <div><label className={labelClass}>สถานะผลลัพธ์คดี</label>
             <select name="result" value={formData.result} onChange={handleInputChange} className={inputClass}>
               <option value="PENDING">PENDING</option><option value="SUCCESS">SUCCESS</option><option value="FAILED">FAILED</option>
             </select>
           </div>
         </div>
 
+        <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
+          <input type="checkbox" id="victim_indicator" name="victim_indicator" checked={formData.victim_indicator} onChange={handleInputChange} className="w-4 h-4 text-black! dark:text-white! focus:ring-(--header) border-gray-300 rounded cursor-pointer" />
+          <label htmlFor="victim_indicator" className="text-sm font-bold cursor-pointer select-none text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์ (Victim Indicator)</label>
+        </div>
+
         <div className="mb-5">
-          <label className={labelClass}>ภูมิลำเนา / ที่อยู่</label>
-          <textarea name="address" value={formData.address} onChange={handleInputChange} rows={3} className={inputClass} />
+          <label className={labelClass}>หมายเหตุเพิ่มเติม (Note)</label>
+          <textarea name="note" value={formData.note} onChange={handleInputChange} rows={3} className={inputClass} />
         </div>
 
         <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">

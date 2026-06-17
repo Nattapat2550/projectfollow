@@ -45,6 +45,13 @@ function DashboardContent() {
             </select>
           </div>
 
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ผู้เพิ่มข้อมูล</label>
+            <select value={states.filterCreator} onChange={(e) => actions.handleFilterChange(actions.setFilterCreator, e.target.value)} className={inputClass}>
+              {derived.creatorsOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
           {states.filterType === "illegal" && (
             <>
               <div className="flex flex-col gap-2">
@@ -129,10 +136,12 @@ function DashboardContent() {
                         {derived.natChart.length > 0 && <DonutChart data={derived.natChart} title="สัญชาติ (Top 6)" />}
                         {derived.victimChart.length > 0 && <DonutChart data={derived.victimChart} title="สถานะผู้เสียหาย" />}
                         {derived.passportChart.length > 0 && <DonutChart data={derived.passportChart} title="สถานะหนังสือเดินทาง" />}
+                        {derived.creatorChart.length > 0 && <DonutChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>
                     ) : (
                       <>
                         {derived.channelChart.length > 0 && <DonutChart data={derived.channelChart} title="ช่องทางการส่งกลับ" />}
+                        {derived.creatorChart.length > 0 && <DonutChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>
                     )}
                   </div>

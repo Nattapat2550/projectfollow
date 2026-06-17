@@ -1,14 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 
-// ─── คอนสแตนท์สีสำหรับกราฟ ────────────────────────────────────────────────
+// ─── คอนสแตนท์สีสำหรับกราฟ (อัปเดตให้ใช้ตัวแปร CSS เพื่อรองรับ Theme) ──────────
 const CHART_COLORS = [
-  "#6B3A3A",
-  "#A0522D",
-  "#CD853F",
-  "#DEB887",
-  "#9E7B5A",
-  "#8B7355",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
 ];
 
 interface ChartItem {
@@ -72,7 +72,8 @@ function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
           style={{ width: "100%", height: "100%" }}
         >
           {slices.map((s, i) => (
-            <path key={i} d={arcPath(s.startAngle, s.endAngle)} fill={s.color} />
+            // ✨ อัปเดตการลงสีด้วย style={{ fill: ... }} เพื่อให้รองรับ CSS Variables
+            <path key={i} d={arcPath(s.startAngle, s.endAngle)} style={{ fill: s.color }} />
           ))}
           <text x={cx} y={cy - 8} textAnchor="middle" fontSize="24" fontWeight="bold" fill="currentColor" style={{ color: "var(--header)" }}>
             {total.toLocaleString("th-TH")}
@@ -138,7 +139,8 @@ export default async function Home() {
     }));
 
     if (total > sum) {
-      mapped.push({ name: "อื่นๆ", value: total - sum, color: "#737373" });
+      // ✨ เปลี่ยนเป็นใช้ var(--chart-other) แทน #737373
+      mapped.push({ name: "อื่นๆ", value: total - sum, color: "var(--chart-other)" });
     }
     return mapped;
   })();
@@ -153,7 +155,8 @@ export default async function Home() {
     }));
 
     if (total > sum) {
-      mapped.push({ name: "อื่นๆ", value: total - sum, color: "#737373" });
+      // ✨ เปลี่ยนเป็นใช้ var(--chart-other) แทน #737373
+      mapped.push({ name: "อื่นๆ", value: total - sum, color: "var(--chart-other)" });
     }
     return mapped;
   })();

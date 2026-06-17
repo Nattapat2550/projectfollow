@@ -7,8 +7,9 @@ export default function ServerAwaker({ children }: { children: React.ReactNode }
   const [isServerAlive, setIsServerAlive] = useState<boolean | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  // ใช้ endpoint ที่เบาที่สุดเพื่อเช็คว่า Backend เปิดอยู่หรือยัง
-  const API_PING_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000") + "/api/v1/auth/me";
+  // 🟢 แก้ไข: เปลี่ยนไปปิงที่ Root URL (หน้าแรกสุด) ของ Backend แทนที่จะเป็น /auth/me
+  // เพื่อหลีกเลี่ยง Error 401 Unauthorized กวนใจใน Console
+  const API_PING_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -18,6 +19,7 @@ export default function ServerAwaker({ children }: { children: React.ReactNode }
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 4000); // ตั้งเวลา Timeout แค่ 4 วิ
 
+        // ยิงไปที่ Base URL เฉยๆ เพื่อเช็คว่าเซิร์ฟเวอร์ตอบสนองไหม
         const res = await fetch(API_PING_URL, {
           method: "GET",
           signal: controller.signal
@@ -25,11 +27,12 @@ export default function ServerAwaker({ children }: { children: React.ReactNode }
 
         clearTimeout(timeoutId);
 
-        // ถ้า Backend ส่งอะไรกลับมา (แม้จะ 401 Unauthorized) แปลว่าเซิร์ฟเวอร์ตื่นแล้ว
+        // ถ้า Backend ส่งอะไรกลับมา (เช่น 200 OK หรือ 404 Not Found) แปลว่าเซิร์ฟเวอร์ตื่นแล้ว
         if (res) {
           setIsServerAlive(true);
         }
       } catch (error) {
+        // กรณี Network Error (เซิร์ฟเวอร์หลับ/ยังไม่เปิด) จะหลุดมาที่นี่
         setRetryCount((prev) => prev + 1);
         setIsServerAlive(false);
       }
@@ -86,6 +89,5 @@ export default function ServerAwaker({ children }: { children: React.ReactNode }
     );
   }
 
-  // เซิร์ฟเวอร์ตื่นแล้ว ก็แสดงหน้าเว็บปกติ
   return <>{children}</>;
 }

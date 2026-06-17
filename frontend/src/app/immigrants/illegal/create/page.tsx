@@ -15,7 +15,7 @@ export default function CreateIllegalImmigrant() {
     first_name_en: "", middle_name_en: "", last_name_en: "",
     passport_id: "", gender: "", nationality: "",
     detected_date: "", detected_location: "", is_victim: false,
-    warrant: "", workplace: "", screening_details: "", photo_url: "",
+    workplace: "", screening_details: "", note: "", photo_url: "",
   });
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -26,16 +26,14 @@ export default function CreateIllegalImmigrant() {
     setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value }));
   };
 
-  // 🛠️ ส่วนนี้คือการโชว์รูปพรีวิว "โดยยังไม่อัพโหลดขึ้น Drive"
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file); // 1. เก็บไฟล์รูปไว้ใน State ของบราวเซอร์ (ยังไม่ส่งไปเซิร์ฟเวอร์)
-      setImagePreview(URL.createObjectURL(file)); // 2. สร้าง Blob URL จำลองเพื่อโชว์พรีวิวบนหน้าจอเท่านั้น
+      setSelectedImage(file); 
+      setImagePreview(URL.createObjectURL(file)); 
     }
   };
 
-  // 🛠️ ส่วนนี้คือการอัพโหลดขึ้น Drive "เมื่อกดปุ่มบันทึกข้อมูลเท่านั้น"
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -52,18 +50,25 @@ export default function CreateIllegalImmigrant() {
         }
       });
 
-      // 3. แนบไฟล์รูปภาพของจริงเข้าไปกับข้อมูลฟอร์ม
       if (selectedImage) {
         submitData.append("photo", selectedImage);
       }
 
-      // 4. ยิง API ไปที่ Backend เพื่อบันทึกข้อมูลและอัพรูปลง Drive พร้อมกัน
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
       const res = await fetch(`${backendUrl}/api/v1/immigrants/illegal`, {
         method: "POST", 
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         body: submitData,
       });
 
-      if (!res.ok) throw new Error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+      
       alert("เพิ่มข้อมูลแอบเข้าเมืองสำเร็จ!");
       router.push("/immigrants/illegal"); 
       router.refresh();
@@ -85,7 +90,7 @@ export default function CreateIllegalImmigrant() {
           <span>เพิ่มข้อมูลใหม่ (ผู้แอบเข้าประเทศ)</span>
         </button>
         <Link href="/test-upload">
-          <button className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/50 rounded-lg hover:bg-amber-500/20 font-bold transition text-sm cursor-pointer">
+          <button className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/50 rounded-lg hover:bg-amber-500/20 font-bold transition text-sm cursor-pointer mt-4">
             <FileSpreadsheet size={18} /> อัพโหลดจากไฟล์ Excel
           </button>
         </Link>
@@ -103,7 +108,7 @@ export default function CreateIllegalImmigrant() {
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-stone-200 dark:file:bg-stone-800 file:text-slate-800 dark:file:text-slate-200 hover:file:opacity-80 cursor-pointer"
+            className="w-full bg-background border border-(--wrapper) text-black! dark:text-white! rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-800 dark:file:bg-slate-600 file:text-white! hover:file:opacity-80 cursor-pointer"
           />
         </div>
 
@@ -136,19 +141,23 @@ export default function CreateIllegalImmigrant() {
           <div><label className={labelClass}>สถานที่ตรวจเจอพิกัด *</label><input required type="text" name="detected_location" value={formData.detected_location} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">
           <div><label className={labelClass}>สถานที่ทำงานปลายทาง</label><input type="text" name="workplace" value={formData.workplace} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>ข้อมูลหมายจับเคสเดิม</label><input type="text" name="warrant" value={formData.warrant} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
         <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
-          <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim} onChange={handleInputChange} className="w-4 h-4 text-(--header) focus:ring-(--header) border-gray-300 rounded cursor-pointer" />
-          <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer select-none">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
+          <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim} onChange={handleInputChange} className="w-4 h-4 text-black! dark:text-white! focus:ring-(--header) border-gray-300 rounded cursor-pointer" />
+          <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer select-none text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
         </div>
 
         <div className="mb-5">
           <label className={labelClass}>บันทึกรายละเอียดผลการคัดกรอง</label>
           <textarea name="screening_details" value={formData.screening_details} onChange={handleInputChange} rows={4} className={inputClass} />
+        </div>
+        
+        <div className="mb-5">
+          <label className={labelClass}>หมายเหตุเพิ่มเติม (Note)</label>
+          <textarea name="note" value={formData.note} onChange={handleInputChange} rows={3} className={inputClass} />
         </div>
 
         <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">

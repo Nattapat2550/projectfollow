@@ -22,6 +22,11 @@ app.use(cookieParser());
 // เสิร์ฟไฟล์รูปภาพ/ไฟล์แนบแบบ Public
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// 🟢 เพิ่ม Route หน้าแรก (Root) เอาไว้ตอบกลับ ServerAwaker โดยเฉพาะ
+app.get("/", (req, res) => {
+  res.status(200).send("Backend is awake!");
+});
+
 // 📌 Routes: ปรับปรุงให้มี /api/v1/ นำหน้าทุกจุดให้ตรงกับหน้าบ้าน
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/immigrants", immigrantRoutes);

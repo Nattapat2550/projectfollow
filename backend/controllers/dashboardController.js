@@ -1,7 +1,7 @@
 // backend/controllers/dashboardController.js
 const pool = require("../config/db");
 
-// ✨ ฟังก์ชันแปลงปี พ.ศ. เป็น ค.ศ. อัตโนมัติ กรณีพิมพ์ปี 25xx เข้ามา
+// ฟังก์ชันแปลงปี พ.ศ. เป็น ค.ศ. อัตโนมัติ กรณีพิมพ์ปี 25xx เข้ามา
 const convertBEtoAD = (dateStr) => {
     if (!dateStr || String(dateStr).trim() === "") return null;
     const parts = String(dateStr).split('-');
@@ -27,13 +27,13 @@ exports.getDashboardStats = async (req, res) => {
       dobEnd: rawDobEnd,   
       isVictim = "ทั้งหมด",
       hasPassport = "ทั้งหมด",
+      creator = "ทั้งหมด", // ฟิลเตอร์ชื่อผู้เพิ่มข้อมูล
       page = 1,
       limit = 50,
       sortBy,             
       sortOrder = "asc"   
     } = req.query;
 
-    // ✨ แปลงวันที่ที่รับมาก่อนนำไปใช้งาน (แปลง พ.ศ. -> ค.ศ.)
     const startDate = convertBEtoAD(rawStartDate);
     const endDate = convertBEtoAD(rawEndDate);
     const dobStart = convertBEtoAD(rawDobStart);
@@ -43,7 +43,6 @@ exports.getDashboardStats = async (req, res) => {
     const limitNum = parseInt(limit) || 50;
     const offset = (pageNum - 1) * limitNum;
 
-    // เช็คว่ามีค่าวันที่ส่งมาจริงๆ
     const vStart = !!startDate;
     const vEnd = !!endDate;
     const vDobStart = !!dobStart;
@@ -56,147 +55,127 @@ exports.getDashboardStats = async (req, res) => {
     let queryParams = [];
     let paramIndex = 1;
 
+    // WHERE clause สำหรับวันที่
     if (vStart && vEnd) {
-      conditions.push(`DATE(${dateField}) >= $${paramIndex} AND DATE(${dateField}) <= $${paramIndex + 1}`);
+      conditions.push(`DATE(t.${dateField}) >= $${paramIndex} AND DATE(t.${dateField}) <= $${paramIndex + 1}`);
       queryParams.push(startDate, endDate);
       paramIndex += 2;
     } else if (vStart) {
-      conditions.push(`DATE(${dateField}) >= $${paramIndex}`);
+      conditions.push(`DATE(t.${dateField}) >= $${paramIndex}`);
       queryParams.push(startDate);
       paramIndex++;
     } else if (vEnd) {
-      conditions.push(`DATE(${dateField}) <= $${paramIndex}`);
+      conditions.push(`DATE(t.${dateField}) <= $${paramIndex}`);
       queryParams.push(endDate);
       paramIndex++;
     }
 
     if (type === "deported") {
       if (vDobStart && vDobEnd) {
-        conditions.push(`DATE(date_of_birth) >= $${paramIndex} AND DATE(date_of_birth) <= $${paramIndex + 1}`);
+        conditions.push(`DATE(t.date_of_birth) >= $${paramIndex} AND DATE(t.date_of_birth) <= $${paramIndex + 1}`);
         queryParams.push(dobStart, dobEnd);
         paramIndex += 2;
       } else if (vDobStart) {
-        conditions.push(`DATE(date_of_birth) >= $${paramIndex}`);
+        conditions.push(`DATE(t.date_of_birth) >= $${paramIndex}`);
         queryParams.push(dobStart);
         paramIndex++;
       } else if (vDobEnd) {
-        conditions.push(`DATE(date_of_birth) <= $${paramIndex}`);
+        conditions.push(`DATE(t.date_of_birth) <= $${paramIndex}`);
         queryParams.push(dobEnd);
         paramIndex++;
       }
     }
 
     if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
-      conditions.push(`nationality = $${paramIndex}`);
+      conditions.push(`t.nationality = $${paramIndex}`);
       queryParams.push(nationality);
       paramIndex++;
     }
     if (gender && gender !== "ทั้งหมด") {
-      conditions.push(`gender = $${paramIndex}`);
+      conditions.push(`t.gender = $${paramIndex}`);
       queryParams.push(gender);
       paramIndex++;
     }
 
     if (type === "illegal") {
       if (isVictim === "true" || isVictim === "false") {
-        conditions.push(`is_victim = $${paramIndex}`);
+        conditions.push(`t.is_victim = $${paramIndex}`);
         queryParams.push(isVictim === "true");
         paramIndex++;
       }
       if (hasPassport === "true") {
-        conditions.push(`passport_id IS NOT NULL AND passport_id ~ '\\S' AND LOWER(TRIM(passport_id)) NOT IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง')`);
+        conditions.push(`t.passport_id IS NOT NULL AND t.passport_id ~ '\\S' AND LOWER(TRIM(t.passport_id)) NOT IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง')`);
       } else if (hasPassport === "false") {
-        conditions.push(`(passport_id IS NULL OR TRIM(passport_id) = '' OR LOWER(TRIM(passport_id)) IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง'))`);
+        conditions.push(`(t.passport_id IS NULL OR TRIM(t.passport_id) = '' OR LOWER(TRIM(t.passport_id)) IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง'))`);
       }
+    }
+
+    // ฟิลเตอร์ผู้เพิ่มข้อมูล (เชื่อมกับตาราง users)
+    if (creator && creator !== "ทั้งหมด") {
+      conditions.push(`u.name = $${paramIndex}`);
+      queryParams.push(creator);
+      paramIndex++;
     }
 
     let whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-    let orderClause = `ORDER BY ${dateField} DESC NULLS LAST, id DESC`; 
+    let orderClause = `ORDER BY t.${dateField} DESC NULLS LAST, t.id DESC`; 
     if (sortBy) {
       const dir = sortOrder.toLowerCase() === "desc" ? "DESC" : "ASC";
       if (sortBy === "name") {
-          orderClause = `ORDER BY first_name_th ${dir} NULLS LAST, last_name_th ${dir} NULLS LAST, id DESC`;
+          orderClause = `ORDER BY t.first_name_th ${dir} NULLS LAST, t.last_name_th ${dir} NULLS LAST, t.id DESC`;
+      } else if (sortBy === "creator") {
+          orderClause = `ORDER BY u.name ${dir} NULLS LAST, t.id DESC`;
       } else {
           const allowedColumns = ["nationality", "detected_date", "detected_location", "is_victim", "date_of_birth", "national_id", "address", "return_date", "result", "channel"];
           if (allowedColumns.includes(sortBy)) {
-              orderClause = `ORDER BY ${sortBy} ${dir} NULLS LAST, id DESC`;
+              orderClause = `ORDER BY t.${sortBy} ${dir} NULLS LAST, t.id DESC`;
           }
       }
     }
 
-    const dataQuery = `SELECT * FROM ${tableName} ${whereClause} ${orderClause} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    // Query เพื่อดึงข้อมูล Table พร้อม Join ตาราง users เพื่อเอาชื่อคนเพิ่ม
+    const dataQuery = `
+      SELECT t.*, u.name as creator_name 
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${whereClause} 
+      ${orderClause} 
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
     const tableData = await pool.query(dataQuery, [...queryParams, limitNum, offset]);
 
-    const totalCountQuery = `SELECT COUNT(*) FROM ${tableName} ${whereClause}`;
+    // Query นับจำนวนข้อมูลทั้งหมด
+    const totalCountQuery = `
+      SELECT COUNT(*) 
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${whereClause}
+    `;
     const totalCountResult = await pool.query(totalCountQuery, queryParams);
     const totalItems = parseInt(totalCountResult.rows[0].count);
 
-    let baseConditions = [];
-    let baseParams = [];
-    let baseIdx = 1;
-
-    if (vStart && vEnd) {
-      baseConditions.push(`DATE(${dateField}) >= $${baseIdx} AND DATE(${dateField}) <= $${baseIdx + 1}`);
-      baseParams.push(startDate, endDate);
-      baseIdx += 2;
-    } else if (vStart) {
-      baseConditions.push(`DATE(${dateField}) >= $${baseIdx}`);
-      baseParams.push(startDate);
-      baseIdx++;
-    } else if (vEnd) {
-      baseConditions.push(`DATE(${dateField}) <= $${baseIdx}`);
-      baseParams.push(endDate);
-      baseIdx++;
-    }
-
-    if (type === "deported") {
-      if (vDobStart && vDobEnd) {
-        baseConditions.push(`DATE(date_of_birth) >= $${baseIdx} AND DATE(date_of_birth) <= $${baseIdx + 1}`);
-        baseParams.push(dobStart, dobEnd);
-        baseIdx += 2;
-      } else if (vDobStart) {
-        baseConditions.push(`DATE(date_of_birth) >= $${baseIdx}`);
-        baseParams.push(dobStart);
-        baseIdx++;
-      } else if (vDobEnd) {
-        baseConditions.push(`DATE(date_of_birth) <= $${baseIdx}`);
-        baseParams.push(dobEnd);
-        baseIdx++;
-      }
-    }
-
-    if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
-      baseConditions.push(`nationality = $${baseIdx}`);
-      baseParams.push(nationality);
-      baseIdx++;
-    }
-    if (gender && gender !== "ทั้งหมด") {
-      baseConditions.push(`gender = $${baseIdx}`);
-      baseParams.push(gender);
-      baseIdx++;
-    }
-    
-    let baseWhere = baseConditions.length > 0 ? `WHERE ${baseConditions.join(" AND ")}` : "";
+    let baseWhere = whereClause;
+    let baseParams = queryParams;
 
     let stats = { total: totalItems };
     let charts = {};
 
     if (type === "illegal") {
-      const victimCountQuery = `SELECT COUNT(*) FROM illegal_immigrants ${baseWhere ? baseWhere + " AND " : "WHERE "} is_victim = true`;
+      const victimCountQuery = `SELECT COUNT(*) FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.is_victim = true`;
       const victimRes = await pool.query(victimCountQuery, baseParams);
       
-      const passportValidCond = `passport_id IS NOT NULL AND passport_id ~ '\\S' AND LOWER(TRIM(passport_id)) NOT IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง')`;
-      const passportCountQuery = `SELECT COUNT(*) FROM illegal_immigrants ${baseWhere ? baseWhere + " AND " : "WHERE "} ${passportValidCond}`;
+      const passportValidCond = `t.passport_id IS NOT NULL AND t.passport_id ~ '\\S' AND LOWER(TRIM(t.passport_id)) NOT IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง')`;
+      const passportCountQuery = `SELECT COUNT(*) FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} ${passportValidCond}`;
       const passportRes = await pool.query(passportCountQuery, baseParams);
 
-      const natChartQuery = `SELECT COALESCE(nationality, 'ไม่ระบุ') as name, COUNT(*) as value FROM illegal_immigrants ${baseWhere} GROUP BY 1 ORDER BY value DESC LIMIT 6`;
+      const natChartQuery = `SELECT COALESCE(t.nationality, 'ไม่ระบุ') as name, COUNT(*) as value FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC LIMIT 6`;
       const natChartRes = await pool.query(natChartQuery, baseParams);
 
-      const victimChartQuery = `SELECT CASE WHEN is_victim = true THEN 'เป็นผู้เสียหาย' ELSE 'ไม่เป็นผู้เสียหาย' END as name, COUNT(*) as value FROM illegal_immigrants ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
+      const victimChartQuery = `SELECT CASE WHEN t.is_victim = true THEN 'เป็นผู้เสียหาย' ELSE 'ไม่เป็นผู้เสียหาย' END as name, COUNT(*) as value FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
       const victimChartRes = await pool.query(victimChartQuery, baseParams);
 
-      const passportChartQuery = `SELECT CASE WHEN ${passportValidCond} THEN 'มีหนังสือเดินทาง' ELSE 'ไม่มีข้อมูล / ไม่มี' END as name, COUNT(*) as value FROM illegal_immigrants ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
+      const passportChartQuery = `SELECT CASE WHEN ${passportValidCond} THEN 'มีหนังสือเดินทาง' ELSE 'ไม่มีข้อมูล / ไม่มี' END as name, COUNT(*) as value FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
       const passportChartRes = await pool.query(passportChartQuery, baseParams);
 
       stats.victims = parseInt(victimRes.rows[0].count);
@@ -205,22 +184,45 @@ exports.getDashboardStats = async (req, res) => {
       charts.victim = victimChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
       charts.passport = passportChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     } else {
-      const successCountQuery = `SELECT COUNT(*) FROM deported_persons ${baseWhere ? baseWhere + " AND " : "WHERE "} result = 'SUCCESS'`;
+      const successCountQuery = `SELECT COUNT(*) FROM deported_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.result = 'SUCCESS'`;
       const successRes = await pool.query(successCountQuery, baseParams);
 
-      const channelChartQuery = `SELECT COALESCE(channel, 'ไม่ระบุช่องทาง') as name, COUNT(*) as value FROM deported_persons ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
+      const channelChartQuery = `SELECT COALESCE(t.channel, 'ไม่ระบุช่องทาง') as name, COUNT(*) as value FROM deported_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
       const channelChartRes = await pool.query(channelChartQuery, baseParams);
 
       stats.success = parseInt(successRes.rows[0].count);
       charts.channel = channelChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     }
 
+    // ✨ ปรับปรุง: กราฟสรุปผู้เพิ่มข้อมูล (Creator Chart) ให้ดึงค่า u.color ประจำตัวของ User ออกมาจาก Database ด้วย
+    const creatorChartQuery = `
+      SELECT 
+        COALESCE(u.name, 'ไม่ทราบผู้เพิ่ม') as name, 
+        u.color as color, 
+        COUNT(*) as value 
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${baseWhere} 
+      GROUP BY u.name, u.color 
+      ORDER BY value DESC 
+      LIMIT 10
+    `;
+    const creatorChartRes = await pool.query(creatorChartQuery, baseParams);
+    charts.creator = creatorChartRes.rows.map(r => ({ 
+      name: r.name, 
+      value: parseInt(r.value),
+      color: r.color 
+    }));
+
     let allNatsRes = { rows: [] };
     if (type === "illegal") {
-      allNatsRes = await pool.query(`SELECT DISTINCT COALESCE(nationality, 'ไม่ระบุ') as nat FROM illegal_immigrants WHERE nationality IS NOT NULL AND nationality != '' ORDER BY nat`);
+      allNatsRes = await pool.query(`SELECT DISTINCT COALESCE(t.nationality, 'ไม่ระบุ') as nat FROM illegal_immigrants t WHERE t.nationality IS NOT NULL AND t.nationality != '' ORDER BY nat`);
     }
 
-    const allGendersRes = await pool.query(`SELECT DISTINCT COALESCE(gender, 'ไม่ระบุ') as gen FROM ${tableName} WHERE gender IS NOT NULL AND gender != '' ORDER BY gen`);
+    const allGendersRes = await pool.query(`SELECT DISTINCT COALESCE(t.gender, 'ไม่ระบุ') as gen FROM ${tableName} t WHERE t.gender IS NOT NULL AND t.gender != '' ORDER BY gen`);
+    
+    // ดึงรายชื่อผู้เพิ่มข้อมูลทั้งหมดไปโชว์ใน Dropdown Filter
+    const allCreatorsRes = await pool.query(`SELECT DISTINCT u.name as creator FROM ${tableName} t JOIN users u ON t.created_by = u.id WHERE u.name IS NOT NULL ORDER BY u.name`);
 
     res.status(200).json({
       success: true,
@@ -229,7 +231,8 @@ exports.getDashboardStats = async (req, res) => {
         totalPages: Math.ceil(totalItems / limitNum) || 1,
         currentPage: pageNum,
         allNationalities: type === "illegal" ? ["ทั้งหมด", ...allNatsRes.rows.map(r => r.nat)] : ["ทั้งหมด"],
-        allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen)]
+        allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen)],
+        allCreators: ["ทั้งหมด", ...allCreatorsRes.rows.map(r => r.creator)]
       },
       stats,
       charts,
