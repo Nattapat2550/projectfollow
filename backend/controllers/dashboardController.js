@@ -194,10 +194,25 @@ exports.getDashboardStats = async (req, res) => {
       charts.channel = channelChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     }
 
-    // ✨ กราฟสรุปผู้เพิ่มข้อมูล (Creator Chart) สำหรับหน้าแดชบอร์ด
-    const creatorChartQuery = `SELECT COALESCE(u.name, 'ไม่ทราบผู้เพิ่ม') as name, COUNT(*) as value FROM ${tableName} t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC LIMIT 10`;
+    // ✨ ปรับปรุง: กราฟสรุปผู้เพิ่มข้อมูล (Creator Chart) ให้ดึงค่า u.color ประจำตัวของ User ออกมาจาก Database ด้วย
+    const creatorChartQuery = `
+      SELECT 
+        COALESCE(u.name, 'ไม่ทราบผู้เพิ่ม') as name, 
+        u.color as color, 
+        COUNT(*) as value 
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${baseWhere} 
+      GROUP BY u.name, u.color 
+      ORDER BY value DESC 
+      LIMIT 10
+    `;
     const creatorChartRes = await pool.query(creatorChartQuery, baseParams);
-    charts.creator = creatorChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
+    charts.creator = creatorChartRes.rows.map(r => ({ 
+      name: r.name, 
+      value: parseInt(r.value),
+      color: r.color 
+    }));
 
     let allNatsRes = { rows: [] };
     if (type === "illegal") {
