@@ -16,6 +16,18 @@ export default function TopBar() {
     // ใช้ตัวแปรเดียวกับหน้า Login และเปลี่ยนเป็น Port 8000 ตามเซิร์ฟเวอร์หลัก
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
+    // 🟢 ฟังก์ชันกลางสำหรับล้างข้อมูล Auth ทั้งหมด ทั้ง localStorage และ Cookie
+    // ต้องเรียกตัวนี้ทุกครั้งที่เจอ token หมดอายุ/ไม่ valid เพื่อไม่ให้ cookie ค้าง
+    // ไม่งั้น middleware จะยังคิดว่า login อยู่ (เพราะมันเช็คแค่ "มี cookie หรือไม่")
+    // แล้วจะเด้งออกจากหน้า /login กลับไปหน้าเดิมตลอด ทำให้ login ใหม่ไม่ได้
+    const clearAuthData = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("user_id");
+        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        setUser(null);
+    };
+
     // เช็คสถานะ Login
     useEffect(() => {
         const fetchUser = async () => {
@@ -37,12 +49,9 @@ export default function TopBar() {
                     credentials: "include" // 🟢 จำเป็นมาก เพื่อให้ยอมรับการอ่าน/เขียน Cookie จาก Backend
                 });
                 
-                // ✅ เพิ่มการเช็ค 401 (Unauthorized) เพื่อล้าง Token ทิ้ง
+                // ✅ เพิ่มการเช็ค 401 (Unauthorized) เพื่อล้าง Token ทิ้ง (ทั้ง localStorage และ Cookie)
                 if (res.status === 401) {
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
-                    localStorage.removeItem("user_id");
-                    setUser(null);
+                    clearAuthData();
                     throw new Error("Unauthorized: Token is invalid or expired");
                 }
 
@@ -56,10 +65,7 @@ export default function TopBar() {
                     setUser(data.data);
                 } else {
                     // ลบของเก่าทิ้งถ้า Token ไม่ผ่าน
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
-                    localStorage.removeItem("user_id");
-                    setUser(null);
+                    clearAuthData();
                 }
             } catch (err) {
                 console.error("Failed to fetch user", err);
@@ -89,19 +95,17 @@ export default function TopBar() {
                 credentials: "include" // 🟢 จำเป็นมาก เพื่อให้คำสั่งเคลียร์ Cookie ของ Backend ทำงานสำเร็จ
             });
             
-            // 🚨 บังคับลบ Cookie ฝั่ง Client (ในกรณีที่ Cookie ไม่ใช่ HttpOnly)
-            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            
-            // ล้างข้อมูลออกจาก LocalStorage ให้เกลี้ยง
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-            localStorage.removeItem("user_id");
+            // 🚨 ล้างข้อมูล Auth ฝั่ง Client ทั้งหมด (localStorage + Cookie) ผ่านฟังก์ชันกลาง
+            clearAuthData();
 
-            setUser(null);
             router.push('/login');
             router.refresh(); // บังคับรีเฟรช 1 รอบเพื่อให้ Layout อัปเดตใหม่ทั้งหมด
         } catch (err) {
             console.error("Logout error", err);
+            // 🟢 ถึง Backend ยิงไม่สำเร็จ ก็ยังต้องล้างข้อมูลฝั่ง Client เพื่อไม่ให้ค้าง login ผี
+            clearAuthData();
+            router.push('/login');
+            router.refresh();
         }
     };
 
