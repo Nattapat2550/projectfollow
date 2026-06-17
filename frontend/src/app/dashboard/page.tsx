@@ -13,7 +13,7 @@ function DashboardContent() {
 
   return (
     <div className="w-full p-4 sm:p-6 transition-colors duration-200" style={{ backgroundColor: "var(--wrapper)", minHeight: "calc(100vh - 80px)" }}>
-      <Link href="/" className="inline-flex items-center gap-1 font-bold mb-6 hover:opacity-80 transition text-(--header) text-2xl">
+      <Link href="/" className="inline-flex items-center gap-1 font-bold mb-6 hover:opacity-70 transition text-(--header) text-2xl">
         {"< แดชบอร์ด"}
       </Link>
 
@@ -22,7 +22,7 @@ function DashboardContent() {
         <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] shadow-[4px_4px_0px_rgba(0,0,0,0.25)] p-6 shrink-0 flex flex-col gap-5 w-full lg:w-72">
           <span className="font-bold text-lg text-(--header)">ฟิลเตอร์ตัวเลือก</span>
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ประเภทข้อมูล</label>
+            <label className="text-sm font-bold text-[var(--header)] opacity-70">ประเภทข้อมูล</label>
             <select value={states.filterType} onChange={(e) => actions.handleTypeChange(e.target.value as "illegal" | "deported")} className={inputClass}>
               <option value="illegal">ผู้แอบเข้า (Illegal)</option>
               <option value="deported">ผู้ถูกส่งกลับ (Deported)</option>
@@ -31,7 +31,7 @@ function DashboardContent() {
 
           {states.filterType === "illegal" && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สัญชาติ</label>
+              <label className="text-sm font-bold text-[var(--header)] opacity-70">สัญชาติ</label>
               <select value={states.filterNat} onChange={(e) => actions.handleFilterChange(actions.setFilterNat, e.target.value)} className={inputClass}>
                 {derived.nationalitiesOptions.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -39,7 +39,7 @@ function DashboardContent() {
           )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-stone-600 dark:text-slate-300">เพศ</label>
+            <label className="text-sm font-bold text-[var(--header)] opacity-70">เพศ</label>
             <select value={states.filterGender} onChange={(e) => actions.handleFilterChange(actions.setFilterGender, e.target.value)} className={inputClass}>
               {derived.gendersOptions.map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
@@ -48,7 +48,7 @@ function DashboardContent() {
           {states.filterType === "illegal" && (
             <>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สถานะผู้เสียหาย</label>
+                <label className="text-sm font-bold text-[var(--header)] opacity-70">สถานะผู้เสียหาย</label>
                 <select value={states.filterVictim} onChange={(e) => actions.handleFilterChange(actions.setFilterVictim, e.target.value)} className={inputClass}>
                   <option value="ทั้งหมด">ทั้งหมด</option>
                   <option value="true">เป็นผู้เสียหาย</option>
@@ -56,7 +56,7 @@ function DashboardContent() {
                 </select>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">สถานะหนังสือเดินทาง</label>
+                <label className="text-sm font-bold text-[var(--header)] opacity-70">สถานะหนังสือเดินทาง</label>
                 <select value={states.filterPassport} onChange={(e) => actions.handleFilterChange(actions.setFilterPassport, e.target.value)} className={inputClass}>
                   <option value="ทั้งหมด">ทั้งหมด</option>
                   <option value="true">มีหนังสือเดินทาง</option>
@@ -67,22 +67,22 @@ function DashboardContent() {
           )}
 
           <div className="flex flex-col gap-2 mt-2">
-             <label className="text-sm font-bold text-stone-600 dark:text-slate-300">{states.filterType === "deported" ? "วันที่ส่งกลับ (ตั้งแต่)" : "ตั้งแต่วันที่"}</label>
+             <label className="text-sm font-bold text-[var(--header)] opacity-70">{states.filterType === "deported" ? "วันที่ส่งกลับ (ตั้งแต่)" : "ตั้งแต่วันที่"}</label>
              <input type="date" value={states.startDate} onChange={(e) => actions.handleFilterChange(actions.setStartDate, e.target.value)} className={inputClass} />
           </div>
           <div className="flex flex-col gap-2">
-             <label className="text-sm font-bold text-stone-600 dark:text-slate-300">{states.filterType === "deported" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่"}</label>
+             <label className="text-sm font-bold text-[var(--header)] opacity-70">{states.filterType === "deported" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่"}</label>
              <input type="date" value={states.endDate} onChange={(e) => actions.handleFilterChange(actions.setEndDate, e.target.value)} className={inputClass} />
           </div>
 
           {states.filterType === "deported" && (
             <>
               <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-(--wrapper)">
-                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">วันเกิดตั้งแต่</label>
+                <label className="text-sm font-bold text-[var(--header)] opacity-70">วันเกิดตั้งแต่</label>
                 <input type="date" value={states.dobStart} onChange={(e) => actions.handleFilterChange(actions.setDobStart, e.target.value)} className={inputClass} />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ถึงวันที่ (วันเกิด)</label>
+                <label className="text-sm font-bold text-[var(--header)] opacity-70">ถึงวันที่ (วันเกิด)</label>
                 <input type="date" value={states.dobEnd} onChange={(e) => actions.handleFilterChange(actions.setDobEnd, e.target.value)} className={inputClass} />
               </div>
             </>
@@ -110,7 +110,7 @@ function DashboardContent() {
                 <div className="flex gap-10 flex-wrap">
                   {derived.stats.map((s) => (
                     <div key={s.label} className="flex flex-col">
-                      <span className="text-sm font-bold text-stone-600 dark:text-slate-300 mb-1">{s.label}</span>
+                      <span className="text-sm font-bold text-[var(--header)] opacity-70 mb-1">{s.label}</span>
                       <span className="text-4xl font-black text-(--header)">{Number(s.value).toLocaleString("th-TH")}</span>
                     </div>
                   ))}

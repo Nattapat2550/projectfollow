@@ -75,7 +75,7 @@ export default function CreateIllegalImmigrant() {
   };
 
   const inputClass = "w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40";
-  const labelClass = "block text-xs font-bold mb-2 text-stone-600 dark:text-slate-300";
+  const labelClass = "block text-xs font-bold mb-2 text-[var(--header)] opacity-70";
 
   return (
     <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-200">

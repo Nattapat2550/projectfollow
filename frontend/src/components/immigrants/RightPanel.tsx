@@ -60,24 +60,24 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
             <h3 className="text-xl font-bold text-(--header) mb-2">ข้อมูลเพิ่มเติม</h3>
             
             <div className="flex justify-between items-center text-sm border-b border-(--wrapper) pb-2">
-              <span className="font-bold text-stone-600 dark:text-slate-300">วันที่ส่งกลับ</span>
+              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">วันที่ส่งกลับ</span>
               <span className="font-mono font-semibold">{formatDate(data.return_date)}</span>
             </div>
 
             <div className="flex justify-between items-center text-sm border-b border-(--wrapper) pb-2">
-              <span className="font-bold text-stone-600 dark:text-slate-300">จำนวน Case ID</span>
+              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">จำนวน Case ID</span>
               <span className="font-semibold font-mono">{data.number_of_case ?? 0}</span>
             </div>
 
             <div className="flex justify-between items-center text-sm border-b border-(--wrapper) pb-2">
-              <span className="font-bold text-stone-600 dark:text-slate-300">จำนวนหมายจับ</span>
+              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">จำนวนหมายจับ</span>
               <span className={`font-semibold font-mono ${data.number_of_warrant > 0 ? "text-(--redText)" : ""}`}>
                 {data.number_of_warrant ?? 0}
               </span>
             </div>
 
             <div className="flex justify-between items-center text-sm pb-1">
-              <span className="font-bold text-stone-600 dark:text-slate-300">ช่องทางส่งกลับ</span>
+              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">ช่องทางส่งกลับ</span>
               <span className="font-semibold">{data.channel || "-"}</span>
             </div>
           </div>
@@ -89,7 +89,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
               {data.is_victim ? "เข้าข่ายเป็นผู้เสียหายจากการค้ามนุษย์" : "ไม่เป็นผู้เสียหายจากการค้ามนุษย์"}
             </div>
 
-            <div className="bg-background border border-(--wrapper) rounded-md p-3 text-xs text-stone-600 dark:text-slate-300 font-medium leading-relaxed shadow-inner min-h-15 mt-2 whitespace-pre-wrap">
+            <div className="bg-background border border-(--wrapper) rounded-md p-3 text-xs text-[var(--foreground) ]dark:text-slate-300 font-medium leading-relaxed shadow-inner min-h-15 mt-2 whitespace-pre-wrap">
               {data.screening_details || "ไม่มีรายละเอียดการคัดกรองระบุไว้"}
             </div>
           </div>
