@@ -6,8 +6,8 @@ export interface StatItem { label: string; value: number | string; }
 export interface ChartItem { name: string; value: number; color: string; }
 export interface DashboardData {
   stats: { total: number; victims?: number; hasPassport?: number; success?: number; };
-  charts: { nationality?: { name: string; value: number }[]; victim?: { name: string; value: number }[]; passport?: { name: string; value: number }[]; channel?: { name: string; value: number }[]; };
-  meta: { totalItems: number; totalPages: number; currentPage: number; allNationalities: string[]; allGenders: string[]; };
+  charts: { nationality?: { name: string; value: number }[]; victim?: { name: string; value: number }[]; passport?: { name: string; value: number }[]; channel?: { name: string; value: number }[]; creator?: { name: string; value: number }[]; };
+  meta: { totalItems: number; totalPages: number; currentPage: number; allNationalities: string[]; allGenders: string[]; allCreators?: string[]; };
   tableData: any[];
 }
 
@@ -29,7 +29,6 @@ export function useDashboard() {
   const [filterVictim, setFilterVictim] = useState<string>("ทั้งหมด");
   const [filterPassport, setFilterPassport] = useState<string>("ทั้งหมด");
   
-  // 🟢 เพิ่ม State สำหรับฟิลเตอร์ "ผู้เพิ่มข้อมูล"
   const [filterCreator, setFilterCreator] = useState<string>("ทั้งหมด");
   
   const [startDate, setStartDate] = useState<string>("");
@@ -53,7 +52,6 @@ export function useDashboard() {
       limit: "50"
     });
 
-    // 🟢 แนบพารามิเตอร์ creator (ผู้เพิ่มข้อมูล) ไปให้ Backend ถ้าไม่ได้เลือก "ทั้งหมด"
     if (filterCreator && filterCreator !== "ทั้งหมด") {
       params.append("creator", filterCreator);
     }
@@ -112,7 +110,7 @@ export function useDashboard() {
   const resetFilters = () => {
     setFilterNat("ทั้งหมด"); setFilterGender("ทั้งหมด"); setFilterVictim("ทั้งหมด");
     setFilterPassport("ทั้งหมด"); 
-    setFilterCreator("ทั้งหมด"); // 🟢 รีเซ็ตฟิลเตอร์ผู้เพิ่มข้อมูลด้วย
+    setFilterCreator("ทั้งหมด");
     setStartDate(""); setEndDate(""); setDobStart("");
     setDobEnd(""); setSortField(""); setCurrentPage(1);
   };
@@ -123,6 +121,7 @@ export function useDashboard() {
 
   const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
   const gendersOptions = dashboardData?.meta?.allGenders || ["ทั้งหมด"];
+  const creatorsOptions = dashboardData?.meta?.allCreators || ["ทั้งหมด"];
 
   const tableRows = (dashboardData?.tableData || []).map((item: any) => {
     const fnTh = !item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ" ? (item.first_name_en || "ไม่ระบุ") : item.first_name_th;
@@ -144,14 +143,15 @@ export function useDashboard() {
     return mapped;
   };
 
-  const natChart = formatChartData(dashboardData?.charts?.nationality, dashboardData?.stats?.total);
-  const channelChart = formatChartData(dashboardData?.charts?.channel, dashboardData?.stats?.total);
+  const natChart = formatChartData(dashboardData?.charts?.nationality, dashboardData?.stats?.total, 0);
+  const channelChart = formatChartData(dashboardData?.charts?.channel, dashboardData?.stats?.total, 0);
   const victimChart = (dashboardData?.charts?.victim || []).map(d => ({ ...d, color: d.name === "เป็นผู้เสียหาย" ? CHART_COLORS[0] : CHART_COLORS[2] }));
   const passportChart = (dashboardData?.charts?.passport || []).map(d => ({ ...d, color: d.name === "มีหนังสือเดินทาง" ? CHART_COLORS[1] : CHART_COLORS[3] }));
+  const creatorChart = formatChartData(dashboardData?.charts?.creator, dashboardData?.stats?.total, 4);
 
   return {
     states: { filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection, loading, isUpdating, dashboardData },
     actions: { handleFilterChange, handleSort, resetFilters, handleTypeChange, setCurrentPage, setFilterNat, setFilterGender, setFilterVictim, setFilterPassport, setFilterCreator, setStartDate, setEndDate, setDobStart, setDobEnd },
-    derived: { nationalitiesOptions, gendersOptions, tableRows, stats, natChart, channelChart, victimChart, passportChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
+    derived: { nationalitiesOptions, gendersOptions, creatorsOptions, tableRows, stats, natChart, channelChart, victimChart, passportChart, creatorChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
   };
 }

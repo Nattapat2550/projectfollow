@@ -26,16 +26,14 @@ export default function CreateIllegalImmigrant() {
     setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value }));
   };
 
-  // 🛠️ ส่วนนี้คือการโชว์รูปพรีวิว "โดยยังไม่อัพโหลดขึ้น Drive"
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file); // 1. เก็บไฟล์รูปไว้ใน State ของบราวเซอร์ (ยังไม่ส่งไปเซิร์ฟเวอร์)
-      setImagePreview(URL.createObjectURL(file)); // 2. สร้าง Blob URL จำลองเพื่อโชว์พรีวิวบนหน้าจอเท่านั้น
+      setSelectedImage(file); 
+      setImagePreview(URL.createObjectURL(file)); 
     }
   };
 
-  // 🛠️ ส่วนนี้คือการอัพโหลดขึ้น Drive "เมื่อกดปุ่มบันทึกข้อมูลเท่านั้น"
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -52,18 +50,27 @@ export default function CreateIllegalImmigrant() {
         }
       });
 
-      // 3. แนบไฟล์รูปภาพของจริงเข้าไปกับข้อมูลฟอร์ม
       if (selectedImage) {
         submitData.append("photo", selectedImage);
       }
 
-      // 4. ยิง API ไปที่ Backend เพื่อบันทึกข้อมูลและอัพรูปลง Drive พร้อมกัน
+      // 🟢 ดึง Token จาก Cookie
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
+      // 🟢 แนบ Token ใน Header
       const res = await fetch(`${backendUrl}/api/v1/immigrants/illegal`, {
         method: "POST", 
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
         body: submitData,
       });
 
-      if (!res.ok) throw new Error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+      
       alert("เพิ่มข้อมูลแอบเข้าเมืองสำเร็จ!");
       router.push("/immigrants/illegal"); 
       router.refresh();

@@ -19,7 +19,6 @@ export default function CreateDeportedImmigrant() {
     result: "PENDING", address: "", photo_url: "",
   });
 
-  // States สำหรับจัดการไฟล์รูปภาพและการพรีวิว
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
@@ -44,7 +43,6 @@ export default function CreateDeportedImmigrant() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
       
-      // แปลงข้อมูลเป็น FormData เพื่อรองรับไฟล์รูป
       const submitData = new FormData();
       Object.keys(formData).forEach((key) => {
         const val = (formData as any)[key];
@@ -53,17 +51,27 @@ export default function CreateDeportedImmigrant() {
         }
       });
 
-      // ถ้ามีการเลือกไฟล์ ให้เพิ่มเข้าไปใน FormData
       if (selectedImage) {
         submitData.append("photo", selectedImage);
       }
 
+      // 🟢 ดึง Token จาก Cookie
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
+      // 🟢 แนบ Token ใน Header
       const res = await fetch(`${backendUrl}/api/v1/immigrants/deported`, {
         method: "POST", 
-        body: submitData, // ส่งเป็น FormData
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: submitData, 
       });
 
-      if (!res.ok) throw new Error("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+      }
+      
       alert("เพิ่มข้อมูลผู้ถูกส่งตัวกลับสำเร็จ!");
       router.push("/immigrants/deported"); 
       router.refresh();
@@ -108,7 +116,6 @@ export default function CreateDeportedImmigrant() {
             type="file"
             accept="image/*"
             onChange={handleImageChange}
-            // แก้สี text ของปุ่มอัพโหลดไฟล์ให้ชัดเจนขึ้น
             className="w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-stone-200 dark:file:bg-stone-800 file:text-slate-800 dark:file:text-slate-200 hover:file:opacity-80 cursor-pointer"
           />
         </div>

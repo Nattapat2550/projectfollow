@@ -27,8 +27,15 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
       const endpoint = type === "deported" ? "deported" : "illegal";
       
+      // 🟢 ดึง Token จาก Cookie
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
       const res = await fetch(`${backendUrl}/api/v1/immigrants/${endpoint}/${data.id}`, {
         method: 'DELETE',
+        // 🟢 แนบ Token ไปกับ Headers เพื่อยืนยันตัวตนกับ Backend
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!res.ok) {
