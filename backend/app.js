@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
 
 const immigrantRoutes = require("./routes/immigrants");
 const dashboardRoutes = require("./routes/dashboard");
@@ -10,6 +11,7 @@ const authRoutes = require("./routes/auth"); // นำเข้า Auth Route
 
 const app = express();
 app.disable('x-powered-by');
+app.use(helmet());
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
