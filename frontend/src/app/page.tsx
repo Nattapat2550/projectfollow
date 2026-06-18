@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
+export const dynamic = "force-dynamic";
 // ─── คอนสแตนท์สีสำหรับกราฟ (อัปเดตให้ใช้ตัวแปร CSS เพื่อรองรับ Theme) ──────────
 const CHART_COLORS = [
   "var(--chart-1)",

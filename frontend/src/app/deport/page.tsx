@@ -3,6 +3,8 @@ import { getDeportData } from "@/lib/server/deport";
 
 import { deportColumns } from "./columns";
 
+export const dynamic = "force-dynamic";
+
 export default async function Deport() {
 	const { data } = await getDeportData(0, 100);
 	return (
