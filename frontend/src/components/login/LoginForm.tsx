@@ -48,8 +48,9 @@ const LoginForm = () => {
                 const callbackUrl = searchParams.get('callbackUrl');
 
                 // ถ้ามี URL เดิมติดมาด้วย ให้พากลับไปหน้าเดิม แต่ถ้าไม่มีให้พากลับหน้า /dashboard
-                if (callbackUrl) {
-                    window.location.href = decodeURIComponent(callbackUrl);
+                const decodedUrl = decodeURIComponent(callbackUrl || '');
+                if (decodedUrl && decodedUrl.startsWith('/') && !decodedUrl.startsWith('//')) {
+                    window.location.href = decodedUrl;
                 } else {
                     window.location.href = '/dashboard';
                 }

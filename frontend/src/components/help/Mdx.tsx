@@ -48,7 +48,7 @@ export const MdxComponents = {
         // Uses your standard CSS wrapper variable and safely defaults to a soft gray if not loaded
         borderColor: 'color-mix(in srgb, var(--wrapper, #e2e8f0) 100%, transparent)'
       }}
-      className="my-6 overflow-hidden rounded-lg border bg-[var(--button)] p-2"
+      className="my-6 overflow-hidden rounded-lg border bg- (--button)] p-2"
     >
       <Image 
         src={src} 

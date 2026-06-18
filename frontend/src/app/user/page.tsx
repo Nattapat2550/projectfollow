@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Save, Lock, User as UserIcon, Palette } from 'lucide-react';
-
+import Swal from 'sweetalert2';
 export default function UserProfilePage() {
     const [name, setName] = useState('');
     const [color, setColor] = useState('#ffffff');
@@ -47,7 +47,12 @@ export default function UserProfilePage() {
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         const token = getToken();
-        if(!token) return alert('Token expired. Please login again.');
+        if(!token) return 
+        Swal.fire({
+            icon: 'error',
+            title: 'Token Expired',
+            text: 'Token expired. Please login again.'
+        });
 
         try {
             // เรียกไปยัง /api/v1/auth/profile
@@ -62,21 +67,40 @@ export default function UserProfilePage() {
             const data = await res.json().catch(() => ({}));
             
             if (res.ok && data.success) {
-                alert('อัปเดตโปรไฟล์เรียบร้อยแล้ว');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ!',
+                    text: 'อัปเดตโปรไฟล์เรียบร้อยแล้ว',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
                 window.location.reload(); 
             } else {
-                alert(`เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ${data.msg || data.message || 'Unknown error'}`);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: `เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ${data.msg || data.message || 'Unknown error'}`
+                });
             }
         } catch (err: any) {
             console.error(err);
-            alert(`เกิดข้อผิดพลาด: ${err.message}`);
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: `เกิดข้อผิดพลาด: ${err.message}`
+            });
         }
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
         const token = getToken();
-        if(!token) return alert('Token expired. Please login again.');
+        if(!token) return 
+        Swal.fire({
+            icon: 'error',
+            title: 'Token Expired',
+            text: 'Token expired. Please login again.'
+        });
 
         try {
             // เรียกไปยัง /api/v1/auth/password
@@ -91,14 +115,28 @@ export default function UserProfilePage() {
             const data = await res.json().catch(() => ({}));
 
             if (res.ok && data.success) {
-                alert('เปลี่ยนรหัสผ่านสำเร็จ');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ!',
+                    text: 'เปลี่ยนรหัสผ่านสำเร็จ',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
                 setPassword('');
             } else {
-                alert(`เปลี่ยนรหัสผ่านไม่สำเร็จ: ${data.msg || data.message || 'Unknown error'}`);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: `เปลี่ยนรหัสผ่านไม่สำเร็จ: ${data.msg || data.message || 'Unknown error'}`
+                });
             }
         } catch (err: any) {
             console.error(err);
-            alert(`เกิดข้อผิดพลาด: ${err.message}`);
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาด',
+                text: `เกิดข้อผิดพลาด: ${err.message}`
+            });
         }
     };
 

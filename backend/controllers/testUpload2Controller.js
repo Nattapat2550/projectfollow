@@ -1,12 +1,10 @@
 const xlsx = require("xlsx");
 const ExcelJS = require("exceljs");
-const fs = require("fs");
-const path = require("path");
 const pool = require("../config/db");
 const { v4: uuidv4 } = require("uuid"); 
 const { uploadToDrive } = require("../services/googleDriveService"); 
 
-// Helper functions คงเดิม
+// Helper functions
 const removePrefix = (fullName) => {
     if (!fullName || typeof fullName !== "string") return fullName;
     const prefixRegex = /^(พล\.ต\.อ\.|พล\.ต\.ท\.|พล\.ต\.ต\.|พ\.ต\.อ\.|พ\.ต\.ท\.|พ\.ต\.ต\.|ร\.ต\.อ\.|ร\.ต\.ท\.|ร\.ต\.ต\.|ด\.ต\.|จ\.ส\.ต\.|ส\.ต\.อ\.|ส\.ต\.ท\.|ส\.ต\.ต\.|ว่าที่ ร\.ต\.|นางสาว|น\.ส\.|เด็กชาย|เด็กหญิง|ด\.ช\.|ด\.ญ\.|นาย|นาง|Mr\.|Mrs\.|Ms\.|Miss\s*)/i;
@@ -83,14 +81,13 @@ exports.getUploadProgress = (req, res) => {
 
 exports.uploadExcel = async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel" });
+        if (!req.file || !req.file.buffer) return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel" });
 
         const action = req.query.action || "upload";
         const jobId = req.query.jobId;
-        const uploadsDir = path.join(__dirname, "../uploads");
-        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-        const workbookXlsx = xlsx.readFile(req.file.path);
+        // อ่านไฟล์ Excel จาก Buffer ในหน่วยความจำโดยตรง
+        const workbookXlsx = xlsx.read(req.file.buffer, { type: "buffer" });
         const sheetName = workbookXlsx.SheetNames[0];
         let rawData = xlsx.utils.sheet_to_json(workbookXlsx.Sheets[sheetName], { defval: null });
 
@@ -102,8 +99,9 @@ exports.uploadExcel = async (req, res) => {
             return (thName && String(thName).trim() !== "") || (enName && String(enName).trim() !== "") || idCard || pass;
         });
 
+        // ใช้ exceljs อ่านภาพจาก Buffer เช่นกัน
         const workbookExt = new ExcelJS.Workbook();
-        await workbookExt.xlsx.readFile(req.file.path);
+        await workbookExt.xlsx.load(req.file.buffer);
         const worksheetExt = workbookExt.worksheets[0];
 
         const imagesMap = {};
@@ -156,7 +154,6 @@ exports.uploadExcel = async (req, res) => {
                     raw_data_from_excel: row
                 });
             }
-            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path); 
             return res.status(200).json({ success: true, message: "ดึงข้อมูลพรีวิวสำเร็จ", total_rows: preview_data.length, preview_data });
         }
 
@@ -165,7 +162,6 @@ exports.uploadExcel = async (req, res) => {
         let errors = [];
         if (jobId) global.uploadProgress[jobId] = { current: 0, total: rawData.length, status: 'processing' };
 
-        // 🟢 ดึง ID ของคนที่กำลังล็อกอินจาก Middleware
         const created_by = req.user ? req.user.id : null;
 
         for (let i = 0; i < rawData.length; i++) {
@@ -258,7 +254,6 @@ exports.uploadExcel = async (req, res) => {
                     }
                     await pool.query(updateQ, updateVals);
                 } else {
-                    // 🟢 เพิ่ม created_by
                     const insertQ = `INSERT INTO deported_persons (
                         id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
                         date_of_birth, gender, age, national_id, passport_id, address,
@@ -279,7 +274,6 @@ exports.uploadExcel = async (req, res) => {
         }
 
         if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
-        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
         res.status(200).json({
             success: true,
@@ -287,7 +281,6 @@ exports.uploadExcel = async (req, res) => {
             errors: errors.length > 0 ? errors : undefined
         });
     } catch (error) {
-        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ success: false, message: "เกิดข้อผิดพลาด: " + error.message });
     }
 };

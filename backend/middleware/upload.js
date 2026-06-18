@@ -1,23 +1,15 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
-// สร้างโฟลเดอร์อัตโนมัติหากไม่มี
-const uploadDir = path.join(__dirname, "../uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// เปลี่ยนมาใช้ Memory Storage แทนการบันทึกลง Harddisk (diskStorage)
+// เพื่อให้ได้ req.file.buffer นำไปใช้สตรีมขึ้น Google Drive ทันที
+const storage = multer.memoryStorage();
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    // ตั้งชื่อไฟล์: วันที่-ชื่อไฟล์เดิม
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+const upload = multer({ 
+  storage: storage,
+  // แนะนำให้ใส่ limits เพื่อป้องกันคนอัปโหลดไฟล์ใหญ่เกินไปจน RAM เต็ม
+  limits: {
+    fileSize: 10 * 1024 * 1024 // จำกัดขนาดไฟล์สูงสุด 10 MB (ปรับตัวเลขได้ตามต้องการ)
+  }
 });
-
-const upload = multer({ storage: storage });
 
 module.exports = upload;

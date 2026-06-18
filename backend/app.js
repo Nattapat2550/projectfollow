@@ -9,7 +9,7 @@ const testUpload2Routes = require("./routes/testUpload2");
 const authRoutes = require("./routes/auth"); // นำเข้า Auth Route
 
 const app = express();
-
+app.disable('x-powered-by');
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',

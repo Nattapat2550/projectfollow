@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import Swal from 'sweetalert2';
 export const getValidImageUrl = (url: string | null) => {
   if (!url) return null;
   if (url.startsWith("blob:")) return url;
@@ -115,10 +115,20 @@ export function useImmigrantDetail(id: string) {
          throw new Error(errData.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
       }
       
-      alert("บันทึกการแก้ไขข้อมูลเรียบร้อยแล้ว!");
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ!',
+        text: 'บันทึกการแก้ไขข้อมูลเรียบร้อยแล้ว!',
+        timer: 1500,
+        showConfirmButton: false
+      });
       setIsEditing(false); setSelectedImage(null); fetchData(); 
     } catch (error: any) { 
-      alert(error.message); 
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: error.message
+      });
     } finally { 
       setIsSaving(false); 
     }

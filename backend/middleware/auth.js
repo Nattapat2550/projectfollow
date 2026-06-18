@@ -22,7 +22,11 @@ exports.protect = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallbacksecret");
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        return res.status(500).json({ success: false, message: "Server misconfiguration: Missing JWT_SECRET" });
+    }
+    const decoded = jwt.verify(token, secret);
     
     // ค้นหา User ผ่าน Native Pool แทน Prisma
     const result = await pool.query("SELECT id, name, role, color FROM users WHERE id = $1", [decoded.id]);

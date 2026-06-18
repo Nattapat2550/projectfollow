@@ -2,9 +2,14 @@ const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
-// ฟังก์ชันสร้าง JWT Token
+// ฟังก์ชันสร้าง JWT Token ปิดช่องโหว่ Hardcoded Secret
 const getSignedJwtToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || "fallbacksecret", {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("ระบบขาดการตั้งค่า JWT_SECRET ใน Environment Variables");
+  }
+
+  return jwt.sign({ id }, secret, {
     expiresIn: process.env.JWT_EXPIRE || "30d",
   });
 };
@@ -67,7 +72,7 @@ exports.register = async (req, res) => {
     sendTokenResponse(user, 200, res);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, msg: "Server error during registration" });
+    res.status(500).json({ success: false, msg: err.message || "Server error during registration" });
   }
 };
 
@@ -96,7 +101,7 @@ exports.login = async (req, res) => {
     sendTokenResponse(user, 200, res);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, msg: "Server error" });
+    res.status(500).json({ success: false, msg: err.message || "Server error" });
   }
 };
 

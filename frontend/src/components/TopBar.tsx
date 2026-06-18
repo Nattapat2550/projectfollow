@@ -24,7 +24,7 @@ export default function TopBar() {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         localStorage.removeItem("user_id");
-        document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = `token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`;
         setUser(null);
     };
 

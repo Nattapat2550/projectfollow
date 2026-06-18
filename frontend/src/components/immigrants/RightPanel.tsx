@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import Swal from 'sweetalert2';
 interface RightPanelProps {
   type: "deported" | "illegal";
   data: any;
@@ -59,17 +59,40 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
         throw new Error(err.message || err.error || "Failed to save note to database");
       }
 
-      alert(`บันทึกหมายเหตุระบบเรียบร้อยแล้ว!`);
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ!',
+        text: 'บันทึกหมายเหตุระบบเรียบร้อยแล้ว!',
+        timer: 1500,
+        showConfirmButton: false
+      });
     } catch (error: any) {
       console.error("Error saving note:", error);
-      alert(`เกิดข้อผิดพลาดในการบันทึกหมายเหตุ: ${error.message}`);
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: `เกิดข้อผิดพลาดในการบันทึกหมายเหตุ: ${error.message}`
+      });
     } finally {
       setIsSavingNote(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm("ยืนยันที่จะลบประวัติของบุคคลนี้ออกจากระบบอย่างถาวร?")) return;
+    
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบ?',
+      text: "ยืนยันที่จะลบประวัติของบุคคลนี้ออกจากระบบอย่างถาวร?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444', // สีแดง (Danger)
+      cancelButtonColor: '#6b7280',  // สีเทา (Cancel)
+      confirmButtonText: 'ใช่, ลบเลย!',
+      cancelButtonText: 'ยกเลิก'
+    });
+
+    // ถ้าผู้ใช้กด "ยกเลิก" หรือปิดหน้าต่าง ให้หยุดการทำงาน (return ออกไป)
+    if (!result.isConfirmed) return;
 
     try {
       setIsDeleting(true);
@@ -89,12 +112,23 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
         throw new Error("Failed to delete from database");
       }
 
-      alert("ลบข้อมูลออกจากระบบเสร็จสิ้น");
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ!',
+        text: 'ลบข้อมูลออกจากระบบเสร็จสิ้น',
+        timer: 1500,
+        showConfirmButton: false
+      });
       router.back(); 
-      
+      router.refresh();
+
     } catch (error) {
       console.error("Error deleting record:", error);
-      alert("เกิดข้อผิดพลาดในการส่งคำสั่งลบข้อมูลไปยังฐานข้อมูล");
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'เกิดข้อผิดพลาดในการส่งคำสั่งลบข้อมูลไปยังฐานข้อมูล'
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -114,24 +148,24 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
             <h3 className="text-xl font-bold text-(--header) mb-2">ข้อมูลเพิ่มเติม</h3>
             
             <div className="flex justify-between items-center text-sm border-b border-(--wrapper) pb-2">
-              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">วันที่ส่งกลับ</span>
+              <span className="font-bold text- (--foreground) ]dark:text-slate-300">วันที่ส่งกลับ</span>
               <span className="font-mono font-semibold">{formatDate(data.return_date)}</span>
             </div>
 
             <div className="flex justify-between items-center text-sm border-b border-(--wrapper) pb-2">
-              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">จำนวน Case ID</span>
+              <span className="font-bold text- (--foreground) ]dark:text-slate-300">จำนวน Case ID</span>
               <span className="font-semibold font-mono">{data.number_of_case ?? 0}</span>
             </div>
 
             <div className="flex justify-between items-center text-sm border-b border-(--wrapper) pb-2">
-              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">จำนวนหมายจับ</span>
+              <span className="font-bold text- (--foreground) ]dark:text-slate-300">จำนวนหมายจับ</span>
               <span className={`font-semibold font-mono ${data.number_of_warrant > 0 ? "text-(--redText)" : ""}`}>
                 {data.number_of_warrant ?? 0}
               </span>
             </div>
 
             <div className="flex justify-between items-center text-sm pb-1">
-              <span className="font-bold text-[var(--foreground) ]dark:text-slate-300">ช่องทางส่งกลับ</span>
+              <span className="font-bold text- (--foreground) ]dark:text-slate-300">ช่องทางส่งกลับ</span>
               <span className="font-semibold">{data.channel || "-"}</span>
             </div>
           </div>
@@ -143,7 +177,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
               {data.is_victim ? "เข้าข่ายเป็นผู้เสียหายจากการค้ามนุษย์" : "ไม่เป็นผู้เสียหายจากการค้ามนุษย์"}
             </div>
 
-            <div className="bg-background border border-(--wrapper) rounded-md p-3 text-xs text-[var(--foreground) ]dark:text-slate-300 font-medium leading-relaxed shadow-inner min-h-15 mt-2 whitespace-pre-wrap">
+            <div className="bg-background border border-(--wrapper) rounded-md p-3 text-xs text- (--foreground) ]dark:text-slate-300 font-medium leading-relaxed shadow-inner min-h-15 mt-2 whitespace-pre-wrap">
               {data.screening_details || "ไม่มีรายละเอียดการคัดกรองระบุไว้"}
             </div>
           </div>

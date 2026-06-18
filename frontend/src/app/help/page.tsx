@@ -15,7 +15,7 @@ export default function HelpPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <div className="bg-[var(--container)] shadow-md rounded-xl p-8 border border-[var(--wrapper)]">
+      <div className="bg- (--container)] shadow-md rounded-xl p-8 border border- (--wrapper)]">
         {/* 2. Bind your custom CSS class and optional Tailwind prose together */}
         <article className={`${styles.markdownContainer} prose prose-slate dark:prose-invert max-w-none`}>
           <MDXRemote source={mdxSource} components={MdxComponents} />

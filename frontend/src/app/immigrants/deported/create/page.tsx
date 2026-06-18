@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
+import Swal from 'sweetalert2';
 
 export default function CreateDeportedImmigrant() {
   const router = useRouter();
@@ -74,8 +75,13 @@ export default function CreateDeportedImmigrant() {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
       }
-      
-      alert("เพิ่มข้อมูลผู้ถูกส่งตัวกลับสำเร็จ!");
+      Swal.fire({
+        icon: 'success', // เปลี่ยนเป็น 'error', 'warning', 'info' ได้
+        title: 'สำเร็จ!',
+        text: 'เพิ่มข้อมูลผู้ถูกส่งตัวกลับสำเร็จ!',
+        timer: 1500,
+        showConfirmButton: false
+      });
       router.push("/immigrants/deported"); 
       router.refresh();
     } catch (err: any) {
@@ -86,7 +92,7 @@ export default function CreateDeportedImmigrant() {
   };
 
   const inputClass = "w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40";
-  const labelClass = "block text-xs font-bold mb-2 text-[var(--header)] opacity-70";
+  const labelClass = "block text-xs font-bold mb-2 text- (--header)] opacity-70";
 
   return (
     <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-200">
