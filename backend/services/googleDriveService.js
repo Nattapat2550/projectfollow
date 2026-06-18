@@ -31,7 +31,7 @@ const uploadToDrive = async (fileObject, folderId) => {
     if (fileObject.buffer) {
         bodyStream = Readable.from(fileObject.buffer);
     } else {
-        bodyStream = fs.createReadStream(fileObject.path);
+        throw new Error("ระบบรองรับการอัปโหลดไฟล์ผ่าน Memory Storage (Buffer) เท่านั้น");
     }
 
     const media = {
