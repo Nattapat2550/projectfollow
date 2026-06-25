@@ -24,7 +24,7 @@ function DashboardContent() {
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text- (--header)] opacity-70">ประเภทข้อมูล</label>
             <select value={states.filterType} onChange={(e) => actions.handleTypeChange(e.target.value as "illegal" | "deported")} className={inputClass}>
-              <option value="illegal">ผู้แอบเข้า (Illegal)</option>
+              <option value="illegal">ผู้ลักลอบเข้า (Illegal)</option>
               <option value="deported">ผู้ถูกส่งกลับ (Deported)</option>
             </select>
           </div>

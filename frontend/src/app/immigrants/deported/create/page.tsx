@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
 import Swal from 'sweetalert2';
+import SingleImageField from "@/components/form/single-image-field";
 
 export default function CreateDeportedImmigrant() {
   const router = useRouter();
@@ -36,9 +37,12 @@ export default function CreateDeportedImmigrant() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      setImagePreview(URL.createObjectURL(file)); 
+      setSelectedImage(file); 
     }
+  };
+
+  const handleImageRemove = () => {
+    setSelectedImage(null); 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,21 +117,9 @@ export default function CreateDeportedImmigrant() {
         {error && <div className="mb-6 rounded-md border border-red-500 bg-red-100 dark:bg-red-900/30 p-4 text-sm text-red-600 dark:text-red-400 font-medium">{error}</div>}
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
-        <div className="mb-6 flex flex-col items-start gap-4">
-          {imagePreview && (
-            <img 
-              src={imagePreview} 
-              alt="Preview" 
-              className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" 
-            />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full bg-background border border-(--wrapper) text-black! dark:text-white! rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-800 dark:file:bg-slate-600 file:text-white! hover:file:opacity-80 cursor-pointer"
-          />
-        </div>
+		<div className="mb-6 flex flex-col items-start gap-4">
+            <SingleImageField file={selectedImage} previewUrl="/enter.png" onChange={handleImageChange} onRemove={handleImageRemove}/>
+		</div>
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">

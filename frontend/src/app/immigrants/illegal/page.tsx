@@ -117,7 +117,7 @@ function IllegalPageContent() {
         <div className="p-5 sm:p-6" style={{ backgroundColor: "var(--container)", minHeight: "calc(100vh - 120px)" }}>
           
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้แอบเข้าเมือง (Illegal)</h1>
+            <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้ลักลอบเข้าเมือง (Illegal)</h1>
             <Link href="/immigrants/illegal/create" className="px-4 py-2 bg-(--header) text-background font-bold rounded-sm hover:opacity-90 transition text-sm">
               + เพิ่มข้อมูล
             </Link>

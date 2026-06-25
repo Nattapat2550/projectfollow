@@ -146,7 +146,7 @@ export default function IllegalCard({ data }: IllegalCardProps) {
         
         {/* คอลัมน์ซ้าย (รูปภาพและป้ายสัญชาติ) */}
         <div className="flex flex-col items-center shrink-0" style={{ width: "30%" }}>
-          <p className="font-bold text-emerald-900 text-center leading-tight mb-[3%]" style={{ fontSize: "clamp(8px, 2.4vw, 20px)" }}>ผู้แอบเข้าประเทศ</p>
+          <p className="font-bold text-emerald-900 text-center leading-tight mb-[3%]" style={{ fontSize: "clamp(8px, 2.4vw, 20px)" }}>ผู้ลักลอบเข้าประเทศ</p>
           
           <span className="text-red-500 font-bold bg-red-50 border border-red-200 rounded-full flex items-center justify-center gap-1 mb-[5%]" style={{ fontSize: "clamp(5px, 1.2vw, 11px)", padding: "1% 8%" }}>
             สัญชาติ: 
