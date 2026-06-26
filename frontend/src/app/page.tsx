@@ -174,7 +174,7 @@ export default async function Home() {
       }}
     >
       <HomeCard
-        title="ผู้แอบเข้า"
+        title="ผู้ลักลอบเข้า"
         count={countDisplay(illegalCount)}
         viewAllHref="/immigrants/illegal"
         dashboardHref="/dashboard?type=illegal"

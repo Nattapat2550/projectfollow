@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
 import Swal from 'sweetalert2';
+import SingleImageField from "@/components/form/single-image-field";
 export default function CreateIllegalImmigrant() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,6 @@ export default function CreateIllegalImmigrant() {
   });
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -30,8 +30,11 @@ export default function CreateIllegalImmigrant() {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedImage(file); 
-      setImagePreview(URL.createObjectURL(file)); 
     }
+  };
+
+  const handleImageRemove = () => {
+    setSelectedImage(null); 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,7 +74,7 @@ export default function CreateIllegalImmigrant() {
       Swal.fire({
         icon: 'success', // เปลี่ยนเป็น 'error', 'warning', 'info' ได้
         title: 'สำเร็จ!',
-        text: 'เพิ่มข้อมูลแอบเข้าเมืองสำเร็จ!',
+        text: 'เพิ่มข้อมูลลักลอบเข้าเมืองสำเร็จ!',
         timer: 1500,
         showConfirmButton: false
       });
@@ -92,7 +95,7 @@ export default function CreateIllegalImmigrant() {
       <div className="max-w-4xl mx-auto mb-6">
         <button onClick={() => router.push("/immigrants/illegal")} className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer">
           <ChevronLeft size={32} />
-          <span>เพิ่มข้อมูลใหม่ (ผู้แอบเข้าประเทศ)</span>
+          <span>เพิ่มข้อมูลใหม่ (ผู้ลักลอบเข้าประเทศ)</span>
         </button>
         <Link href="/test-upload">
           <button className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/50 rounded-lg hover:bg-amber-500/20 font-bold transition text-sm cursor-pointer mt-4">
@@ -105,18 +108,9 @@ export default function CreateIllegalImmigrant() {
         {error && <div className="mb-6 rounded-md border border-red-500 bg-red-100 dark:bg-red-900/30 p-4 text-sm text-red-600 dark:text-red-400 font-medium">{error}</div>}
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
-        <div className="mb-6 flex flex-col items-start gap-4">
-          {imagePreview && (
-            <img src={imagePreview} alt="Preview" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageChange}
-            className="w-full bg-background border border-(--wrapper) text-black! dark:text-white! rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-800 dark:file:bg-slate-600 file:text-white! hover:file:opacity-80 cursor-pointer"
-          />
-        </div>
-
+		<div className="mb-6 flex flex-col items-start gap-4">
+            <SingleImageField file={selectedImage} previewUrl="/return.png" onChange={handleImageChange} onRemove={handleImageRemove}/>
+		</div>
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>ชื่อต้นภาษาไทย *</label><input required type="text" name="first_name_th" value={formData.first_name_th} onChange={handleInputChange} className={inputClass} /></div>
@@ -142,7 +136,7 @@ export default function CreateIllegalImmigrant() {
               <option value="">ไม่ระบุ</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
             </select>
           </div>
-          <div><label className={labelClass}>วันที่ตรวจพบการแอบเข้าประเทศ</label><input type="date" name="detected_date" value={formData.detected_date} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>วันที่ตรวจพบการลักลอบเข้าประเทศ</label><input type="date" name="detected_date" value={formData.detected_date} onChange={handleInputChange} className={inputClass} /></div>
           <div><label className={labelClass}>สถานที่ตรวจเจอพิกัด *</label><input required type="text" name="detected_location" value={formData.detected_location} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
