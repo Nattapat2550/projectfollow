@@ -1,6 +1,6 @@
 import React from "react";
 
-interface DeportedCardProps {
+interface RepatriatedCardProps {
   data: any; 
 }
 
@@ -16,7 +16,7 @@ const getDirectImageUrl = (url: string) => {
   return url;
 };
 
-export default function DeportedCard({ data }: DeportedCardProps) {
+export default function RepatriatedCard({ data }: RepatriatedCardProps) {
   const fullNameTh = `${data.first_name_th}${data.middle_name_th ? " " + data.middle_name_th : ""} ${data.last_name_th}`;
   const fullNameEn = data.first_name_en
     ? `${data.first_name_en}${data.middle_name_en ? " " + data.middle_name_en : ""} ${data.last_name_en ?? ""}`.trim()

@@ -7,7 +7,7 @@ import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
 import Swal from 'sweetalert2';
 import SingleImageField from "@/components/form/single-image-field";
 
-export default function CreateDeportedImmigrant() {
+export default function CreateRepatriatedImmigrant() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -67,7 +67,7 @@ export default function CreateDeportedImmigrant() {
 
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
 
-      const res = await fetch(`${backendUrl}/api/v1/immigrants/deported`, {
+      const res = await fetch(`${backendUrl}/api/v1/immigrants/repatriated`, {
         method: "POST", 
         headers: {
           Authorization: `Bearer ${token}`
@@ -86,7 +86,7 @@ export default function CreateDeportedImmigrant() {
         timer: 1500,
         showConfirmButton: false
       });
-      router.push("/immigrants/deported"); 
+      router.push("/immigrants/repatriated"); 
       router.refresh();
     } catch (err: any) {
       setError(err.message || "Something went wrong");
@@ -101,7 +101,7 @@ export default function CreateDeportedImmigrant() {
   return (
     <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-200">
       <div className="max-w-4xl mx-auto mb-6">
-        <button onClick={() => router.push("/immigrants/deported")} className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer">
+        <button onClick={() => router.push("/immigrants/repatriated")} className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer">
           <ChevronLeft size={32} />
           <span>เพิ่มข้อมูลใหม่ (ผู้ถูกส่งตัวกลับ)</span>
         </button>
@@ -202,7 +202,7 @@ export default function CreateDeportedImmigrant() {
         </div>
 
         <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">
-          <Link href="/immigrants/deported">
+          <Link href="/immigrants/repatriated">
             <button type="button" className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer">
               <X size={16} /><span>ยกเลิก</span>
             </button>

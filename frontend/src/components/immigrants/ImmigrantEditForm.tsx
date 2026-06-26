@@ -43,7 +43,7 @@ export default function ImmigrantEditForm({
         </div>
       </div>
       
-      {personType === "deported" ? (
+      {personType === "repatriated" ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
             <div><label className={labelClass}>วันเดือนปีเกิด</label><input type="date" name="date_of_birth" value={formData.date_of_birth || ""} onChange={handleInputChange} className={inputClass} /></div>

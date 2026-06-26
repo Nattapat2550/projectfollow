@@ -13,7 +13,7 @@ exports.buildDashboardQuerySQL = (query, type) => {
   let paramIdx = 1;
 
   if (sDate || eDate) {
-    const dateField = type === "deported" ? "t.return_date" : "t.detected_date";
+    const dateField = type === "repatriated" ? "t.return_date" : "t.detected_date";
     if (sDate && eDate) {
       conditions.push(`DATE(${dateField}) >= $${paramIdx} AND DATE(${dateField}) <= $${paramIdx + 1}`);
       params.push(sDate, eDate);
@@ -58,7 +58,7 @@ exports.buildDashboardQuerySQL = (query, type) => {
       const kw = `%${keyword}%`;
       let fields = `t.first_name_th ILIKE $${paramIdx} OR t.last_name_th ILIKE $${paramIdx} OR t.first_name_en ILIKE $${paramIdx} OR t.last_name_en ILIKE $${paramIdx} OR t.passport_id ILIKE $${paramIdx}`;
       
-      if (type === "deported") {
+      if (type === "repatriated") {
         fields += ` OR t.national_id ILIKE $${paramIdx} OR t.channel ILIKE $${paramIdx}`;
       } else {
         fields += ` OR t.nationality ILIKE $${paramIdx} OR t.detected_location ILIKE $${paramIdx}`;
@@ -83,7 +83,7 @@ exports.buildDashboardQuerySQL = (query, type) => {
         orderClause = `ORDER BY t.${sortBy} ${dir} NULLS LAST, t.id DESC`;
     }
   } else {
-    const defaultField = type === "deported" ? "t.return_date" : "t.detected_date";
+    const defaultField = type === "repatriated" ? "t.return_date" : "t.detected_date";
     orderClause = `ORDER BY ${defaultField} DESC NULLS LAST, t.id DESC`;
   }
 

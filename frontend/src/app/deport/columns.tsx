@@ -3,7 +3,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Circle } from "lucide-react";
 
-export const deportColumns: ColumnDef<DeportData>[] = [
+export const repatriateColumns: ColumnDef<RepatriateData>[] = [
 	{
 		header: "Name - TH",
 		accessorFn: (row) =>

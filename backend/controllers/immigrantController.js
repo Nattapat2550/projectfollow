@@ -10,7 +10,7 @@ exports.getAllData = async (req, res) => {
     const offset = (page - 1) * limit;
 
     // ทำการ LEFT JOIN กับตาราง users เพื่อเอาชื่อคนอัพโหลด (creator_name) และสี (creator_color) ออกมาแสดงในตารางข้อมูลทั้งหมดด้วย
-    const [immigrantsRes, immigrantsCountRes, deportedsRes, deportedsCountRes] = await Promise.all([
+    const [immigrantsRes, immigrantsCountRes, repatriatedsRes, repatriatedsCountRes] = await Promise.all([
       pool.query(`
         SELECT t.*, u.name AS creator_name, u.color AS creator_color 
         FROM illegal_immigrants t 
@@ -21,12 +21,12 @@ exports.getAllData = async (req, res) => {
       pool.query("SELECT COUNT(*) FROM illegal_immigrants"),
       pool.query(`
         SELECT t.*, u.name AS creator_name, u.color AS creator_color 
-        FROM deported_persons t 
+        FROM repatriated_persons t 
         LEFT JOIN users u ON t.created_by = u.id 
         ORDER BY t.return_date DESC NULLS LAST 
         LIMIT $1 OFFSET $2
       `, [limit, offset]),
-      pool.query("SELECT COUNT(*) FROM deported_persons")
+      pool.query("SELECT COUNT(*) FROM repatriated_persons")
     ]);
 
     res.status(200).json({ 
@@ -35,11 +35,11 @@ exports.getAllData = async (req, res) => {
         // ใช้คีย์ immigrants ตามที่กำหนด (และใส่คีย์เดิมสำรองไว้เพื่อความปลอดภัยของระบบ)
         immigrants: immigrantsRes.rows, 
         illegals: immigrantsRes.rows, 
-        deporteds: deportedsRes.rows,
+        repatriateds: repatriatedsRes.rows,
         meta: { 
           immigrantsTotal: parseInt(immigrantsCountRes.rows[0].count), 
           illegalsTotal: parseInt(immigrantsCountRes.rows[0].count), 
-          deportedsTotal: parseInt(deportedsCountRes.rows[0].count), 
+          repatriatedsTotal: parseInt(repatriatedsCountRes.rows[0].count), 
           currentPage: page, 
           limit: limit 
         }
@@ -54,7 +54,7 @@ exports.getAllData = async (req, res) => {
 exports.getDashboardData = async (req, res) => {
   try {
     // รองรับการส่งไทป์มาเป็น 'immigrants' หรือ 'illegal'
-    let type = req.query.type || "deported";
+    let type = req.query.type || "repatriated";
     if (type === "immigrants" || type === "immigrant" || type === "illegal") {
       type = "illegal"; // แมปภายในเข้ากับเงื่อนไขของ service และฐานข้อมูลตัวเดิม
     }
@@ -65,7 +65,7 @@ exports.getDashboardData = async (req, res) => {
 
     // 🟢 สร้าง SQL Query จาก Service
     const { whereClause, params, orderClause } = dashboardService.buildDashboardQuerySQL(req.query, type);
-    const tableName = type === "deported" ? "deported_persons" : "illegal_immigrants";
+    const tableName = type === "repatriated" ? "repatriated_persons" : "illegal_immigrants";
     const paramCount = params.length;
 
     // ปรับ Query หลักให้ทำการ LEFT JOIN ดึงข้อมูลรายละเอียดบัญชีผู้ใช้ (ชื่อและสี) ของผู้อัพโหลดข้อมูลรายการนั้นๆ

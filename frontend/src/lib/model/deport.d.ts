@@ -1,4 +1,4 @@
-interface DeportData {
+interface RepatriateData {
 	id: string;
 	first_name_th: string;
 	middle_name_th?: string | null;

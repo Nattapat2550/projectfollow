@@ -1,6 +1,6 @@
 // src/components/immigrants/mockData.ts
 
-export interface DeportedPerson {
+export interface RepatriatedPerson {
   id: string;
   first_name_th: string;
   middle_name_th?: string;
@@ -73,9 +73,9 @@ export function getNationalityCode(nationality?: string): string | undefined {
 }
 
 // ─────────────────────────────────────────────
-// Mock Data สำหรับฝั่ง ส่งกลับ (Deported)
+// Mock Data สำหรับฝั่ง ส่งกลับ (Repatriated)
 // ─────────────────────────────────────────────
-export const MOCK_DEPORTED_DATA: DeportedPerson[] = [
+export const MOCK_DEPORTED_DATA: RepatriatedPerson[] = [
   {
     id: "-1",
     first_name_th: "สมชาย",
@@ -158,5 +158,5 @@ export const MOCK_ILLEGAL_DATA: IllegalImmigrant[] = [
 // ─────────────────────────────────────────────
 // คงตัวแปรเดิมไว้ เพื่อไม่ให้ไฟล์อื่นที่เคยเรียกตัวแปรเหล่านี้พัง (Backward Compatibility)
 // ─────────────────────────────────────────────
-export const MOCK_DEPORTED_DATA1: DeportedPerson[] = [MOCK_DEPORTED_DATA[0]];
+export const MOCK_DEPORTED_DATA1: RepatriatedPerson[] = [MOCK_DEPORTED_DATA[0]];
 export const MOCK_ILLEGAL_DATA2: IllegalImmigrant[] = [MOCK_ILLEGAL_DATA[0]];

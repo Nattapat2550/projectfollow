@@ -119,13 +119,13 @@ async function fetchDashboardStats(type: string) {
 
 // ─── หน้าเพจหลัก (Server Component) ──────────────────────────────────────
 export default async function Home() {
-  const [illegalJson, deportedJson] = await Promise.all([
+  const [illegalJson, repatriatedJson] = await Promise.all([
     fetchDashboardStats("illegal"),
-    fetchDashboardStats("deported")
+    fetchDashboardStats("repatriated")
   ]);
 
   const illegalCount = illegalJson?.stats?.total ?? null;
-  const deportedCount = deportedJson?.stats?.total ?? null;
+  const repatriatedCount = repatriatedJson?.stats?.total ?? null;
 
   const countDisplay = (n: number | null) =>
     n === null ? "XX" : n.toLocaleString("th-TH");
@@ -146,10 +146,10 @@ export default async function Home() {
     return mapped;
   })();
 
-  const deportedChart = (() => {
-    const raw = deportedJson?.charts?.channel || [];
+  const repatriatedChart = (() => {
+    const raw = repatriatedJson?.charts?.channel || [];
     const sum = raw.reduce((acc: number, curr: any) => acc + curr.value, 0);
-    const total = deportedJson?.stats?.total || 0;
+    const total = repatriatedJson?.stats?.total || 0;
 
     const mapped = raw.map((d: any, i: number) => ({
       ...d, color: CHART_COLORS[i % CHART_COLORS.length]
@@ -186,11 +186,11 @@ export default async function Home() {
 
       <HomeCard
         title="ผู้ถูกส่งกลับ"
-        count={countDisplay(deportedCount)}
-        viewAllHref="/immigrants/deported"
-        dashboardHref="/dashboard?type=deported"
-        addHref="/immigrants/deported/create"
-        chartData={deportedChart}
+        count={countDisplay(repatriatedCount)}
+        viewAllHref="/immigrants/repatriated"
+        dashboardHref="/dashboard?type=repatriated"
+        addHref="/immigrants/repatriated/create"
+        chartData={repatriatedChart}
         chartTitle="ช่องทางการส่งกลับ"
         imageSrc="return.png"
       />

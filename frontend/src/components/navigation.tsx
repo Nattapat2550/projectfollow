@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-import { ModeSelect } from "./theme-switcher";
 
 type MenuItem =
 	| {
@@ -69,17 +68,17 @@ const menu: MenuItem[] = [
 	},
 	{
 		title: "ส่งกลับ",
-		url: "/deport",
+		url: "/repatriate",
 		items: [
 			{
 				title: "ข้อมูลทั้งหมด",
 				icon: <Book className="size-5 shrink-0" />,
-				url: "/deport",
+				url: "/repatriate",
 			},
 			{
 				title: "เพิ่มข้อมูล",
 				icon: <Book className="size-5 shrink-0" />,
-				url: "/deport/create",
+				url: "/repatriate/create",
 			},
 		],
 	},
@@ -119,7 +118,6 @@ export function Navigation({ className = "" }) {
 						</div>
 					</div>
 					<div className="flex gap-2">
-						<ModeSelect />
 						<Button asChild size="sm">
 							<a href={auth.login.url}>{auth.login.title}</a>
 						</Button>
@@ -152,7 +150,6 @@ export function Navigation({ className = "" }) {
 									</Accordion>
 
 									<div className="flex flex-col gap-3">
-										<ModeSelect />
 										<Button asChild>
 											<a href={auth.login.url}>{auth.login.title}</a>
 										</Button>

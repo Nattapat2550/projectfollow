@@ -6,7 +6,7 @@ interface TableHeaderProps {
   sortField: SortField | null;
   sortDirection: "asc" | "desc";
   onSort: (field: SortField) => void;
-  type: "deported" | "illegal";
+  type: "repatriated" | "illegal";
 }
 
 export default function TableHeader({ sortField, sortDirection, onSort, type }: TableHeaderProps) {

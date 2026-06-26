@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import DeportedTable, { SortField } from "@/components/immigrants/DeportedTable";
+import RepatriatedTable, { SortField } from "@/components/immigrants/RepatriatedTable";
 
-function DeportedPageContent() {
+function RepatriatedPageContent() {
   const searchParams = useSearchParams();
   const [data, setData] = useState<any>(null);
   
@@ -42,7 +42,7 @@ function DeportedPageContent() {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
         
         const params = new URLSearchParams({
-          type: "deported",
+          type: "repatriated",
           page: currentPage.toString(),
           limit: "50"
         });
@@ -119,8 +119,8 @@ function DeportedPageContent() {
         <div className="p-5 sm:p-6" style={{ backgroundColor: "var(--container)", minHeight: "calc(100vh - 120px)" }}>
           
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้ถูกส่งกลับ (Deported)</h1>
-            <Link href="/immigrants/deported/create" className="px-4 py-2 bg-(--header) text-background font-bold rounded-sm hover:opacity-90 transition text-sm">
+            <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้ถูกส่งกลับ (Repatriated)</h1>
+            <Link href="/immigrants/repatriated/create" className="px-4 py-2 bg-(--header) text-background font-bold rounded-sm hover:opacity-90 transition text-sm">
               + เพิ่มข้อมูล
             </Link>
           </div>
@@ -163,7 +163,7 @@ function DeportedPageContent() {
                 {isUpdating && <span className="text-(--header) animate-pulse text-xs">กำลังอัปเดต...</span>}
               </div>
               
-              <DeportedTable 
+              <RepatriatedTable 
                 data={tableRows} 
                 sortField={sortField} 
                 sortDirection={sortDirection} 
@@ -253,10 +253,10 @@ function DeportedPageContent() {
   );
 }
 
-export default function DeportedPage() {
+export default function RepatriatedPage() {
   return (
     <Suspense fallback={<div className="p-6 text-center text-muted-foreground flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-4 border-zinc-200 dark:border-zinc-800 border-t-zinc-500 mr-3"></div>กำลังเริ่มระบบตารางข้อมูล...</div>}>
-      <DeportedPageContent />
+      <RepatriatedPageContent />
     </Suspense>
   );
 }

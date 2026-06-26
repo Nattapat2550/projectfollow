@@ -7,7 +7,7 @@ const multer = require("multer");
 // นำเข้า Controller 
 const immigrantController = require("../controllers/immigrantController");
 const illegalController = require("../controllers/illegalController");
-const deportedController = require("../controllers/deportedController");
+const repatriatedController = require("../controllers/repatriatedController");
 
 const uploadMiddleware = require("../middleware/upload");
 // 🟢 เพิ่มนำเข้า Middleware protect เพื่อเช็ค User จาก Token
@@ -37,11 +37,11 @@ router.post("/upload-excel-illegal", protect, uploadExcel.single("file"), illega
 router.get("/upload-progress/:jobId", illegalController.getUploadProgress);
 
 // ----------------------------------------------------
-// Deported (ส่งกลับ)
+// Repatriated (ส่งกลับ)
 // ----------------------------------------------------
-router.get("/deported/:id", deportedController.getDeportedById);
-router.post("/deported", protect, uploadMiddleware.single("photo"), deportedController.createDeported);
-router.put("/deported/:id", protect, uploadMiddleware.single("photo"), deportedController.updateDeported);
-router.delete("/deported/:id", protect, deportedController.deleteDeported);
+router.get("/repatriated/:id", repatriatedController.getRepatriatedById);
+router.post("/repatriated", protect, uploadMiddleware.single("photo"), repatriatedController.createRepatriated);
+router.put("/repatriated/:id", protect, uploadMiddleware.single("photo"), repatriatedController.updateRepatriated);
+router.delete("/repatriated/:id", protect, repatriatedController.deleteRepatriated);
 
 module.exports = router;

@@ -48,8 +48,8 @@ exports.getDashboardStats = async (req, res) => {
     const vDobStart = !!dobStart;
     const vDobEnd = !!dobEnd;
 
-    let tableName = type === "deported" ? "deported_persons" : "illegal_immigrants";
-    let dateField = type === "deported" ? "return_date" : "detected_date";
+    let tableName = type === "repatriated" ? "repatriated_persons" : "illegal_immigrants";
+    let dateField = type === "repatriated" ? "return_date" : "detected_date";
 
     let conditions = [];
     let queryParams = [];
@@ -70,7 +70,7 @@ exports.getDashboardStats = async (req, res) => {
       paramIndex++;
     }
 
-    if (type === "deported") {
+    if (type === "repatriated") {
       if (vDobStart && vDobEnd) {
         conditions.push(`DATE(t.date_of_birth) >= $${paramIndex} AND DATE(t.date_of_birth) <= $${paramIndex + 1}`);
         queryParams.push(dobStart, dobEnd);
@@ -184,10 +184,10 @@ exports.getDashboardStats = async (req, res) => {
       charts.victim = victimChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
       charts.passport = passportChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     } else {
-      const successCountQuery = `SELECT COUNT(*) FROM deported_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.result = 'SUCCESS'`;
+      const successCountQuery = `SELECT COUNT(*) FROM repatriated_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.result = 'SUCCESS'`;
       const successRes = await pool.query(successCountQuery, baseParams);
 
-      const channelChartQuery = `SELECT COALESCE(t.channel, 'ไม่ระบุช่องทาง') as name, COUNT(*) as value FROM deported_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
+      const channelChartQuery = `SELECT COALESCE(t.channel, 'ไม่ระบุช่องทาง') as name, COUNT(*) as value FROM repatriated_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
       const channelChartRes = await pool.query(channelChartQuery, baseParams);
 
       stats.success = parseInt(successRes.rows[0].count);

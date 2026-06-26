@@ -7,7 +7,7 @@ import { useTableSort } from "@/hooks/useTableSort"; // 🟢 ดึง hook ใ�
 interface ImmigrantsTableProps {
   data: any[]; 
   isMock: boolean;
-  type: "deported" | "illegal";
+  type: "repatriated" | "illegal";
 }
 
 export default function ImmigrantsTable({ data, isMock, type }: ImmigrantsTableProps) {

@@ -209,11 +209,11 @@ exports.uploadExcel = async (req, res) => {
             try {
                 let existingId = null;
                 if (!id_card.startsWith("NO_ID_")) {
-                    const natCheck = await pool.query("SELECT id FROM deported_persons WHERE national_id = $1", [id_card]);
+                    const natCheck = await pool.query("SELECT id FROM repatriated_persons WHERE national_id = $1", [id_card]);
                     if (natCheck.rows.length > 0) existingId = natCheck.rows[0].id;
                 }
                 if (!existingId && passport) {
-                    const passCheck = await pool.query("SELECT id FROM deported_persons WHERE passport_id = $1", [passport]);
+                    const passCheck = await pool.query("SELECT id FROM repatriated_persons WHERE passport_id = $1", [passport]);
                     if (passCheck.rows.length > 0) existingId = passCheck.rows[0].id;
                 }
 
@@ -238,7 +238,7 @@ exports.uploadExcel = async (req, res) => {
                 ];
 
                 if (existingId) {
-                    let updateQ = `UPDATE deported_persons SET 
+                    let updateQ = `UPDATE repatriated_persons SET 
                         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
                         date_of_birth=$7, gender=$8, age=$9, national_id=$10, passport_id=$11, address=$12,
                         building=$13, floor=$14, room=$15, job_type=$16, role=$17, salary=$18, paid_by=$19, payment_method=$20,
@@ -254,7 +254,7 @@ exports.uploadExcel = async (req, res) => {
                     }
                     await pool.query(updateQ, updateVals);
                 } else {
-                    const insertQ = `INSERT INTO deported_persons (
+                    const insertQ = `INSERT INTO repatriated_persons (
                         id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
                         date_of_birth, gender, age, national_id, passport_id, address,
                         building, floor, room, job_type, role, salary, paid_by, payment_method,

@@ -21,7 +21,7 @@ export const getValidImageUrl = (url: string | null) => {
 export function useImmigrantDetail(id: string) {
   const router = useRouter();
   const [person, setPerson] = useState<any | null>(null);
-  const [personType, setPersonType] = useState<"deported" | "illegal" | null>(null);
+  const [personType, setPersonType] = useState<"repatriated" | "illegal" | null>(null);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState("");
 
@@ -44,12 +44,12 @@ export function useImmigrantDetail(id: string) {
       const headers: any = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      let res = await fetch(`${backendUrl}/api/v1/immigrants/deported/${id}`, { headers });
+      let res = await fetch(`${backendUrl}/api/v1/immigrants/repatriated/${id}`, { headers });
       let json = await res.json().catch(() => ({}));
       
       // ตอนนี้ Backend จะส่ง 200 {success: false} กลับมาแทน 404
       if (res.ok && json.success && json.data) {
-        setPerson(json.data); setPersonType("deported"); setNote(json.data.note || "");
+        setPerson(json.data); setPersonType("repatriated"); setNote(json.data.note || "");
         setFormData({ ...json.data, date_of_birth: json.data.date_of_birth?.split("T")[0] || "", return_date: json.data.return_date?.split("T")[0] || "" });
         setImagePreview(getValidImageUrl(json.data.photo_url)); return;
       }
@@ -83,10 +83,10 @@ export function useImmigrantDetail(id: string) {
     try {
       setIsSaving(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const endpoint = personType === "deported" ? `deported/${id}` : `illegal/${id}`;
+      const endpoint = personType === "repatriated" ? `repatriated/${id}` : `illegal/${id}`;
       const payload = { ...formData };
       
-      if (personType === "deported") {
+      if (personType === "repatriated") {
         payload.number_of_case = parseInt(payload.number_of_case) || 0;
         payload.number_of_warrant = parseInt(payload.number_of_warrant) || 0;
         payload.age = parseInt(payload.age) || null;

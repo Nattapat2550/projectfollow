@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
-import DeportedTable, { SortField as DeportedSortField } from "@/components/immigrants/DeportedTable";
+import RepatriatedTable, { SortField as RepatriatedSortField } from "@/components/immigrants/RepatriatedTable";
 import DonutChart from "@/components/dashboard/DonutChart";
 import { useDashboard } from "@/hooks/useDashboard";
 
@@ -23,9 +23,9 @@ function DashboardContent() {
           <span className="font-bold text-lg text-(--header)">ฟิลเตอร์ตัวเลือก</span>
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text- (--header)] opacity-70">ประเภทข้อมูล</label>
-            <select value={states.filterType} onChange={(e) => actions.handleTypeChange(e.target.value as "illegal" | "deported")} className={inputClass}>
+            <select value={states.filterType} onChange={(e) => actions.handleTypeChange(e.target.value as "illegal" | "repatriated")} className={inputClass}>
               <option value="illegal">ผู้ลักลอบเข้า (Illegal)</option>
-              <option value="deported">ผู้ถูกส่งกลับ (Deported)</option>
+              <option value="repatriated">ผู้ถูกส่งกลับ (Repatriated)</option>
             </select>
           </div>
 
@@ -74,15 +74,15 @@ function DashboardContent() {
           )}
 
           <div className="flex flex-col gap-2 mt-2">
-             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "deported" ? "วันที่ส่งกลับ (ตั้งแต่)" : "ตั้งแต่วันที่"}</label>
+             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "repatriated" ? "วันที่ส่งกลับ (ตั้งแต่)" : "ตั้งแต่วันที่"}</label>
              <input type="date" value={states.startDate} onChange={(e) => actions.handleFilterChange(actions.setStartDate, e.target.value)} className={inputClass} />
           </div>
           <div className="flex flex-col gap-2">
-             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "deported" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่"}</label>
+             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "repatriated" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่"}</label>
              <input type="date" value={states.endDate} onChange={(e) => actions.handleFilterChange(actions.setEndDate, e.target.value)} className={inputClass} />
           </div>
 
-          {states.filterType === "deported" && (
+          {states.filterType === "repatriated" && (
             <>
               <div className="flex flex-col gap-2 mt-2 pt-4 border-t border-(--wrapper)">
                 <label className="text-sm font-bold text- (--header)] opacity-70">วันเกิดตั้งแต่</label>
@@ -157,7 +157,7 @@ function DashboardContent() {
                    {states.filterType === "illegal" ? (
                      <IllegalTable data={derived.tableRows} sortField={states.sortField as IllegalSortField} sortDirection={states.sortDirection} onSort={actions.handleSort} />
                    ) : (
-                     <DeportedTable data={derived.tableRows} sortField={states.sortField as DeportedSortField} sortDirection={states.sortDirection} onSort={actions.handleSort} />
+                     <RepatriatedTable data={derived.tableRows} sortField={states.sortField as RepatriatedSortField} sortDirection={states.sortDirection} onSort={actions.handleSort} />
                    )}
                  </div>
                  {/* แถบควบคุมเปลี่ยนหน้าเพจ (Pagination) ฉบับเต็ม */}

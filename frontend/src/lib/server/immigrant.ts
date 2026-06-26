@@ -77,7 +77,7 @@ export async function getSingleImmigrantData(id: string): Promise<any | null> {
 
 // ฟังก์ชันเดิมสำหรับระบบ Dashboard Pagination
 export async function getImmigrantDashboardData(
-	type: "illegal" | "deported",
+	type: "illegal" | "repatriated",
 	page: number = 1,
 	limit: number = 50,
 	search: string = "",

@@ -5,14 +5,14 @@ import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 export type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "result";
 
-interface DeportedTableProps {
+interface RepatriatedTableProps {
   data: any[];
   sortField: SortField | null;
   sortDirection: "asc" | "desc";
   onSort: (field: SortField) => void;
 }
 
-export default function DeportedTable({ data, sortField, sortDirection, onSort }: DeportedTableProps) {
+export default function RepatriatedTable({ data, sortField, sortDirection, onSort }: RepatriatedTableProps) {
   const router = useRouter();
 
   const Th = ({ field, width, children }: { field: SortField; width?: string; children: React.ReactNode }) => (

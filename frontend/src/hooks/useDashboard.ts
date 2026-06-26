@@ -30,13 +30,13 @@ const dashboardFetchCache = new Map<string, DashboardData>();
 export function useDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const typeParam = (searchParams.get("type") as "illegal" | "deported") || "illegal";
+  const typeParam = (searchParams.get("type") as "illegal" | "repatriated") || "illegal";
 
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true); 
   const [isUpdating, setIsUpdating] = useState(false); 
 
-  const [filterType, setFilterType] = useState<"illegal" | "deported">(typeParam);
+  const [filterType, setFilterType] = useState<"illegal" | "repatriated">(typeParam);
   const [filterNat, setFilterNat] = useState<string>("ทั้งหมด");
   const [filterGender, setFilterGender] = useState<string>("ทั้งหมด");
   const [filterVictim, setFilterVictim] = useState<string>("ทั้งหมด");
@@ -69,7 +69,7 @@ export function useDashboard() {
       params.append("creator", filterCreator);
     }
 
-    if (filterType === "deported") {
+    if (filterType === "repatriated") {
       if (dobStart) params.append("dobStart", dobStart);
       if (dobEnd) params.append("dobEnd", dobEnd);
     }
@@ -127,7 +127,7 @@ export function useDashboard() {
     setStartDate(""); setEndDate(""); setDobStart("");
     setDobEnd(""); setSortField(""); setCurrentPage(1);
   };
-  const handleTypeChange = (val: "illegal" | "deported") => {
+  const handleTypeChange = (val: "illegal" | "repatriated") => {
     setFilterType(val); resetFilters();
     router.replace(`/dashboard?type=${val}`, { scroll: false }); 
   };

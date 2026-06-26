@@ -1,7 +1,7 @@
-# Project Overview: Illegal Immigrants & Deported Persons Management System
+# Project Overview: Illegal Immigrants & Repatriated Persons Management System
 
 ## Project Purpose
-This project is a management system designed to track and monitor illegal immigrants and deported persons. It provides tools for data entry (individual and bulk via Excel), statistical visualization through a dashboard, and storage of related documents and photos.
+This project is a management system designed to track and monitor illegal immigrants and repatriated persons. It provides tools for data entry (individual and bulk via Excel), statistical visualization through a dashboard, and storage of related documents and photos.
 
 ## Project Structure
 
@@ -10,7 +10,7 @@ Built with **Node.js** and **Express.js**, using **Prisma** as an ORM and **Post
 
 - `server.js`: Entry point of the server.
 - `app.js`: Express application setup, middleware (CORS, JSON, static files), and route registration.
-- `prisma/schema.prisma`: Defines the database models (`illegal_immigrants`, `deported_persons`).
+- `prisma/schema.prisma`: Defines the database models (`illegal_immigrants`, `repatriated_persons`).
 - `routes/`:
   - `immigrants.js`: Routes for managing immigrant data.
   - `dashboard.js`: Routes for dashboard statistics.
@@ -21,7 +21,7 @@ Built with **Node.js** and **Express.js**, using **Prisma** as an ORM and **Post
   - `testUpload2Controller.js`: Logic for test Excel uploads.
 - `config/`:
   - `db.js`: Database connection pool configuration.
-- `uploads/`: Stores uploaded files (e.g., photos of deported persons).
+- `uploads/`: Stores uploaded files (e.g., photos of repatriated persons).
 
 ### Frontend (`/frontend`)
 Built with **Next.js** (App Router), **TypeScript**, and **Tailwind CSS**.
@@ -43,15 +43,15 @@ Built with **Next.js** (App Router), **TypeScript**, and **Tailwind CSS**.
 ### Immigrants API (`/api/immigrants`)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | Fetch all illegal immigrants and deported persons. |
+| GET | `/` | Fetch all illegal immigrants and repatriated persons. |
 | POST | `/illegal` | Create a new illegal immigrant record. |
-| POST | `/deported` | Create a new deported person record (supports photo upload). |
+| POST | `/repatriated` | Create a new repatriated person record (supports photo upload). |
 | POST | `/upload-excel-illegal` | Bulk upload illegal immigrant data from an Excel file. |
 
 ### Dashboard API (`/api/dashboard`)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | Get statistical summary (Total counts, victims, passport status, deportation channels). |
+| GET | `/` | Get statistical summary (Total counts, victims, passport status, repatriation channels). |
 
 ### Test API (`/api/test-upload2`)
 | Method | Endpoint | Description |

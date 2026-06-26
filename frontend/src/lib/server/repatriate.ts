@@ -1,4 +1,4 @@
-export async function getDeportData(
+export async function getRepatriateData(
 	page: number = 0,
 	limit: number = 25
 ): Promise<{
@@ -12,11 +12,11 @@ export async function getDeportData(
 		});
 
 		if (!response.ok) {
-			throw new Error("Failed to fetch deport data");
+			throw new Error("Failed to fetch repatriate data");
 		}
 
 		const result = await response.json();
-		const rawData = result.data?.deporteds || [];
+		const rawData = result.data?.repatriateds || [];
 
 		// Map ข้อมูลให้ตรงกับ UI
 		const mappedData = rawData.map((item: any) => {
@@ -77,14 +77,14 @@ export async function getDeportData(
 			total: mappedData.length,
 		};
 	} catch (error) {
-		console.error("Error fetching deport data:", error);
+		console.error("Error fetching repatriate data:", error);
 		return { data: [], total: 0 };
 	}
 }
 
-export async function getSingleDeportData(
+export async function getSingleRepatriateData(
 	id: string
 ): Promise<any | null> {
-	const { data } = await getDeportData(0, 10000);
-	return data.find((deport: any) => deport.id === id) ?? null;
+	const { data } = await getRepatriateData(0, 10000);
+	return data.find((repatriate: any) => repatriate.id === id) ?? null;
 }

@@ -3,7 +3,7 @@
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import DeportedCard from "@/components/immigrants/DeportedCard";
+import RepatriatedCard from "@/components/immigrants/RepatriatedCard";
 import IllegalCard from "@/components/immigrants/IllegalCard";
 import RightPanel from "@/components/immigrants/RightPanel";
 import ImmigrantEditForm from "@/components/immigrants/ImmigrantEditForm";
@@ -51,7 +51,7 @@ export default function ImmigrantDetailPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto items-start">
           <div className="lg:col-span-7 xl:col-span-8 w-full">
-            {states.personType === "deported" ? <DeportedCard data={states.person} /> : <IllegalCard data={states.person} />}
+            {states.personType === "repatriated" ? <RepatriatedCard data={states.person} /> : <IllegalCard data={states.person} />}
           </div>
           <div className="lg:col-span-5 xl:col-span-4 w-full">
             <RightPanel type={states.personType} data={states.person} note={states.note} setNote={actions.setNote} onEditClick={() => actions.setIsEditing(true)} />

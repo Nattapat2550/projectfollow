@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
 
-export default function TableRow({ person, isMock, type }: { person: any, isMock: boolean, type: "deported" | "illegal" }) {
+export default function TableRow({ person, isMock, type }: { person: any, isMock: boolean, type: "repatriated" | "illegal" }) {
   
   const ActionButtons = () => {
     const detailUrl = type === "illegal" 
         ? `/immigrant/${person.id}` 
-        : `/deport/${person.id}`;
+        : `/repatriate/${person.id}`;
 
     return (
       <div className="flex items-center gap-2">

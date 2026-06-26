@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Swal from 'sweetalert2';
 interface RightPanelProps {
-  type: "deported" | "illegal";
+  type: "repatriated" | "illegal";
   data: any;
   note: string;
   setNote: (value: string) => void;
@@ -20,7 +20,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
     try {
       setIsSavingNote(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const endpoint = type === "deported" ? "deported" : "illegal";
+      const endpoint = type === "repatriated" ? "repatriated" : "illegal";
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
 
       // 🟢 กลับมาใช้ FormData เพื่อให้เข้ากับ Multer ของ Backend
@@ -28,7 +28,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
       const payload = { ...data, note: note };
 
       // ฟอร์แมตวันที่และตัวเลข
-      if (type === "deported") {
+      if (type === "repatriated") {
         payload.number_of_case = parseInt(payload.number_of_case) || 0;
         payload.number_of_warrant = parseInt(payload.number_of_warrant) || 0;
         payload.age = parseInt(payload.age) || "";
@@ -97,7 +97,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
     try {
       setIsDeleting(true);
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-      const endpoint = type === "deported" ? "deported" : "illegal";
+      const endpoint = type === "repatriated" ? "repatriated" : "illegal";
       
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
 
@@ -143,7 +143,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
     <div className="flex flex-col gap-6 w-full">
       <div className="bg-(--container) border border-(--wrapper) rounded-2xl p-6 shadow-sm transition-colors">
         
-        {type === "deported" ? (
+        {type === "repatriated" ? (
           <div className="flex flex-col gap-3">
             <h3 className="text-xl font-bold text-(--header) mb-2">ข้อมูลเพิ่มเติม</h3>
             

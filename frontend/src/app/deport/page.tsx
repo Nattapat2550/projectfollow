@@ -1,19 +1,19 @@
 import DataTable from "@/components/data-table/table";
-import { getDeportData } from "@/lib/server/deport";
+import { getRepatriateData } from "@/lib/server/repatriate";
 
-import { deportColumns } from "./columns";
+import { repatriateColumns } from "./columns";
 
 export const dynamic = "force-dynamic";
 
-export default async function Deport() {
-	const { data } = await getDeportData(0, 100);
+export default async function Repatriate() {
+	const { data } = await getRepatriateData(0, 100);
 	return (
 		<div>
 			<DataTable
-				columns={deportColumns}
+				columns={repatriateColumns}
 				data={data}
-				createUrl="/deport/create"
-				singlePage={{ key: "id", url: "/deport" }}
+				createUrl="/repatriate/create"
+				singlePage={{ key: "id", url: "/repatriate" }}
 			/>
 		</div>
 	);
