@@ -36,6 +36,9 @@ exports.createIllegal = async (req, res) => {
 
     const created_by = req.user ? req.user.id : null;
     const id = uuidv4();
+    
+    let passport_id = data.passport_id ? String(data.passport_id).trim() : null;
+    if (passport_id === "") passport_id = null;
 
     // ลบ warrant ออก, ใส่ note
     const query = `
@@ -48,7 +51,7 @@ exports.createIllegal = async (req, res) => {
     const values = [
       id, data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
-      data.passport_id || null, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
+      passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
       data.detected_location || "ไม่ระบุ", data.workplace || null, data.screening_details || null,
       data.is_victim === "true" || data.is_victim === true || false,
       safeParseDate(data.detected_date), data.note || null, photo_url, created_by
@@ -82,6 +85,9 @@ exports.updateIllegal = async (req, res) => {
       photo_url = driveRes.webViewLink;
     }
 
+    let passport_id = data.passport_id ? String(data.passport_id).trim() : null;
+    if (passport_id === "") passport_id = null;
+
     const query = `
       UPDATE illegal_immigrants SET 
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
@@ -92,7 +98,7 @@ exports.updateIllegal = async (req, res) => {
     const values = [
       data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
-      data.passport_id || null, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
+      passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
       data.detected_location || "ไม่ระบุ", data.workplace || null, data.screening_details || null,
       data.is_victim === "true" || data.is_victim === true || false,
       safeParseDate(data.detected_date), data.note || null, photo_url, id
@@ -169,6 +175,9 @@ exports.uploadExcelIllegal = async (req, res) => {
         
         let rawPass = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
         let passport = rawPass ? String(rawPass).replace(/\s/g, '').trim() : null;
+        
+        // แก้ไข: เปลี่ยน String ว่างให้เป็น null เพื่อป้องกัน Error Duplicate Key
+        if (passport === "") passport = null;
         if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null"].includes(passport.toLowerCase())) passport = null;
 
         let dateObj = parseThaiDateToDate(row._sheetName);
@@ -185,7 +194,6 @@ exports.uploadExcelIllegal = async (req, res) => {
           passport_id: passport,
           detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")).trim() : "ไม่ระบุ",
           workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")).trim() : null,
-          // warrant: ลบออกจากการอ่านไฟล์ Excel
           gender: determineGender(row, prefix),
           detected_date: dateObj ? dateObj.toISOString().split('T')[0] : null,
           is_victim: typeof isVictim === 'boolean' ? isVictim : false,
@@ -220,6 +228,9 @@ exports.uploadExcelIllegal = async (req, res) => {
       
       let rawPass = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
       let passport_id = rawPass ? String(rawPass).replace(/\s/g, '').trim() : null;
+      
+      // แก้ไข: เปลี่ยน String ว่างให้เป็น null ป้องกัน Duplicate Key Constraint
+      if (passport_id === "") passport_id = null;
       if (passport_id && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null"].includes(passport_id.toLowerCase())) {
           passport_id = null;
       }

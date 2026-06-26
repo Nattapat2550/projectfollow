@@ -24,8 +24,8 @@ CREATE TABLE illegal_immigrants (
     gender VARCHAR(50),
     date_of_birth DATE,
     age INT,
-    national_id VARCHAR(50) UNIQUE,
-    passport_id VARCHAR(255) UNIQUE,
+    national_id VARCHAR(50) ,
+    passport_id VARCHAR(255) ,
     nationality VARCHAR(255),
     photo_url TEXT,
     
@@ -57,8 +57,8 @@ CREATE TABLE repatriated_persons (
     gender VARCHAR(50),
     date_of_birth DATE,
     age INT,
-    national_id VARCHAR(50) UNIQUE NOT NULL,  -- คงค่า NOT NULL ไว้เผื่อใช้เป็นหลัก
-    passport_id VARCHAR(255) UNIQUE,
+    national_id VARCHAR(50) NOT NULL,  -- คงค่า NOT NULL ไว้เผื่อใช้เป็นหลัก
+    passport_id VARCHAR(255) ,
     nationality VARCHAR(255),                 -- เพิ่มเข้ามาใหม่
     photo_url TEXT,
     

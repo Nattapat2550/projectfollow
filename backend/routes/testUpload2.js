@@ -1,11 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const rateLimit = require("express-rate-limit"); // 🟢 นำเข้า Rate Limit
+const rateLimit = require("express-rate-limit"); 
 const testUpload2Controller = require("../controllers/testUpload2Controller");
 const { protect } = require("../middleware/auth");
 
-const upload = multer({ dest: "uploads/" });
+// 🟢 แก้ไขตรงนี้: ใช้ memoryStorage() เพื่อให้ Controller สามารถอ่าน req.file.buffer ได้
+const upload = multer({ storage: multer.memoryStorage() });
 
 // 🟢 สร้างตัวกันสแปม: ให้ยิงได้ไม่เกิน 10 ครั้งต่อ 15 นาที
 const uploadLimiter = rateLimit({
