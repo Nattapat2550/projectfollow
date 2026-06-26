@@ -27,7 +27,7 @@ exports.getDashboardStats = async (req, res) => {
       dobEnd: rawDobEnd,   
       isVictim = "ทั้งหมด",
       hasPassport = "ทั้งหมด",
-      creator = "ทั้งหมด", // ฟิลเตอร์ชื่อผู้เพิ่มข้อมูล
+      creator = "ทั้งหมด", 
       page = 1,
       limit = 50,
       sortBy,             
@@ -55,7 +55,6 @@ exports.getDashboardStats = async (req, res) => {
     let queryParams = [];
     let paramIndex = 1;
 
-    // WHERE clause สำหรับวันที่
     if (vStart && vEnd) {
       conditions.push(`DATE(t.${dateField}) >= $${paramIndex} AND DATE(t.${dateField}) <= $${paramIndex + 1}`);
       queryParams.push(startDate, endDate);
@@ -91,10 +90,16 @@ exports.getDashboardStats = async (req, res) => {
       queryParams.push(nationality);
       paramIndex++;
     }
+    
+    // เงื่อนไข Filter เพศ ที่รองรับ "ไม่ระบุ"
     if (gender && gender !== "ทั้งหมด") {
-      conditions.push(`t.gender = $${paramIndex}`);
-      queryParams.push(gender);
-      paramIndex++;
+      if (gender === "ไม่ระบุ") {
+        conditions.push(`(t.gender IS NULL OR TRIM(t.gender) = '' OR t.gender = 'ไม่ระบุ')`);
+      } else {
+        conditions.push(`t.gender = $${paramIndex}`);
+        queryParams.push(gender);
+        paramIndex++;
+      }
     }
 
     if (type === "illegal") {
@@ -110,7 +115,6 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
 
-    // ฟิลเตอร์ผู้เพิ่มข้อมูล (เชื่อมกับตาราง users)
     if (creator && creator !== "ทั้งหมด") {
       conditions.push(`u.name = $${paramIndex}`);
       queryParams.push(creator);
@@ -134,7 +138,6 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
 
-    // Query เพื่อดึงข้อมูล Table พร้อม Join ตาราง users เพื่อเอาชื่อคนเพิ่ม
     const dataQuery = `
       SELECT t.*, u.name as creator_name 
       FROM ${tableName} t 
@@ -145,7 +148,6 @@ exports.getDashboardStats = async (req, res) => {
     `;
     const tableData = await pool.query(dataQuery, [...queryParams, limitNum, offset]);
 
-    // Query นับจำนวนข้อมูลทั้งหมด
     const totalCountQuery = `
       SELECT COUNT(*) 
       FROM ${tableName} t 
@@ -160,6 +162,23 @@ exports.getDashboardStats = async (req, res) => {
 
     let stats = { total: totalItems };
     let charts = {};
+
+    // 🌟 ดึงข้อมูลกราฟเพศ (ทำได้ทั้ง 2 ประเภทข้อมูล)
+    const genderChartQuery = `
+      SELECT 
+        CASE 
+          WHEN t.gender IS NULL OR TRIM(t.gender) = '' THEN 'ไม่ระบุ' 
+          ELSE t.gender 
+        END as name, 
+        COUNT(*) as value 
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${baseWhere} 
+      GROUP BY 1 
+      ORDER BY value DESC
+    `;
+    const genderChartRes = await pool.query(genderChartQuery, baseParams);
+    charts.gender = genderChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
 
     if (type === "illegal") {
       const victimCountQuery = `SELECT COUNT(*) FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.is_victim = true`;
@@ -194,7 +213,6 @@ exports.getDashboardStats = async (req, res) => {
       charts.channel = channelChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     }
 
-    // ✨ ปรับปรุง: กราฟสรุปผู้เพิ่มข้อมูล (Creator Chart) ให้ดึงค่า u.color ประจำตัวของ User ออกมาจาก Database ด้วย
     const creatorChartQuery = `
       SELECT 
         COALESCE(u.name, 'ไม่ทราบผู้เพิ่ม') as name, 
@@ -219,9 +237,16 @@ exports.getDashboardStats = async (req, res) => {
       allNatsRes = await pool.query(`SELECT DISTINCT COALESCE(t.nationality, 'ไม่ระบุ') as nat FROM illegal_immigrants t WHERE t.nationality IS NOT NULL AND t.nationality != '' ORDER BY nat`);
     }
 
-    const allGendersRes = await pool.query(`SELECT DISTINCT COALESCE(t.gender, 'ไม่ระบุ') as gen FROM ${tableName} t WHERE t.gender IS NOT NULL AND t.gender != '' ORDER BY gen`);
+    const allGendersRes = await pool.query(`
+      SELECT DISTINCT 
+        CASE 
+          WHEN t.gender IS NULL OR TRIM(t.gender) = '' THEN 'ไม่ระบุ' 
+          ELSE t.gender 
+        END as gen 
+      FROM ${tableName} t 
+      ORDER BY gen
+    `);
     
-    // ดึงรายชื่อผู้เพิ่มข้อมูลทั้งหมดไปโชว์ใน Dropdown Filter
     const allCreatorsRes = await pool.query(`SELECT DISTINCT u.name as creator FROM ${tableName} t JOIN users u ON t.created_by = u.id WHERE u.name IS NOT NULL ORDER BY u.name`);
 
     res.status(200).json({
@@ -231,7 +256,7 @@ exports.getDashboardStats = async (req, res) => {
         totalPages: Math.ceil(totalItems / limitNum) || 1,
         currentPage: pageNum,
         allNationalities: type === "illegal" ? ["ทั้งหมด", ...allNatsRes.rows.map(r => r.nat)] : ["ทั้งหมด"],
-        allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen)],
+        allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen).filter(g => g !== "ทั้งหมด")],
         allCreators: ["ทั้งหมด", ...allCreatorsRes.rows.map(r => r.creator)]
       },
       stats,

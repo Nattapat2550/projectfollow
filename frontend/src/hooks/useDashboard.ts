@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-// Types
 export interface StatItem { label: string; value: number | string; }
 export interface ChartItem { name: string; value: number; color: string; }
 export interface DashboardData {
   stats: { total: number; victims?: number; hasPassport?: number; success?: number; };
   charts: { 
     nationality?: { name: string; value: number; color?: string }[]; 
+    gender?: { name: string; value: number; color?: string }[]; 
     victim?: { name: string; value: number; color?: string }[]; 
     passport?: { name: string; value: number; color?: string }[]; 
     channel?: { name: string; value: number; color?: string }[]; 
@@ -41,7 +41,6 @@ export function useDashboard() {
   const [filterGender, setFilterGender] = useState<string>("ทั้งหมด");
   const [filterVictim, setFilterVictim] = useState<string>("ทั้งหมด");
   const [filterPassport, setFilterPassport] = useState<string>("ทั้งหมด");
-  
   const [filterCreator, setFilterCreator] = useState<string>("ทั้งหมด");
   
   const [startDate, setStartDate] = useState<string>("");
@@ -122,8 +121,7 @@ export function useDashboard() {
   };
   const resetFilters = () => {
     setFilterNat("ทั้งหมด"); setFilterGender("ทั้งหมด"); setFilterVictim("ทั้งหมด");
-    setFilterPassport("ทั้งหมด"); 
-    setFilterCreator("ทั้งหมด");
+    setFilterPassport("ทั้งหมด"); setFilterCreator("ทั้งหมด");
     setStartDate(""); setEndDate(""); setDobStart("");
     setDobEnd(""); setSortField(""); setCurrentPage(1);
   };
@@ -133,7 +131,8 @@ export function useDashboard() {
   };
 
   const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
-  const gendersOptions = dashboardData?.meta?.allGenders || ["ทั้งหมด"];
+  // เพิ่มการรับประกันว่า "ไม่ระบุ" จะถูกรวมใน dropdown เสมอ
+  const gendersOptions = Array.from(new Set(["ทั้งหมด", "ชาย", "หญิง", "ไม่ระบุ", ...(dashboardData?.meta?.allGenders || [])]));
   const creatorsOptions = dashboardData?.meta?.allCreators || ["ทั้งหมด"];
 
   const tableRows = (dashboardData?.tableData || []).map((item: any) => {
@@ -149,7 +148,6 @@ export function useDashboard() {
       : [ { label: "จำนวนทั้งหมดที่พบตามตัวกรอง", value: dashboardData.stats.total }, { label: "ส่งกลับสำเร็จ", value: dashboardData.stats.success || 0 } ];
   })();
 
-  // 1. จัดรูปแบบกราฟมาตรฐาน -> เขียนทับรหัสสีเก่าจาก DB ด้วย CSS variables เพื่อสลับ Theme
   const formatStandardChartData = (raw: any[] = [], total: number = 0, colorOffset: number = 0) => {
     const sum = raw.reduce((acc, curr) => acc + curr.value, 0);
     const mapped = raw.map((d, i) => ({ 
@@ -160,7 +158,6 @@ export function useDashboard() {
     return mapped;
   };
 
-  // 2. จัดรูปแบบกราฟผู้สร้าง -> รองรับการดึงสีโปรไฟล์รายบุคคลประจำตัวมาจาก Database 
   const formatCreatorChartData = (raw: any[] = [], total: number = 0) => {
     const sum = raw.reduce((acc, curr) => acc + curr.value, 0);
     const mapped = raw.map((d, i) => ({ 
@@ -174,6 +171,9 @@ export function useDashboard() {
   const natChart = formatStandardChartData(dashboardData?.charts?.nationality, dashboardData?.stats?.total, 0);
   const channelChart = formatStandardChartData(dashboardData?.charts?.channel, dashboardData?.stats?.total, 0);
   
+  // กราฟเพศใหม่
+  const genderChart = formatStandardChartData(dashboardData?.charts?.gender, dashboardData?.stats?.total, 2);
+
   const victimChart = (dashboardData?.charts?.victim || []).map(d => ({ 
     ...d, 
     color: d.name === "เป็นผู้เสียหาย" ? "var(--chart-1)" : "var(--chart-3)" 
@@ -188,6 +188,6 @@ export function useDashboard() {
   return {
     states: { filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection, loading, isUpdating, dashboardData },
     actions: { handleFilterChange, handleSort, resetFilters, handleTypeChange, setCurrentPage, setFilterNat, setFilterGender, setFilterVictim, setFilterPassport, setFilterCreator, setStartDate, setEndDate, setDobStart, setDobEnd },
-    derived: { nationalitiesOptions, gendersOptions, creatorsOptions, tableRows, stats, natChart, channelChart, victimChart, passportChart, creatorChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
+    derived: { nationalitiesOptions, gendersOptions, creatorsOptions, tableRows, stats, natChart, genderChart, channelChart, victimChart, passportChart, creatorChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
   };
 }

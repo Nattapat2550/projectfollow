@@ -4,7 +4,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
 import RepatriatedTable, { SortField as RepatriatedSortField } from "@/components/immigrants/RepatriatedTable";
-import DonutChart from "@/components/dashboard/DonutChart";
+// เปลี่ยนจาก DonutChart เป็น BarChart (ต้องสร้างไฟล์ BarChart ไว้ในตำแหน่งเดียวกัน)
+import BarChart from "@/components/dashboard/BarChart";
 import { useDashboard } from "@/hooks/useDashboard";
 
 function DashboardContent() {
@@ -124,24 +125,26 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Charts */}
+              {/* Charts - เปลี่ยนไปใช้ BarChart หมด */}
               <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
                 <span className="font-bold text-lg block mb-6 text-(--header)">กราฟสรุปจำนวนคนทั้งหมด</span>
                 {(!states.dashboardData || states.dashboardData.tableData.length === 0) ? (
                   <div className="flex items-center justify-center h-48 text-muted-foreground font-medium text-sm">ไม่มีข้อมูลแสดงผลตามสัญชาติหรือวันที่ระบุ</div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-row gap-6 xl:gap-4 pb-2 justify-center items-start w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pb-2 justify-start items-start w-full">
                     {states.filterType === "illegal" ? (
                       <>
-                        {derived.natChart.length > 0 && <DonutChart data={derived.natChart} title="สัญชาติ (Top 6)" />}
-                        {derived.victimChart.length > 0 && <DonutChart data={derived.victimChart} title="สถานะผู้เสียหาย" />}
-                        {derived.passportChart.length > 0 && <DonutChart data={derived.passportChart} title="สถานะหนังสือเดินทาง" />}
-                        {derived.creatorChart.length > 0 && <DonutChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
+                        {derived.natChart.length > 0 && <BarChart data={derived.natChart} title="สัญชาติ (Top 6)" />}
+                        {derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
+                        {derived.victimChart.length > 0 && <BarChart data={derived.victimChart} title="สถานะผู้เสียหาย" />}
+                        {derived.passportChart.length > 0 && <BarChart data={derived.passportChart} title="สถานะหนังสือเดินทาง" />}
+                        {derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>
                     ) : (
                       <>
-                        {derived.channelChart.length > 0 && <DonutChart data={derived.channelChart} title="ช่องทางการส่งกลับ" />}
-                        {derived.creatorChart.length > 0 && <DonutChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
+                        {derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
+                        {derived.channelChart.length > 0 && <BarChart data={derived.channelChart} title="ช่องทางการส่งกลับ" />}
+                        {derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>
                     )}
                   </div>
