@@ -52,7 +52,7 @@ export default function RepatriatedTable({ data, sortField, sortDirection, onSor
             data.map((person) => {
               const fullName = `${person.first_name_th} ${person.last_name_th}`;
               const nationalId = person.national_id || person.passport_id || "ไม่ระบุ";
-              const address = person.address || "ไม่ระบุสถานที่";
+              const address = person.address_details ? `${person.address_details} ${person.sub_district ? 'ต.'+person.sub_district : ''} ${person.district ? 'อ.'+person.district : ''} ${person.province ? 'จ.'+person.province : ''}` : "ไม่ระบุสถานที่";
 
               return (
                 <tr

@@ -6,6 +6,10 @@ import Link from "next/link";
 import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
 import Swal from 'sweetalert2';
 import SingleImageField from "@/components/form/single-image-field";
+import { useAddressOptions } from "@/hooks/useAddressOptions";
+import AutocompleteInput from "@/components/ui/AutocompleteInput";
+import { ALL_NATIONALITIES } from "@/constants/nationalities";
+
 export default function CreateIllegalImmigrant() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -22,6 +26,27 @@ export default function CreateIllegalImmigrant() {
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
+
+  const { provinces, districtOptions: detDistrictOptions, subDistrictOptions: detSubDistrictOptions } = useAddressOptions(formData.detected_location_province, formData.detected_location_district);
+
+  const handleSelectDetDistrict = (opt: any) => {
+    const { district, province } = opt.extra;
+    setFormData((prev) => ({
+      ...prev,
+      detected_location_district: district,
+      detected_location_province: province
+    }));
+  };
+
+  const handleSelectDetSubDistrict = (opt: any) => {
+    const { subDistrict, district, province } = opt.extra;
+    setFormData((prev) => ({
+      ...prev,
+      detected_location_sub_district: subDistrict,
+      detected_location_district: district,
+      detected_location_province: province
+    }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -152,7 +177,7 @@ export default function CreateIllegalImmigrant() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div><label className={labelClass}>เลขหนังสือเดินทาง (Passport ID)</label><input type="text" name="passport_id" value={formData.passport_id} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>สัญชาติ (Nationality)</label><input type="text" name="nationality" value={formData.nationality} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>สัญชาติ (Nationality)</label><AutocompleteInput name="nationality" value={formData.nationality} options={ALL_NATIONALITIES} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดจุดตรวจเจอและการคัดกรอง</h3>
@@ -171,9 +196,9 @@ export default function CreateIllegalImmigrant() {
           <textarea required name="detected_location_details" value={formData.detected_location_details} onChange={handleInputChange} rows={2} className={inputClass} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-          <div><label className={labelClass}>แขวง/ตำบล</label><input type="text" name="detected_location_sub_district" value={formData.detected_location_sub_district} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>เขต/อำเภอ</label><input type="text" name="detected_location_district" value={formData.detected_location_district} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>จังหวัด</label><input type="text" name="detected_location_province" value={formData.detected_location_province} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>จังหวัด</label><AutocompleteInput name="detected_location_province" value={formData.detected_location_province} options={provinces} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>เขต/อำเภอ</label><AutocompleteInput name="detected_location_district" value={formData.detected_location_district} options={detDistrictOptions} onChange={handleInputChange} onSelectOption={handleSelectDetDistrict} className={inputClass} /></div>
+          <div><label className={labelClass}>แขวง/ตำบล</label><AutocompleteInput name="detected_location_sub_district" value={formData.detected_location_sub_district} options={detSubDistrictOptions} onChange={handleInputChange} onSelectOption={handleSelectDetSubDistrict} className={inputClass} /></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">

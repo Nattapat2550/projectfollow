@@ -1,5 +1,8 @@
 import React from "react";
 import { Save, X } from "lucide-react";
+import { useAddressOptions } from "@/hooks/useAddressOptions";
+import AutocompleteInput from "@/components/ui/AutocompleteInput";
+import { ALL_NATIONALITIES } from "@/constants/nationalities";
 
 export default function ImmigrantEditForm({ 
   personType, formData, isSaving, imagePreview, passportImagePreview,
@@ -10,6 +13,36 @@ export default function ImmigrantEditForm({
   // 🟢 บังคับใช้ !text-black dark:!text-white
   const inputClass = "w-full border p-2 rounded bg-background !text-black dark:!text-white border-(--wrapper)";
   const labelClass = "block text-xs font-bold mb-2 !text-black dark:!text-white";
+
+  const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(formData.province || "", formData.district || "");
+  const { provinces: detProvinces, districtOptions: detDistrictOptions, subDistrictOptions: detSubDistrictOptions } = useAddressOptions(formData.detected_location_province || "", formData.detected_location_district || "");
+
+  const handleSelectDistrict = (opt: any) => {
+    const { district, province } = opt.extra;
+    handleInputChange({ target: { name: "district", value: district } });
+    handleInputChange({ target: { name: "province", value: province } });
+  };
+
+  const handleSelectSubDistrict = (opt: any) => {
+    const { subDistrict, district, province } = opt.extra;
+    handleInputChange({ target: { name: "sub_district", value: subDistrict } });
+    handleInputChange({ target: { name: "district", value: district } });
+    handleInputChange({ target: { name: "province", value: province } });
+  };
+
+  const handleSelectDetDistrict = (opt: any) => {
+    const { district, province } = opt.extra;
+    handleInputChange({ target: { name: "detected_location_district", value: district } });
+    handleInputChange({ target: { name: "detected_location_province", value: province } });
+  };
+
+  const handleSelectDetSubDistrict = (opt: any) => {
+    const { subDistrict, district, province } = opt.extra;
+    handleInputChange({ target: { name: "detected_location_sub_district", value: subDistrict } });
+    handleInputChange({ target: { name: "detected_location_district", value: district } });
+    handleInputChange({ target: { name: "detected_location_province", value: province } });
+  };
+
 
   return (
     <form onSubmit={handleSave} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
@@ -45,7 +78,7 @@ export default function ImmigrantEditForm({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
         <div><label className={labelClass}>เลขหนังสือเดินทาง</label><input type="text" name="passport_id" value={formData.passport_id || ""} onChange={handleInputChange} className={inputClass} /></div>
-        <div><label className={labelClass}>สัญชาติ</label><input type="text" name="nationality" value={formData.nationality || ""} onChange={handleInputChange} className={inputClass} /></div>
+        <div><label className={labelClass}>สัญชาติ</label><AutocompleteInput name="nationality" value={formData.nationality || ""} options={ALL_NATIONALITIES} onChange={handleInputChange} className={inputClass} /></div>
         <div><label className={labelClass}>เพศ</label>
             <select name="gender" value={formData.gender || ""} onChange={handleInputChange} className={inputClass}>
               <option value="">ไม่ระบุ</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
@@ -63,8 +96,13 @@ export default function ImmigrantEditForm({
 
           <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดที่อยู่และการทำงาน</h3>
           <div className="mb-5">
-            <label className={labelClass}>ภูมิลำเนา / ที่อยู่</label>
-            <textarea name="address" value={formData.address || ""} onChange={handleInputChange} rows={2} className={inputClass} />
+            <label className={labelClass}>รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *</label>
+            <textarea name="address_details" value={formData.address_details || ""} onChange={handleInputChange} required rows={2} className={inputClass} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+            <div><label className={labelClass}>จังหวัด</label><AutocompleteInput name="province" value={formData.province || ""} options={provinces} onChange={handleInputChange} className={inputClass} /></div>
+            <div><label className={labelClass}>เขต/อำเภอ</label><AutocompleteInput name="district" value={formData.district || ""} options={districtOptions} onChange={handleInputChange} onSelectOption={handleSelectDistrict} className={inputClass} /></div>
+            <div><label className={labelClass}>แขวง/ตำบล</label><AutocompleteInput name="sub_district" value={formData.sub_district || ""} options={subDistrictOptions} onChange={handleInputChange} onSelectOption={handleSelectSubDistrict} className={inputClass} /></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
             <div><label className={labelClass}>อาคาร (Building)</label><input type="text" name="building" value={formData.building || ""} onChange={handleInputChange} className={inputClass} /></div>
@@ -109,10 +147,18 @@ export default function ImmigrantEditForm({
       ) : (
         <>
           <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดจุดตรวจเจอและการคัดกรอง</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
              <div><label className={labelClass}>วันที่ตรวจพบ</label><input type="date" name="detected_date" value={formData.detected_date || ""} onChange={handleInputChange} className={inputClass} /></div>
-             <div><label className={labelClass}>สถานที่ตรวจเจอพิกัด *</label><input type="text" name="detected_location" value={formData.detected_location || ""} onChange={handleInputChange} required className={inputClass} /></div>
              <div><label className={labelClass}>สถานที่ทำงานปลายทาง</label><input type="text" name="workplace" value={formData.workplace || ""} onChange={handleInputChange} className={inputClass} /></div>
+          </div>
+          <div className="mb-5">
+            <label className={labelClass}>รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *</label>
+            <textarea name="detected_location_details" value={formData.detected_location_details || ""} onChange={handleInputChange} required rows={2} className={inputClass} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+            <div><label className={labelClass}>จังหวัด</label><AutocompleteInput name="detected_location_province" value={formData.detected_location_province || ""} options={detProvinces} onChange={handleInputChange} className={inputClass} /></div>
+            <div><label className={labelClass}>เขต/อำเภอ</label><AutocompleteInput name="detected_location_district" value={formData.detected_location_district || ""} options={detDistrictOptions} onChange={handleInputChange} onSelectOption={handleSelectDetDistrict} className={inputClass} /></div>
+            <div><label className={labelClass}>แขวง/ตำบล</label><AutocompleteInput name="detected_location_sub_district" value={formData.detected_location_sub_district || ""} options={detSubDistrictOptions} onChange={handleInputChange} onSelectOption={handleSelectDetSubDistrict} className={inputClass} /></div>
           </div>
           
           <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">

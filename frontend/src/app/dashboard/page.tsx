@@ -47,6 +47,13 @@ function DashboardContent() {
           </div>
 
           <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text- (--header)] opacity-70">จังหวัดที่พบ/ส่งกลับ</label>
+            <select value={states.filterProvince} onChange={(e) => actions.handleFilterChange(actions.setFilterProvince, e.target.value)} className={inputClass}>
+              {derived.provincesOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-stone-600 dark:text-slate-300">ผู้เพิ่มข้อมูล</label>
             <select value={states.filterCreator} onChange={(e) => actions.handleFilterChange(actions.setFilterCreator, e.target.value)} className={inputClass}>
               {derived.creatorsOptions.map((c) => <option key={c} value={c}>{c}</option>)}

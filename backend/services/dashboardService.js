@@ -61,7 +61,7 @@ exports.buildDashboardQuerySQL = (query, type) => {
       if (type === "repatriated") {
         fields += ` OR t.national_id ILIKE $${paramIdx} OR t.channel ILIKE $${paramIdx}`;
       } else {
-        fields += ` OR t.nationality ILIKE $${paramIdx} OR t.detected_location ILIKE $${paramIdx}`;
+        fields += ` OR t.nationality ILIKE $${paramIdx} OR t.detected_location_details ILIKE $${paramIdx} OR t.detected_location_sub_district ILIKE $${paramIdx} OR t.detected_location_district ILIKE $${paramIdx} OR t.detected_location_province ILIKE $${paramIdx}`;
       }
       
       params.push(kw);

@@ -1,8 +1,18 @@
 const pool = require("../config/db"); 
 const { v4: uuidv4 } = require("uuid"); 
+const fs = require('fs');
+const path = require('path');
 const xlsx = require("xlsx");
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
 const { safeParseDate, normalizeNationality, processName, processVictimStatus, findValue, determineGender, parseThaiDateToDate } = require("../utils/immigrantHelpers");
+
+let thaiAddresses = [];
+try {
+    const addressPath = path.join(__dirname, '../../frontend/public/thai_addresses.json');
+    thaiAddresses = JSON.parse(fs.readFileSync(addressPath, 'utf-8'));
+} catch (err) {
+    console.error("Could not load thai_addresses.json for address parsing", err);
+}
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -33,6 +43,31 @@ const splitThaiAddress = (fullAddress) => {
     if (subMatch) {
         sub_district = subMatch[1];
         str = str.replace(subMatch[0], '').trim();
+    }
+    
+    // Smart autofill using thai_addresses.json
+    if (sub_district && (!district || !province) && thaiAddresses.length > 0) {
+        // Find all matches for this sub_district
+        const matches = thaiAddresses.filter(addr => addr.district === sub_district);
+        
+        if (matches.length > 0) {
+            // Check if it's unique across the country (i.e., all matches have the same district/province)
+            const uniqueDistricts = new Set(matches.map(m => m.amphoe));
+            const uniqueProvinces = new Set(matches.map(m => m.province));
+            
+            if (uniqueDistricts.size === 1 && uniqueProvinces.size === 1) {
+                if (!district) district = matches[0].amphoe;
+                if (!province) province = matches[0].province;
+            }
+        }
+    } else if (district && !province && thaiAddresses.length > 0) {
+        const matches = thaiAddresses.filter(addr => addr.amphoe === district);
+        if (matches.length > 0) {
+            const uniqueProvinces = new Set(matches.map(m => m.province));
+            if (uniqueProvinces.size === 1) {
+                province = matches[0].province;
+            }
+        }
     }
     
     return {

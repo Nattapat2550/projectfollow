@@ -30,7 +30,7 @@ export const immigrantColumns: ColumnDef<ImmigrantData>[] = [
 	},
 	{
 		header: "Detected Location",
-		accessorKey: "detected_location",
+		accessorFn: (row: any) => row.detected_location_details ? `${row.detected_location_details} ${row.detected_location_sub_district ? 'ต.'+row.detected_location_sub_district : ''} ${row.detected_location_district ? 'อ.'+row.detected_location_district : ''} ${row.detected_location_province ? 'จ.'+row.detected_location_province : ''}` : "ไม่ระบุสถานที่",
 	},
 	{
 		header: "Is Victim",

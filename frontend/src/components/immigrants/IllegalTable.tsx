@@ -69,8 +69,8 @@ export default function IllegalTable({ data, sortField, sortDirection, onSort }:
                 <td className="px-4 py-3 truncate border-r" style={{ borderColor: "var(--wrapper)" }}>
                   {person.detected_date ? new Date(person.detected_date).toLocaleDateString("th-TH") : "ไม่ระบุ"}
                 </td>
-                <td className="px-4 py-3 truncate border-r" style={{ borderColor: "var(--wrapper)" }} title={person.detected_location || "ไม่ระบุสถานที่"}>
-                  {person.detected_location || "ไม่ระบุสถานที่"}
+                <td className="px-4 py-3 truncate border-r" style={{ borderColor: "var(--wrapper)" }} title={person.detected_location_details ? `${person.detected_location_details} ${person.detected_location_sub_district ? 'ต.'+person.detected_location_sub_district : ''} ${person.detected_location_district ? 'อ.'+person.detected_location_district : ''} ${person.detected_location_province ? 'จ.'+person.detected_location_province : ''}` : "ไม่ระบุสถานที่"}>
+                  {person.detected_location_details ? `${person.detected_location_details} ${person.detected_location_sub_district ? 'ต.'+person.detected_location_sub_district : ''} ${person.detected_location_district ? 'อ.'+person.detected_location_district : ''} ${person.detected_location_province ? 'จ.'+person.detected_location_province : ''}` : "ไม่ระบุสถานที่"}
                 </td>
                 <td className="px-4 py-3 truncate">
                   {person.is_victim ? <span style={{ color: "var(--redText)" }}>เป็นผู้เสียหาย</span> : <span>ไม่ใช่</span>}

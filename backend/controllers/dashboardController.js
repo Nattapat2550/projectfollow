@@ -20,6 +20,7 @@ exports.getDashboardStats = async (req, res) => {
     const { 
       type = "illegal", 
       nationality = "ทั้งหมด", 
+      province = "ทั้งหมด",
       gender = "ทั้งหมด", 
       startDate: rawStartDate, 
       endDate: rawEndDate,
@@ -88,6 +89,13 @@ exports.getDashboardStats = async (req, res) => {
     if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
       conditions.push(`t.nationality = $${paramIndex}`);
       queryParams.push(nationality);
+      paramIndex++;
+    }
+
+    if (province && province !== "ทั้งหมด") {
+      const provField = type === "repatriated" ? "t.province" : "t.detected_location_province";
+      conditions.push(`${provField} = $${paramIndex}`);
+      queryParams.push(province);
       paramIndex++;
     }
     
@@ -249,6 +257,9 @@ exports.getDashboardStats = async (req, res) => {
     
     const allCreatorsRes = await pool.query(`SELECT DISTINCT u.name as creator FROM ${tableName} t JOIN users u ON t.created_by = u.id WHERE u.name IS NOT NULL ORDER BY u.name`);
 
+    const provField = type === "repatriated" ? "province" : "detected_location_province";
+    const allProvincesRes = await pool.query(`SELECT DISTINCT COALESCE(t.${provField}, 'ไม่ระบุ') as prov FROM ${tableName} t WHERE t.${provField} IS NOT NULL AND t.${provField} != '' ORDER BY prov`);
+
     res.status(200).json({
       success: true,
       meta: {
@@ -256,7 +267,8 @@ exports.getDashboardStats = async (req, res) => {
         totalPages: Math.ceil(totalItems / limitNum) || 1,
         currentPage: pageNum,
         allNationalities: type === "illegal" ? ["ทั้งหมด", ...allNatsRes.rows.map(r => r.nat)] : ["ทั้งหมด"],
-        allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen).filter(g => g !== "ทั้งหมด")],
+        allProvinces: ["ทั้งหมด", ...allProvincesRes.rows.map(r => r.prov)],
+        allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen)],
         allCreators: ["ทั้งหมด", ...allCreatorsRes.rows.map(r => r.creator)]
       },
       stats,

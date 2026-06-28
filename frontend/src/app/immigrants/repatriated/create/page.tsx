@@ -6,6 +6,9 @@ import Link from "next/link";
 import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
 import Swal from 'sweetalert2';
 import SingleImageField from "@/components/form/single-image-field";
+import { useAddressOptions } from "@/hooks/useAddressOptions";
+import AutocompleteInput from "@/components/ui/AutocompleteInput";
+import { ALL_NATIONALITIES } from "@/constants/nationalities";
 
 export default function CreateRepatriatedImmigrant() {
   const router = useRouter();
@@ -26,6 +29,27 @@ export default function CreateRepatriatedImmigrant() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(formData.province, formData.district);
+
+  const handleSelectDistrict = (opt: any) => {
+    const { district, province } = opt.extra;
+    setFormData((prev) => ({
+      ...prev,
+      district,
+      province
+    }));
+  };
+
+  const handleSelectSubDistrict = (opt: any) => {
+    const { subDistrict, district, province } = opt.extra;
+    setFormData((prev) => ({
+      ...prev,
+      sub_district: subDistrict,
+      district,
+      province
+    }));
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -161,7 +185,7 @@ export default function CreateRepatriatedImmigrant() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>เลขหนังสือเดินทาง (Passport ID)</label><input type="text" name="passport_id" value={formData.passport_id} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>สัญชาติ (Nationality)</label><input type="text" name="nationality" value={formData.nationality} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>สัญชาติ (Nationality)</label><AutocompleteInput name="nationality" value={formData.nationality} options={ALL_NATIONALITIES} onChange={handleInputChange} className={inputClass} /></div>
           <div><label className={labelClass}>เพศ</label>
             <select name="gender" value={formData.gender} onChange={handleInputChange} className={inputClass}>
               <option value="">ไม่ระบุ</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
@@ -181,9 +205,9 @@ export default function CreateRepatriatedImmigrant() {
           <textarea required name="address_details" value={formData.address_details} onChange={handleInputChange} rows={2} className={inputClass} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-          <div><label className={labelClass}>แขวง/ตำบล</label><input type="text" name="sub_district" value={formData.sub_district} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>เขต/อำเภอ</label><input type="text" name="district" value={formData.district} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>จังหวัด</label><input type="text" name="province" value={formData.province} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>จังหวัด</label><AutocompleteInput name="province" value={formData.province} options={provinces} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>เขต/อำเภอ</label><AutocompleteInput name="district" value={formData.district} options={districtOptions} onChange={handleInputChange} onSelectOption={handleSelectDistrict} className={inputClass} /></div>
+          <div><label className={labelClass}>แขวง/ตำบล</label><AutocompleteInput name="sub_district" value={formData.sub_district} options={subDistrictOptions} onChange={handleInputChange} onSelectOption={handleSelectSubDistrict} className={inputClass} /></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>อาคาร (Building)</label><input type="text" name="building" value={formData.building} onChange={handleInputChange} className={inputClass} /></div>

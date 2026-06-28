@@ -33,8 +33,8 @@ export default function TableRow({ person, isMock, type }: { person: any, isMock
         <td className="p-4 align-middle text-muted-foreground truncate">
           {person.detected_date ? new Date(person.detected_date).toLocaleDateString('th-TH') : "ไม่ระบุ"}
         </td>
-        <td className="p-4 align-middle text-muted-foreground truncate" title={person.detected_location}>
-          {person.detected_location || "ไม่ระบุสถานที่"}
+        <td className="p-4 align-middle text-muted-foreground truncate" title={person.detected_location_details ? `${person.detected_location_details} ${person.detected_location_sub_district ? 'ต.'+person.detected_location_sub_district : ''} ${person.detected_location_district ? 'อ.'+person.detected_location_district : ''} ${person.detected_location_province ? 'จ.'+person.detected_location_province : ''}` : "ไม่ระบุสถานที่"}>
+          {person.detected_location_details ? `${person.detected_location_details} ${person.detected_location_sub_district ? 'ต.'+person.detected_location_sub_district : ''} ${person.detected_location_district ? 'อ.'+person.detected_location_district : ''} ${person.detected_location_province ? 'จ.'+person.detected_location_province : ''}` : "ไม่ระบุสถานที่"}
         </td>
         <td className="p-4 align-middle truncate">
           {person.is_victim ? (
@@ -65,8 +65,8 @@ export default function TableRow({ person, isMock, type }: { person: any, isMock
         <td className="p-4 align-middle text-muted-foreground truncate" title={person.national_id || person.passport_id || "ไม่ระบุ"}>
           {person.national_id || person.passport_id || "ไม่ระบุ"}
         </td>
-        <td className="p-4 align-middle text-muted-foreground truncate" title={person.address}>
-          {person.address || "ไม่ระบุสถานที่"}
+        <td className="p-4 align-middle text-muted-foreground truncate" title={person.address_details ? `${person.address_details} ${person.sub_district ? 'ต.'+person.sub_district : ''} ${person.district ? 'อ.'+person.district : ''} ${person.province ? 'จ.'+person.province : ''}` : "ไม่ระบุสถานที่"}>
+          {person.address_details ? `${person.address_details} ${person.sub_district ? 'ต.'+person.sub_district : ''} ${person.district ? 'อ.'+person.district : ''} ${person.province ? 'จ.'+person.province : ''}` : "ไม่ระบุสถานที่"}
         </td>
         <td className="p-4 align-middle text-muted-foreground truncate">
           {person.return_date ? new Date(person.return_date).toLocaleDateString('th-TH') : "รอการส่งกลับ"}
