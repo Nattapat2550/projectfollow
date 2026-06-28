@@ -45,6 +45,7 @@ export default function ImmigrantDetailPage() {
           formData={states.formData}
           isSaving={states.isSaving}
           imagePreview={states.imagePreview}
+          passportImagePreview={states.passportImagePreview}
           handlers={handlers}
           onCancel={() => actions.setIsEditing(false)}
         />

@@ -72,6 +72,40 @@ const uploadWithRetry = async (fileObj, folderId, maxRetries = 5) => {
     }
 };
 
+const splitThaiAddress = (fullAddress) => {
+    if (!fullAddress || typeof fullAddress !== 'string') {
+        return { details: "ไม่ระบุ", sub_district: null, district: null, province: null };
+    }
+    
+    let str = fullAddress.trim();
+    let province = null, district = null, sub_district = null;
+    
+    const provMatch = str.match(/(?:จ\.| จว\.|จังหวัด)\s*([^\s]+)/) || str.match(/\s(กรุงเทพมหานคร|กรุงเทพฯ|กทม\.?|เชียงใหม่|ภูเก็ต|โคราช|ชลบุรี)$/);
+    if (provMatch) {
+        province = provMatch[1];
+        str = str.replace(provMatch[0], '').trim();
+    }
+    
+    const distMatch = str.match(/(?:อ\.|อำเภอ|เขต)\s*([^\s]+)/);
+    if (distMatch) {
+        district = distMatch[1];
+        str = str.replace(distMatch[0], '').trim();
+    }
+    
+    const subMatch = str.match(/(?:ต\.|ตำบล|แขวง)\s*([^\s]+)/);
+    if (subMatch) {
+        sub_district = subMatch[1];
+        str = str.replace(subMatch[0], '').trim();
+    }
+    
+    return {
+        details: str || "ไม่ระบุ",
+        sub_district,
+        district,
+        province
+    };
+};
+
 if (!global.uploadProgress) { global.uploadProgress = {}; }
   
 exports.getUploadProgress = (req, res) => {
@@ -137,6 +171,9 @@ exports.uploadExcel = async (req, res) => {
                     photo_url_preview = String(row["รูปจาก ทร.14"]);
                 }
 
+                const locationRaw = row["ที่อยู่"] ? String(row["ที่อยู่"]) : "";
+                const parsedLocation = splitThaiAddress(locationRaw);
+
                 preview_data.push({
                     ลำดับที่อ่านได้: i + 1,
                     first_name_th: thName.first || "ไม่ระบุ",
@@ -149,6 +186,10 @@ exports.uploadExcel = async (req, res) => {
                     id_card: id_card,
                     passport: row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).trim() : null,
                     photo_url: photo_url_preview,
+                    address_details: parsedLocation.details,
+                    sub_district: parsedLocation.sub_district,
+                    district: parsedLocation.district,
+                    province: parsedLocation.province,
                     case_id_count: parseInt(row["จำนวน Case ID"]) || 0,
                     warrant: parseInt(row["หมายจับ"]) || 0,
                     raw_data_from_excel: row
@@ -217,11 +258,14 @@ exports.uploadExcel = async (req, res) => {
                     if (passCheck.rows.length > 0) existingId = passCheck.rows[0].id;
                 }
 
+                const locationRaw = row["ที่อยู่"] ? String(row["ที่อยู่"]) : "";
+                const parsedLocation = splitThaiAddress(locationRaw);
+
                 const values = [
                     thName.first || "ไม่ระบุ", thName.middle || null, thName.last || "ไม่ระบุ",
                     enName.first || null, enName.middle || null, enName.last || null,
                     dobDate, autoGender, isNaN(parsedAge) ? null : parsedAge, id_card, passport,
-                    row["ที่อยู่"] ? String(row["ที่อยู่"]) : "ไม่ระบุ",
+                    parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province,
                     row["ตึก ที่ทำงาน"] ? String(row["ตึก ที่ทำงาน"]) : null,
                     row["ชั้น ที่ทำงาน"] ? String(row["ชั้น ที่ทำงาน"]) : null,
                     row["ห้อง ที่ทำงาน"] ? String(row["ห้อง ที่ทำงาน"]) : null,
@@ -240,26 +284,26 @@ exports.uploadExcel = async (req, res) => {
                 if (existingId) {
                     let updateQ = `UPDATE repatriated_persons SET 
                         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
-                        date_of_birth=$7, gender=$8, age=$9, national_id=$10, passport_id=$11, address=$12,
-                        building=$13, floor=$14, room=$15, job_type=$16, role=$17, salary=$18, paid_by=$19, payment_method=$20,
-                        number_of_case=$21, number_of_warrant=$22, victim_indicator=$23, responsible_agency=$24, note=$25, updated_at=NOW()`;
+                        date_of_birth=$7, gender=$8, age=$9, national_id=$10, passport_id=$11, address_details=$12, sub_district=$13, district=$14, province=$15,
+                        building=$16, floor=$17, room=$18, job_type=$19, role=$20, salary=$21, paid_by=$22, payment_method=$23,
+                        number_of_case=$24, number_of_warrant=$25, victim_indicator=$26, responsible_agency=$27, note=$28, updated_at=NOW()`;
                     
                     const updateVals = [...values];
                     if (drivePhotoUrl) {
-                        updateQ += `, photo_url=$26 WHERE id=$27`;
+                        updateQ += `, photo_url=$29 WHERE id=$30`;
                         updateVals.push(drivePhotoUrl, existingId);
                     } else {
-                        updateQ += ` WHERE id=$26`;
+                        updateQ += ` WHERE id=$29`;
                         updateVals.push(existingId);
                     }
                     await pool.query(updateQ, updateVals);
                 } else {
                     const insertQ = `INSERT INTO repatriated_persons (
                         id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
-                        date_of_birth, gender, age, national_id, passport_id, address,
+                        date_of_birth, gender, age, national_id, passport_id, address_details, sub_district, district, province,
                         building, floor, room, job_type, role, salary, paid_by, payment_method,
                         number_of_case, number_of_warrant, victim_indicator, responsible_agency, note, photo_url, created_by
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)`;
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)`;
                     await pool.query(insertQ, [uuidv4(), ...values, drivePhotoUrl || null, created_by]);
                 }
 

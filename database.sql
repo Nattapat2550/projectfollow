@@ -28,9 +28,13 @@ CREATE TABLE illegal_immigrants (
     passport_id VARCHAR(255) ,
     nationality VARCHAR(255),
     photo_url TEXT,
+    passport_photo_url TEXT,
     
     -- ข้อมูลเฉพาะกลุ่มลักลอบเข้าเมือง
-    detected_location TEXT NOT NULL,
+    detected_location_details TEXT,
+    detected_location_sub_district VARCHAR(255),
+    detected_location_district VARCHAR(255),
+    detected_location_province VARCHAR(255),
     is_victim BOOLEAN,
     detected_date DATE,
     workplace VARCHAR(255),
@@ -61,9 +65,13 @@ CREATE TABLE repatriated_persons (
     passport_id VARCHAR(255) ,
     nationality VARCHAR(255),                 -- เพิ่มเข้ามาใหม่
     photo_url TEXT,
+    passport_photo_url TEXT,
     
     -- ข้อมูลสถานที่และรูปแบบงาน
-    address TEXT NOT NULL,
+    address_details TEXT,
+    sub_district VARCHAR(255),
+    district VARCHAR(255),
+    province VARCHAR(255),
     building VARCHAR(255),
     floor VARCHAR(100),
     room VARCHAR(100),

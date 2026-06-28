@@ -284,6 +284,18 @@ export default function TestUpload2Page() {
                             </div>
                           </div>
                         </div>
+
+                        <div className="grid grid-cols-1 gap-2 mb-3 pb-3 border-b border- (--wrapper)]">
+                          <div className="bg- (--container)] p-2 rounded-md border border- (--wrapper)]">
+                            <span className="text- (--blueText)] text-xs font-semibold block">ที่อยู่ (หลังแยกคำ):</span>
+                            <div className="text-sm mt-1 text- (--header)]">
+                                <span className="opacity-60 text-xs mr-2">[DB: address_details]</span> {row.address_details || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: sub_district]</span> {row.sub_district || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: district]</span> {row.district || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: province]</span> {row.province || renderNull()}
+                            </div>
+                          </div>
+                        </div>
                       </td>
                       <td className="p-4 align-top bg-(--button)]">
                         <pre className="text-xs font-mono bg-(--container)] text-(--header)] p-3 border border-(--wrapper)] rounded-lg max-h-screen overflow-y-auto shadow-inner whitespace-pre-wrap sticky top-4">

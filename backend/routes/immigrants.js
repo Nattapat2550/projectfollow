@@ -27,8 +27,8 @@ router.get("/dashboard", immigrantController.getDashboardData);
 // ----------------------------------------------------
 router.get("/illegal/:id", illegalController.getIllegalById);
 // 🟢 ใส่ protect เข้าไปก่อนหน้าฟังก์ชัน controller
-router.post("/illegal", protect, uploadMiddleware.single("photo"), illegalController.createIllegal);
-router.put("/illegal/:id", protect, uploadMiddleware.single("photo"), illegalController.updateIllegal);
+router.post("/illegal", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), illegalController.createIllegal);
+router.put("/illegal/:id", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), illegalController.updateIllegal);
 router.delete("/illegal/:id", protect, illegalController.deleteIllegal);
 
 // ระบบ Excel อัปโหลดและตรวจสอบ Progress
@@ -40,8 +40,8 @@ router.get("/upload-progress/:jobId", illegalController.getUploadProgress);
 // Repatriated (ส่งกลับ)
 // ----------------------------------------------------
 router.get("/repatriated/:id", repatriatedController.getRepatriatedById);
-router.post("/repatriated", protect, uploadMiddleware.single("photo"), repatriatedController.createRepatriated);
-router.put("/repatriated/:id", protect, uploadMiddleware.single("photo"), repatriatedController.updateRepatriated);
+router.post("/repatriated", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), repatriatedController.createRepatriated);
+router.put("/repatriated/:id", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), repatriatedController.updateRepatriated);
 router.delete("/repatriated/:id", protect, repatriatedController.deleteRepatriated);
 
 module.exports = router;

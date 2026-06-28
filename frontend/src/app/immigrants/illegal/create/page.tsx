@@ -15,11 +15,13 @@ export default function CreateIllegalImmigrant() {
     first_name_th: "", middle_name_th: "", last_name_th: "",
     first_name_en: "", middle_name_en: "", last_name_en: "",
     passport_id: "", gender: "", nationality: "",
-    detected_date: "", detected_location: "", is_victim: false,
+    detected_date: "", detected_location_details: "", detected_location_sub_district: "", 
+    detected_location_district: "", detected_location_province: "", is_victim: false,
     workplace: "", screening_details: "", note: "", photo_url: "",
   });
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -35,6 +37,17 @@ export default function CreateIllegalImmigrant() {
 
   const handleImageRemove = () => {
     setSelectedImage(null); 
+  };
+
+  const handlePassportImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedPassportImage(file); 
+    }
+  };
+
+  const handlePassportImageRemove = () => {
+    setSelectedPassportImage(null); 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,6 +68,9 @@ export default function CreateIllegalImmigrant() {
 
       if (selectedImage) {
         submitData.append("photo", selectedImage);
+      }
+      if (selectedPassportImage) {
+        submitData.append("passport_photo", selectedPassportImage);
       }
 
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
@@ -107,10 +123,20 @@ export default function CreateIllegalImmigrant() {
       <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
         {error && <div className="mb-6 rounded-md border border-red-500 bg-red-100 dark:bg-red-900/30 p-4 text-sm text-red-600 dark:text-red-400 font-medium">{error}</div>}
 
-        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
-		<div className="mb-6 flex flex-col items-start gap-4">
-            <SingleImageField file={selectedImage} previewUrl="/return.png" onChange={handleImageChange} onRemove={handleImageRemove}/>
-		</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
+            <div className="flex flex-col items-start gap-4">
+                <SingleImageField file={selectedImage} previewUrl="/return.png" onChange={handleImageChange} onRemove={handleImageRemove}/>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปถ่ายพาสปอร์ต</h3>
+            <div className="flex flex-col items-start gap-4">
+                <SingleImageField file={selectedPassportImage} previewUrl="/return.png" onChange={handlePassportImageChange} onRemove={handlePassportImageRemove}/>
+            </div>
+          </div>
+        </div>
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>ชื่อต้นภาษาไทย *</label><input required type="text" name="first_name_th" value={formData.first_name_th} onChange={handleInputChange} className={inputClass} /></div>
@@ -130,14 +156,24 @@ export default function CreateIllegalImmigrant() {
         </div>
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดจุดตรวจเจอและการคัดกรอง</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <div><label className={labelClass}>เพศ</label>
             <select name="gender" value={formData.gender} onChange={handleInputChange} className={inputClass}>
               <option value="">ไม่ระบุ</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
             </select>
           </div>
           <div><label className={labelClass}>วันที่ตรวจพบการลักลอบเข้าประเทศ</label><input type="date" name="detected_date" value={formData.detected_date} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>สถานที่ตรวจเจอพิกัด *</label><input required type="text" name="detected_location" value={formData.detected_location} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
+        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดที่อยู่และสถานที่</h3>
+        <div className="mb-5">
+          <label className={labelClass}>รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *</label>
+          <textarea required name="detected_location_details" value={formData.detected_location_details} onChange={handleInputChange} rows={2} className={inputClass} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>แขวง/ตำบล</label><input type="text" name="detected_location_sub_district" value={formData.detected_location_sub_district} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>เขต/อำเภอ</label><input type="text" name="detected_location_district" value={formData.detected_location_district} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>จังหวัด</label><input type="text" name="detected_location_province" value={formData.detected_location_province} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">

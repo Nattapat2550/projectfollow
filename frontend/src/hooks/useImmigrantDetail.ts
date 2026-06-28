@@ -30,6 +30,8 @@ export function useImmigrantDetail(id: string) {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
+  const [passportImagePreview, setPassportImagePreview] = useState<string | null>(null);
 
   const getToken = () => {
     return document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
@@ -51,7 +53,9 @@ export function useImmigrantDetail(id: string) {
       if (res.ok && json.success && json.data) {
         setPerson(json.data); setPersonType("repatriated"); setNote(json.data.note || "");
         setFormData({ ...json.data, date_of_birth: json.data.date_of_birth?.split("T")[0] || "", return_date: json.data.return_date?.split("T")[0] || "" });
-        setImagePreview(getValidImageUrl(json.data.photo_url)); return;
+        setImagePreview(getValidImageUrl(json.data.photo_url));
+        setPassportImagePreview(getValidImageUrl(json.data.passport_photo_url));
+        return;
       }
 
       res = await fetch(`${backendUrl}/api/v1/immigrants/illegal/${id}`, { headers });
@@ -60,7 +64,9 @@ export function useImmigrantDetail(id: string) {
       if (res.ok && json.success && json.data) {
         setPerson(json.data); setPersonType("illegal"); setNote(json.data.note || "");
         setFormData({ ...json.data, detected_date: json.data.detected_date?.split("T")[0] || "" });
-        setImagePreview(getValidImageUrl(json.data.photo_url)); return;
+        setImagePreview(getValidImageUrl(json.data.photo_url));
+        setPassportImagePreview(getValidImageUrl(json.data.passport_photo_url));
+        return;
       }
       
       setPerson(null); setPersonType(null);
@@ -76,6 +82,10 @@ export function useImmigrantDetail(id: string) {
   const handleImageChange = (e: any) => {
     const file = e.target.files?.[0];
     if (file) { setSelectedImage(file); setImagePreview(URL.createObjectURL(file)); }
+  };
+  const handlePassportImageChange = (e: any) => {
+    const file = e.target.files?.[0];
+    if (file) { setSelectedPassportImage(file); setPassportImagePreview(URL.createObjectURL(file)); }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -99,6 +109,7 @@ export function useImmigrantDetail(id: string) {
         }
       });
       if (selectedImage) submitData.append("photo", selectedImage);
+      if (selectedPassportImage) submitData.append("passport_photo", selectedPassportImage);
 
       const token = getToken();
       const headers: any = {};
@@ -122,7 +133,7 @@ export function useImmigrantDetail(id: string) {
         timer: 1500,
         showConfirmButton: false
       });
-      setIsEditing(false); setSelectedImage(null); fetchData(); 
+      setIsEditing(false); setSelectedImage(null); setSelectedPassportImage(null); fetchData(); 
     } catch (error: any) { 
       Swal.fire({
         icon: 'error',
@@ -135,8 +146,8 @@ export function useImmigrantDetail(id: string) {
   };
 
   return { 
-    states: { person, personType, loading, note, isEditing, formData, isSaving, imagePreview }, 
+    states: { person, personType, loading, note, isEditing, formData, isSaving, imagePreview, passportImagePreview }, 
     actions: { setNote, setIsEditing },
-    handlers: { handleInputChange, handleCheckboxChange, handleImageChange, handleSave }
+    handlers: { handleInputChange, handleCheckboxChange, handleImageChange, handlePassportImageChange, handleSave }
   };
 }

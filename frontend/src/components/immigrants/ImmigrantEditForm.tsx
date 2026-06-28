@@ -2,10 +2,10 @@ import React from "react";
 import { Save, X } from "lucide-react";
 
 export default function ImmigrantEditForm({ 
-  personType, formData, isSaving, imagePreview, 
+  personType, formData, isSaving, imagePreview, passportImagePreview,
   handlers, onCancel 
 }: any) {
-  const { handleInputChange, handleCheckboxChange, handleImageChange, handleSave } = handlers;
+  const { handleInputChange, handleCheckboxChange, handleImageChange, handlePassportImageChange, handleSave } = handlers;
   
   // 🟢 บังคับใช้ !text-black dark:!text-white
   const inputClass = "w-full border p-2 rounded bg-background !text-black dark:!text-white border-(--wrapper)";
@@ -13,11 +13,21 @@ export default function ImmigrantEditForm({
 
   return (
     <form onSubmit={handleSave} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
-      <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
-      <div className="mb-6 flex flex-col items-start gap-4">
-        {imagePreview && <img src={imagePreview} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" />}
-        {/* 🟢 บังคับใช้สี text เป็นขาว และปรับพื้นหลังปุ่ม */}
-        <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-slate-800 dark:file:bg-slate-600 file:text-white! cursor-pointer" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+        <div>
+          <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
+          <div className="mb-6 flex flex-col items-start gap-4">
+            {imagePreview && <img src={imagePreview} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" />}
+            <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-slate-800 dark:file:bg-slate-600 file:text-white! cursor-pointer" />
+          </div>
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปถ่ายพาสปอร์ต</h3>
+          <div className="mb-6 flex flex-col items-start gap-4">
+            {passportImagePreview && <img src={passportImagePreview} alt="Passport Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" />}
+            <input type="file" accept="image/*" onChange={handlePassportImageChange} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-slate-800 dark:file:bg-slate-600 file:text-white! cursor-pointer" />
+          </div>
+        </div>
       </div>
 
       <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>

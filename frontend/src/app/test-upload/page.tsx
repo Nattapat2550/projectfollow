@@ -289,14 +289,19 @@ export default function TestUploadPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-2 mb-3 pb-3 border-b border- (--wrapper)]">
-                          <div>
-                            <span className="text- (--header)] opacity-60 text-xs block">[DB: detected_location] สถานที่ตรวจพบ:</span>
-                            <span className="font-medium">{row.detected_location || renderNull()}</span>
+                        <div className="grid grid-cols-1 gap-2 mb-3 pb-3 border-b border-(--wrapper)">
+                          <div className="bg-(--container) p-2 rounded-md border border-(--wrapper)">
+                            <span className="text-(--blueText) text-xs font-semibold block">ที่อยู่ / สถานที่ตรวจพบ:</span>
+                            <div className="text-sm mt-1 text-(--header)">
+                                <span className="opacity-60 text-xs mr-2">[DB: details]</span> {row.detected_location_details || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: sub_district]</span> {row.detected_location_sub_district || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: district]</span> {row.detected_location_district || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: province]</span> {row.detected_location_province || renderNull()}
+                            </div>
                           </div>
-                          <div className="bg- (--container)] p-2 rounded-md border border- (--wrapper)]">
-                            <span className="text- (--blueText)] text-xs font-semibold block">[DB: workplace] สถานที่ทำงาน:</span>
-                            <span className="font-medium text- (--header)]">{row.workplace || renderNull()}</span>
+                          <div className="bg-(--container) p-2 rounded-md border border-(--wrapper)">
+                            <span className="text-(--blueText) text-xs font-semibold block">[DB: workplace] สถานที่ทำงาน:</span>
+                            <span className="font-medium text-(--header)">{row.workplace || renderNull()}</span>
                           </div>
                         </div>
 

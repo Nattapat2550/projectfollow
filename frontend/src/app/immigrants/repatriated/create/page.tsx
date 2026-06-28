@@ -18,12 +18,13 @@ export default function CreateRepatriatedImmigrant() {
     passport_id: "", nationality: "", national_id: "", gender: "",
     date_of_birth: "", age: "", return_date: "",
     number_of_case: "", number_of_warrant: "", channel: "",
-    result: "PENDING", address: "", building: "", floor: "", room: "",
+    result: "PENDING", address_details: "", sub_district: "", district: "", province: "", building: "", floor: "", room: "",
     job_type: "", role: "", salary: "", paid_by: "", payment_method: "",
     victim_indicator: false, responsible_agency: "", note: "", photo_url: "",
   });
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -45,6 +46,17 @@ export default function CreateRepatriatedImmigrant() {
     setSelectedImage(null); 
   };
 
+  const handlePassportImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedPassportImage(file); 
+    }
+  };
+
+  const handlePassportImageRemove = () => {
+    setSelectedPassportImage(null); 
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -63,6 +75,9 @@ export default function CreateRepatriatedImmigrant() {
 
       if (selectedImage) {
         submitData.append("photo", selectedImage);
+      }
+      if (selectedPassportImage) {
+        submitData.append("passport_photo", selectedPassportImage);
       }
 
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
@@ -116,10 +131,20 @@ export default function CreateRepatriatedImmigrant() {
         
         {error && <div className="mb-6 rounded-md border border-red-500 bg-red-100 dark:bg-red-900/30 p-4 text-sm text-red-600 dark:text-red-400 font-medium">{error}</div>}
 
-        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
-		<div className="mb-6 flex flex-col items-start gap-4">
-            <SingleImageField file={selectedImage} previewUrl="/enter.png" onChange={handleImageChange} onRemove={handleImageRemove}/>
-		</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+          <div>
+            <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
+            <div className="flex flex-col items-start gap-4">
+                <SingleImageField file={selectedImage} previewUrl="/enter.png" onChange={handleImageChange} onRemove={handleImageRemove}/>
+            </div>
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปถ่ายพาสปอร์ต</h3>
+            <div className="flex flex-col items-start gap-4">
+                <SingleImageField file={selectedPassportImage} previewUrl="/enter.png" onChange={handlePassportImageChange} onRemove={handlePassportImageRemove}/>
+            </div>
+          </div>
+        </div>
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
@@ -152,8 +177,13 @@ export default function CreateRepatriatedImmigrant() {
 
         <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดที่อยู่และการทำงาน</h3>
         <div className="mb-5">
-          <label className={labelClass}>ภูมิลำเนา / ที่อยู่</label>
-          <textarea name="address" value={formData.address} onChange={handleInputChange} rows={2} className={inputClass} />
+          <label className={labelClass}>รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *</label>
+          <textarea required name="address_details" value={formData.address_details} onChange={handleInputChange} rows={2} className={inputClass} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>แขวง/ตำบล</label><input type="text" name="sub_district" value={formData.sub_district} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>เขต/อำเภอ</label><input type="text" name="district" value={formData.district} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>จังหวัด</label><input type="text" name="province" value={formData.province} onChange={handleInputChange} className={inputClass} /></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>อาคาร (Building)</label><input type="text" name="building" value={formData.building} onChange={handleInputChange} className={inputClass} /></div>

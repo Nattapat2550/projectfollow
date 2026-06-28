@@ -33,9 +33,16 @@ exports.createRepatriated = async (req, res) => {
     }
 
     let photo_url = null;
-    if (req.file) {
-      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
-      photo_url = driveRes.webViewLink;
+    let passport_photo_url = null;
+    if (req.files) {
+      if (req.files.photo) {
+        const driveRes = await uploadToDrive(req.files.photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        photo_url = driveRes.webViewLink;
+      }
+      if (req.files.passport_photo) {
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        passport_photo_url = driveRes.webViewLink;
+      }
     }
 
     const created_by = req.user ? req.user.id : null;
@@ -44,22 +51,29 @@ exports.createRepatriated = async (req, res) => {
     const query = `
       INSERT INTO repatriated_persons 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       date_of_birth, national_id, passport_id, gender, address, channel, result, number_of_case, number_of_warrant, age, return_date, photo_url, created_by,
-       building, floor, room, job_type, role, salary, paid_by, payment_method, victim_indicator, responsible_agency, note)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)
+       passport_id, nationality, national_id, gender, age, date_of_birth, return_date, number_of_case, 
+       number_of_warrant, channel, result, address_details, sub_district, district, province, building, floor, room, job_type, 
+       role, salary, paid_by, payment_method, victim_indicator, responsible_agency, note, photo_url, passport_photo_url, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
       RETURNING *;
     `;
     const values = [
       id, data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
-      safeParseDate(data.date_of_birth), data.national_id, data.passport_id || null, data.gender || null,
-      data.address || "ไม่ระบุ", data.channel || null, data.result || "PENDING",
-      parseInt(data.number_of_case) || 0, parseInt(data.number_of_warrant) || 0,
-      parseInt(data.age) || null, safeParseDate(data.return_date), photo_url, created_by,
-      data.building || null, data.floor || null, data.room || null, data.job_type || null, 
-      data.role || null, data.salary ? parseFloat(data.salary) : null, data.paid_by || null, 
-      data.payment_method || null, data.victim_indicator === 'true' || data.victim_indicator === true, 
-      data.responsible_agency || null, data.note || null
+      data.passport_id || null, data.nationality ? normalizeNationality(data.nationality) : null,
+      data.national_id, data.gender || null, 
+      data.age ? parseInt(data.age) : null, 
+      safeParseDate(data.date_of_birth), 
+      safeParseDate(data.return_date),
+      data.number_of_case ? parseInt(data.number_of_case) : 0,
+      data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
+      data.channel || null, data.result || "PENDING",
+      data.address_details || "ไม่ระบุ", data.sub_district || null, data.district || null, data.province || null, 
+      data.building || null, data.floor || null, data.room || null,
+      data.job_type || null, data.role || null, data.salary || null, 
+      data.paid_by || null, data.payment_method || null,
+      data.victim_indicator === "true" || data.victim_indicator === true || false,
+      data.responsible_agency || null, data.note || null, photo_url, passport_photo_url, created_by
     ];
 
     const result = await pool.query(query, values);
@@ -79,34 +93,55 @@ exports.updateRepatriated = async (req, res) => {
     const existingData = existingDataRes.rows[0];
 
     let photo_url = existingData.photo_url;
-    if (req.file) {
-      if (existingData.photo_url) {
-        const oldFileId = extractDriveFileId(existingData.photo_url);
-        if (oldFileId) { try { await deleteFromDrive(oldFileId); } catch (e) { } }
+    let passport_photo_url = existingData.passport_photo_url;
+    
+    if (req.files) {
+      if (req.files.photo) {
+        if (existingData.photo_url) {
+          const oldFileId = extractDriveFileId(existingData.photo_url);
+          if (oldFileId) { try { await deleteFromDrive(oldFileId); } catch (e) { } }
+        }
+        const driveRes = await uploadToDrive(req.files.photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        photo_url = driveRes.webViewLink;
       }
-      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
-      photo_url = driveRes.webViewLink;
+      
+      if (req.files.passport_photo) {
+        if (existingData.passport_photo_url) {
+          const oldFileId = extractDriveFileId(existingData.passport_photo_url);
+          if (oldFileId) { try { await deleteFromDrive(oldFileId); } catch (e) { } }
+        }
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        passport_photo_url = driveRes.webViewLink;
+      }
     }
 
     const query = `
       UPDATE repatriated_persons SET 
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
-        date_of_birth=$7, national_id=$8, passport_id=$9, gender=$10, address=$11, channel=$12, result=$13, 
-        number_of_case=$14, number_of_warrant=$15, age=$16, return_date=$17, photo_url=$18, updated_at=NOW(),
-        building=$20, floor=$21, room=$22, job_type=$23, role=$24, salary=$25, paid_by=$26, payment_method=$27, victim_indicator=$28, responsible_agency=$29, note=$30
-      WHERE id=$19 RETURNING *;
+        passport_id=$7, nationality=$8, national_id=$9, gender=$10, age=$11, date_of_birth=$12, return_date=$13, 
+        number_of_case=$14, number_of_warrant=$15, channel=$16, result=$17, 
+        address_details=$18, sub_district=$19, district=$20, province=$21, building=$22, floor=$23, room=$24, job_type=$25, 
+        role=$26, salary=$27, paid_by=$28, payment_method=$29, victim_indicator=$30, responsible_agency=$31, 
+        note=$32, photo_url=$33, passport_photo_url=$34, updated_at=NOW()
+      WHERE id=$35 RETURNING *;
     `;
     const values = [
       data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
-      safeParseDate(data.date_of_birth), data.national_id, data.passport_id || null, data.gender || null,
-      data.address || "ไม่ระบุ", data.channel || null, data.result || "PENDING",
-      parseInt(data.number_of_case) || 0, parseInt(data.number_of_warrant) || 0,
-      parseInt(data.age) || null, safeParseDate(data.return_date), photo_url, id,
-      data.building || null, data.floor || null, data.room || null, data.job_type || null, 
-      data.role || null, data.salary ? parseFloat(data.salary) : null, data.paid_by || null, 
-      data.payment_method || null, data.victim_indicator === 'true' || data.victim_indicator === true, 
-      data.responsible_agency || null, data.note || null
+      data.passport_id || null, data.nationality ? normalizeNationality(data.nationality) : null,
+      data.national_id, data.gender || null, 
+      data.age ? parseInt(data.age) : null, 
+      safeParseDate(data.date_of_birth), 
+      safeParseDate(data.return_date),
+      data.number_of_case ? parseInt(data.number_of_case) : 0,
+      data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
+      data.channel || null, data.result || "PENDING",
+      data.address_details || "ไม่ระบุ", data.sub_district || null, data.district || null, data.province || null,
+      data.building || null, data.floor || null, data.room || null,
+      data.job_type || null, data.role || null, data.salary || null, 
+      data.paid_by || null, data.payment_method || null,
+      data.victim_indicator === "true" || data.victim_indicator === true || false,
+      data.responsible_agency || null, data.note || null, photo_url, passport_photo_url, id
     ];
 
     const result = await pool.query(query, values);
@@ -119,11 +154,18 @@ exports.updateRepatriated = async (req, res) => {
 exports.deleteRepatriated = async (req, res) => {
   try {
     const { id } = req.params;
-    const existingDataRes = await pool.query("SELECT photo_url FROM repatriated_persons WHERE id = $1", [id]);
+    const existingDataRes = await pool.query("SELECT photo_url, passport_photo_url FROM repatriated_persons WHERE id = $1", [id]);
     
-    if (existingDataRes.rows.length > 0 && existingDataRes.rows[0].photo_url) {
-       const fileId = extractDriveFileId(existingDataRes.rows[0].photo_url);
-       if(fileId) { try { await deleteFromDrive(fileId); } catch(e) {} }
+    if (existingDataRes.rows.length > 0) {
+       const row = existingDataRes.rows[0];
+       if (row.photo_url) {
+           const fileId = extractDriveFileId(row.photo_url);
+           if(fileId) { try { await deleteFromDrive(fileId); } catch(e) {} }
+       }
+       if (row.passport_photo_url) {
+           const fileId2 = extractDriveFileId(row.passport_photo_url);
+           if(fileId2) { try { await deleteFromDrive(fileId2); } catch(e) {} }
+       }
     }
     
     await pool.query("DELETE FROM repatriated_persons WHERE id = $1", [id]);

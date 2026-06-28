@@ -6,6 +6,43 @@ const { safeParseDate, normalizeNationality, processName, processVictimStatus, f
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+const splitThaiAddress = (fullAddress) => {
+    if (!fullAddress || typeof fullAddress !== 'string') {
+        return { details: "ไม่ระบุ", sub_district: null, district: null, province: null };
+    }
+    
+    let str = fullAddress.trim();
+    let province = null, district = null, sub_district = null;
+    
+    // หา จังหวัด
+    const provMatch = str.match(/(?:จ\.| จว\.|จังหวัด)\s*([^\s]+)/) || str.match(/\s(กรุงเทพมหานคร|กรุงเทพฯ|กทม\.?|เชียงใหม่|ภูเก็ต|โคราช|ชลบุรี)$/);
+    if (provMatch) {
+        province = provMatch[1];
+        str = str.replace(provMatch[0], '').trim();
+    }
+    
+    // หา อำเภอ / เขต
+    const distMatch = str.match(/(?:อ\.|อำเภอ|เขต)\s*([^\s]+)/);
+    if (distMatch) {
+        district = distMatch[1];
+        str = str.replace(distMatch[0], '').trim();
+    }
+    
+    // หา ตำบล / แขวง
+    const subMatch = str.match(/(?:ต\.|ตำบล|แขวง)\s*([^\s]+)/);
+    if (subMatch) {
+        sub_district = subMatch[1];
+        str = str.replace(subMatch[0], '').trim();
+    }
+    
+    return {
+        details: str || "ไม่ระบุ",
+        sub_district,
+        district,
+        province
+    };
+};
+
 if (!global.uploadProgress) {
   global.uploadProgress = {};
 }
@@ -29,9 +66,16 @@ exports.createIllegal = async (req, res) => {
     }
 
     let photo_url = null;
-    if (req.file) {
-      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
-      photo_url = driveRes.webViewLink;
+    let passport_photo_url = null;
+    if (req.files) {
+      if (req.files.photo) {
+        const driveRes = await uploadToDrive(req.files.photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        photo_url = driveRes.webViewLink;
+      }
+      if (req.files.passport_photo) {
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        passport_photo_url = driveRes.webViewLink;
+      }
     }
 
     const created_by = req.user ? req.user.id : null;
@@ -44,17 +88,17 @@ exports.createIllegal = async (req, res) => {
     const query = `
       INSERT INTO illegal_immigrants 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       passport_id, gender, nationality, detected_location, workplace, screening_details, is_victim, detected_date, note, photo_url, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        passport_id, gender, nationality, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, screening_details, is_victim, detected_date, note, photo_url, passport_photo_url, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *;
     `;
     const values = [
       id, data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
-      data.detected_location || "ไม่ระบุ", data.workplace || null, data.screening_details || null,
+      data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, data.workplace || null, data.screening_details || null,
       data.is_victim === "true" || data.is_victim === true || false,
-      safeParseDate(data.detected_date), data.note || null, photo_url, created_by
+      safeParseDate(data.detected_date), data.note || null, photo_url, passport_photo_url, created_by
     ];
 
     const result = await pool.query(query, values);
@@ -74,15 +118,30 @@ exports.updateIllegal = async (req, res) => {
     const existingData = existingDataRes.rows[0];
 
     let photo_url = existingData.photo_url;
-    if (req.file) {
-      if (existingData.photo_url) {
-        const oldFileId = extractDriveFileId(existingData.photo_url);
-        if (oldFileId) {
-          try { await deleteFromDrive(oldFileId); } catch (delErr) { console.error(delErr.message); }
+    let passport_photo_url = existingData.passport_photo_url;
+    
+    if (req.files) {
+      if (req.files.photo) {
+        if (existingData.photo_url) {
+          const oldFileId = extractDriveFileId(existingData.photo_url);
+          if (oldFileId) {
+            try { await deleteFromDrive(oldFileId); } catch (delErr) { console.error(delErr.message); }
+          }
         }
+        const driveRes = await uploadToDrive(req.files.photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        photo_url = driveRes.webViewLink;
       }
-      const driveRes = await uploadToDrive(req.file, process.env.GOOGLE_DRIVE_FOLDER_ID);
-      photo_url = driveRes.webViewLink;
+      
+      if (req.files.passport_photo) {
+        if (existingData.passport_photo_url) {
+          const oldFileId = extractDriveFileId(existingData.passport_photo_url);
+          if (oldFileId) {
+            try { await deleteFromDrive(oldFileId); } catch (delErr) { console.error(delErr.message); }
+          }
+        }
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        passport_photo_url = driveRes.webViewLink;
+      }
     }
 
     let passport_id = data.passport_id ? String(data.passport_id).trim() : null;
@@ -91,17 +150,17 @@ exports.updateIllegal = async (req, res) => {
     const query = `
       UPDATE illegal_immigrants SET 
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
-        passport_id=$7, gender=$8, nationality=$9, detected_location=$10, workplace=$11, screening_details=$12, 
-        is_victim=$13, detected_date=$14, note=$15, photo_url=$16, updated_at=NOW()
-      WHERE id=$17 RETURNING *;
+        passport_id=$7, gender=$8, nationality=$9, detected_location_details=$10, detected_location_sub_district=$11, detected_location_district=$12, detected_location_province=$13, workplace=$14, screening_details=$15, 
+        is_victim=$16, detected_date=$17, note=$18, photo_url=$19, passport_photo_url=$20, updated_at=NOW()
+      WHERE id=$21 RETURNING *;
     `;
     const values = [
       data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
-      data.detected_location || "ไม่ระบุ", data.workplace || null, data.screening_details || null,
+      data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, data.workplace || null, data.screening_details || null,
       data.is_victim === "true" || data.is_victim === true || false,
-      safeParseDate(data.detected_date), data.note || null, photo_url, id
+      safeParseDate(data.detected_date), data.note || null, photo_url, passport_photo_url, id
     ];
 
     const result = await pool.query(query, values);
@@ -114,11 +173,18 @@ exports.updateIllegal = async (req, res) => {
 exports.deleteIllegal = async (req, res) => {
   try {
     const { id } = req.params;
-    const existingDataRes = await pool.query("SELECT photo_url FROM illegal_immigrants WHERE id = $1", [id]);
+    const existingDataRes = await pool.query("SELECT photo_url, passport_photo_url FROM illegal_immigrants WHERE id = $1", [id]);
     
-    if (existingDataRes.rows.length > 0 && existingDataRes.rows[0].photo_url) {
-       const fileId = extractDriveFileId(existingDataRes.rows[0].photo_url);
-       if(fileId) { try { await deleteFromDrive(fileId); } catch(e) { console.error(e); } }
+    if (existingDataRes.rows.length > 0) {
+       const row = existingDataRes.rows[0];
+       if (row.photo_url) {
+           const fileId = extractDriveFileId(row.photo_url);
+           if(fileId) { try { await deleteFromDrive(fileId); } catch(e) { console.error(e); } }
+       }
+       if (row.passport_photo_url) {
+           const fileId2 = extractDriveFileId(row.passport_photo_url);
+           if(fileId2) { try { await deleteFromDrive(fileId2); } catch(e) { console.error(e); } }
+       }
     }
     
     await pool.query("DELETE FROM illegal_immigrants WHERE id = $1", [id]);
@@ -182,6 +248,9 @@ exports.uploadExcelIllegal = async (req, res) => {
 
         let dateObj = parseThaiDateToDate(row._sheetName);
 
+        const locationRaw = findValue(row, "สถานที่ตรวจพบ");
+        const parsedLocation = splitThaiAddress(locationRaw ? String(locationRaw) : "");
+
         preview_data.push({
           ลำดับที่อ่านได้: i + 1,
           first_name_th: (hasName && isThai && fname && fname.trim() !== "") ? fname.trim() : "ไม่ระบุ",
@@ -192,7 +261,10 @@ exports.uploadExcelIllegal = async (req, res) => {
           last_name_en: (hasName && !isThai && lname && lname.trim() !== "") ? lname.trim() : null,
           nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
           passport_id: passport,
-          detected_location: findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")).trim() : "ไม่ระบุ",
+          detected_location_details: parsedLocation.details,
+          detected_location_sub_district: parsedLocation.sub_district,
+          detected_location_district: parsedLocation.district,
+          detected_location_province: parsedLocation.province,
           workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")).trim() : null,
           gender: determineGender(row, prefix),
           detected_date: dateObj ? dateObj.toISOString().split('T')[0] : null,
@@ -216,8 +288,8 @@ exports.uploadExcelIllegal = async (req, res) => {
     const insertQuery = `
       INSERT INTO illegal_immigrants 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       nationality, passport_id, detected_location, workplace, gender, detected_date, is_victim, screening_details, note, created_by) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17);
+       nationality, passport_id, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, gender, detected_date, is_victim, screening_details, note, created_by) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20);
     `;
 
     for (let i = 0; i < allJsonData.length; i++) {
@@ -235,8 +307,8 @@ exports.uploadExcelIllegal = async (req, res) => {
           passport_id = null;
       }
 
-      let detected_location = findValue(row, "สถานที่ตรวจพบ") ? String(findValue(row, "สถานที่ตรวจพบ")).trim() : "ไม่ระบุ";
-      if (detected_location === "") detected_location = "ไม่ระบุ";
+      const locationRaw = findValue(row, "สถานที่ตรวจพบ");
+      const parsedLocation = splitThaiAddress(locationRaw ? String(locationRaw) : "");
 
       const first_name_th = (hasName && isThai && fname && fname.trim() !== "") ? fname.trim() : "ไม่ระบุ";
       const middle_name_th = (isThai && mname && mname.trim() !== "") ? mname.trim() : null;
@@ -253,7 +325,7 @@ exports.uploadExcelIllegal = async (req, res) => {
       try {
          const insertValues = [
              uuidv4(), first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
-             nationality, passport_id, detected_location, workplace, gender, detected_date, is_victim_bool, details || null, null, created_by
+             nationality, passport_id, parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province, workplace, gender, detected_date, is_victim_bool, details || null, null, created_by
          ];
          
          await pool.query(insertQuery, insertValues);
