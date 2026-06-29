@@ -79,6 +79,12 @@ exports.buildDashboardQuerySQL = (query, type) => {
   if (sortBy && sortBy.trim() !== "") {
     if (sortBy === "name") {
         orderClause = `ORDER BY t.first_name_th ${dir} NULLS LAST, t.last_name_th ${dir} NULLS LAST, t.id DESC`;
+    } else if (sortBy === "creator") {
+        orderClause = `ORDER BY u.name ${dir} NULLS LAST, t.id DESC`;
+    } else if (sortBy === "detected_location") {
+        orderClause = `ORDER BY t.detected_location_province ${dir} NULLS LAST, t.detected_location_district ${dir} NULLS LAST, t.detected_location_sub_district ${dir} NULLS LAST, t.detected_location_details ${dir} NULLS LAST, t.id DESC`;
+    } else if (sortBy === "address") {
+        orderClause = `ORDER BY t.province ${dir} NULLS LAST, t.district ${dir} NULLS LAST, t.sub_district ${dir} NULLS LAST, t.address_details ${dir} NULLS LAST, t.id DESC`;
     } else {
         orderClause = `ORDER BY t.${sortBy} ${dir} NULLS LAST, t.id DESC`;
     }

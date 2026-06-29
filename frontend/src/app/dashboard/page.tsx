@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
 import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
 import RepatriatedTable, { SortField as RepatriatedSortField } from "@/components/immigrants/RepatriatedTable";
@@ -11,6 +11,40 @@ import { useDashboard } from "@/hooks/useDashboard";
 function DashboardContent() {
   const { states, actions, derived } = useDashboard();
   const inputClass = "w-full bg-background border border- (--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring- (--header)]/40 [&::-webkit-calendar-picker-indicator]:dark:invert";
+
+  const [showSettings, setShowSettings] = useState(false);
+  const [visibleCharts, setVisibleCharts] = useState<string[]>([]);
+
+  useEffect(() => {
+    const getCookie = (name: string): string | null => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+      return null;
+    };
+    
+    const cookieVal = getCookie("dashboard_visible_charts");
+    if (cookieVal) {
+      setVisibleCharts(cookieVal.split(",").filter(Boolean));
+    } else {
+      setVisibleCharts(["nationality", "province", "gender", "victim", "passport", "channel", "creator"]);
+    }
+  }, []);
+
+  const saveVisibleCharts = (chartsList: string[]) => {
+    setVisibleCharts(chartsList);
+    const date = new Date();
+    date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+    document.cookie = `dashboard_visible_charts=${chartsList.join(",")}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
+  };
+
+  const toggleChart = (key: string) => {
+    const isVisible = visibleCharts.includes(key);
+    const updated = isVisible 
+      ? visibleCharts.filter(k => k !== key)
+      : [...visibleCharts, key];
+    saveVisibleCharts(updated);
+  };
 
   return (
     <div className="w-full p-4 sm:p-6 transition-colors duration-200" style={{ backgroundColor: "var(--wrapper)", minHeight: "calc(100vh - 80px)" }}>
@@ -82,11 +116,11 @@ function DashboardContent() {
           )}
 
           <div className="flex flex-col gap-2 mt-2">
-             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "repatriated" ? "วันที่ส่งกลับ (ตั้งแต่)" : "ตั้งแต่วันที่"}</label>
+             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "repatriated" ? "วันที่ส่งกลับ (ตั้งแต่)" : "ตั้งแต่วันที่ตรวจพบ"}</label>
              <input type="date" value={states.startDate} onChange={(e) => actions.handleFilterChange(actions.setStartDate, e.target.value)} className={inputClass} />
           </div>
           <div className="flex flex-col gap-2">
-             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "repatriated" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่"}</label>
+             <label className="text-sm font-bold text- (--header)] opacity-70">{states.filterType === "repatriated" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่ตรวจพบ"}</label>
              <input type="date" value={states.endDate} onChange={(e) => actions.handleFilterChange(actions.setEndDate, e.target.value)} className={inputClass} />
           </div>
 
@@ -133,30 +167,168 @@ function DashboardContent() {
               </div>
 
               {/* Charts - เปลี่ยนไปใช้ BarChart หมด */}
-              <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
-                <span className="font-bold text-lg block mb-6 text-(--header)">กราฟสรุปจำนวนคนทั้งหมด</span>
+              <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)] relative">
+                <div className="flex justify-between items-center mb-6">
+                  <span className="font-bold text-lg text-(--header)">กราฟสรุปจำนวนคนทั้งหมด</span>
+                  <button 
+                    onClick={() => setShowSettings(true)} 
+                    className="px-3 py-1.5 bg-(--wrapper) border border-zinc-300 dark:border-zinc-700 rounded text-xs font-bold text-(--header) hover:opacity-80 transition cursor-pointer flex items-center gap-1 active:scale-95 select-none"
+                  >
+                    ⚙️ ตั้งค่าความน่าสนใจของกราฟ
+                  </button>
+                </div>
+                
                 {(!states.dashboardData || states.dashboardData.tableData.length === 0) ? (
                   <div className="flex items-center justify-center h-48 text-muted-foreground font-medium text-sm">ไม่มีข้อมูลแสดงผลตามสัญชาติหรือวันที่ระบุ</div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pb-2 justify-start items-start w-full">
                     {states.filterType === "illegal" ? (
                       <>
-                        {derived.natChart.length > 0 && <BarChart data={derived.natChart} title="สัญชาติ (Top 6)" />}
-                        {derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
-                        {derived.victimChart.length > 0 && <BarChart data={derived.victimChart} title="สถานะผู้เสียหาย" />}
-                        {derived.passportChart.length > 0 && <BarChart data={derived.passportChart} title="สถานะหนังสือเดินทาง" />}
-                        {derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
+                        {(!visibleCharts.length || visibleCharts.includes("nationality")) && derived.natChart.length > 0 && <BarChart data={derived.natChart} title="สัญชาติ (Top 6)" />}
+                        {(!visibleCharts.length || visibleCharts.includes("province")) && derived.provinceChart.length > 0 && <BarChart data={derived.provinceChart} title="จังหวัด (Top 6)" />}
+                        {(!visibleCharts.length || visibleCharts.includes("gender")) && derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
+                        {(!visibleCharts.length || visibleCharts.includes("victim")) && derived.victimChart.length > 0 && <BarChart data={derived.victimChart} title="สถานะผู้เสียหาย" />}
+                        {(!visibleCharts.length || visibleCharts.includes("passport")) && derived.passportChart.length > 0 && <BarChart data={derived.passportChart} title="สถานะหนังสือเดินทาง" />}
+                        {(!visibleCharts.length || visibleCharts.includes("creator")) && derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>
                     ) : (
                       <>
-                        {derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
-                        {derived.channelChart.length > 0 && <BarChart data={derived.channelChart} title="ช่องทางการส่งกลับ" />}
-                        {derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
+                        {(!visibleCharts.length || visibleCharts.includes("province")) && derived.provinceChart.length > 0 && <BarChart data={derived.provinceChart} title="จังหวัด (Top 6)" />}
+                        {(!visibleCharts.length || visibleCharts.includes("gender")) && derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
+                        {(!visibleCharts.length || visibleCharts.includes("channel")) && derived.channelChart.length > 0 && <BarChart data={derived.channelChart} title="ช่องทางการส่งกลับ" />}
+                        {(!visibleCharts.length || visibleCharts.includes("creator")) && derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>
                     )}
                   </div>
                 )}
               </div>
+
+              {/* Popup Modal สำหรับ Checkboxes ตั้งค่า */}
+              {showSettings && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-(--container) border border-(--wrapper) rounded-[0.2rem] p-6 w-full max-w-md shadow-2xl relative">
+                    <h4 className="text-lg font-bold text-(--header) mb-4">⚙️ ตั้งค่าความน่าสนใจของกราฟ</h4>
+                    <p className="text-sm opacity-80 text-(--header) mb-4">
+                      เลือกกราฟที่ต้องการให้แสดงผลบนแดชบอร์ดหลัก:
+                    </p>
+                    
+                    <div className="flex flex-col gap-3 mb-6">
+                      {states.filterType === "illegal" ? (
+                        <>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("nationality")} 
+                              onChange={() => toggleChart("nationality")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            สัญชาติ (Top 6)
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("province")} 
+                              onChange={() => toggleChart("province")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            จังหวัด (Top 6)
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("gender")} 
+                              onChange={() => toggleChart("gender")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            เพศ
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("victim")} 
+                              onChange={() => toggleChart("victim")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            สถานะผู้เสียหาย
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("passport")} 
+                              onChange={() => toggleChart("passport")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            สถานะหนังสือเดินทาง
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("creator")} 
+                              onChange={() => toggleChart("creator")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            ผู้เพิ่มข้อมูล
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("province")} 
+                              onChange={() => toggleChart("province")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            จังหวัด (Top 6)
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("gender")} 
+                              onChange={() => toggleChart("gender")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            เพศ
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("channel")} 
+                              onChange={() => toggleChart("channel")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            ช่องทางการส่งกลับ
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("creator")} 
+                              onChange={() => toggleChart("creator")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            ผู้เพิ่มข้อมูล
+                          </label>
+                        </>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => saveVisibleCharts(["nationality", "province", "gender", "victim", "passport", "channel", "creator"])} 
+                        className="px-3.5 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-sm font-bold text-(--header) hover:opacity-80 transition rounded cursor-pointer select-none"
+                      >
+                        แสดงผลทั้งหมด
+                      </button>
+                      <button 
+                        onClick={() => setShowSettings(false)} 
+                        className="px-5 py-1.5 bg-(--blueText) text-(--button) text-sm font-bold hover:opacity-90 transition rounded cursor-pointer select-none"
+                      >
+                        ตกลง
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Table & Pagination */}
               <div className="bg-transparent mb-10">

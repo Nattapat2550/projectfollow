@@ -94,9 +94,13 @@ exports.getDashboardStats = async (req, res) => {
 
     if (province && province !== "ทั้งหมด") {
       const provField = type === "repatriated" ? "t.province" : "t.detected_location_province";
-      conditions.push(`${provField} = $${paramIndex}`);
-      queryParams.push(province);
-      paramIndex++;
+      if (province === "ไม่ระบุ") {
+        conditions.push(`(${provField} IS NULL OR TRIM(${provField}) = '' OR ${provField} = 'ไม่ระบุ')`);
+      } else {
+        conditions.push(`${provField} = $${paramIndex}`);
+        queryParams.push(province);
+        paramIndex++;
+      }
     }
     
     // เงื่อนไข Filter เพศ ที่รองรับ "ไม่ระบุ"
@@ -138,8 +142,12 @@ exports.getDashboardStats = async (req, res) => {
           orderClause = `ORDER BY t.first_name_th ${dir} NULLS LAST, t.last_name_th ${dir} NULLS LAST, t.id DESC`;
       } else if (sortBy === "creator") {
           orderClause = `ORDER BY u.name ${dir} NULLS LAST, t.id DESC`;
+      } else if (sortBy === "detected_location") {
+          orderClause = `ORDER BY t.detected_location_province ${dir} NULLS LAST, t.detected_location_district ${dir} NULLS LAST, t.detected_location_sub_district ${dir} NULLS LAST, t.detected_location_details ${dir} NULLS LAST, t.id DESC`;
+      } else if (sortBy === "address") {
+          orderClause = `ORDER BY t.province ${dir} NULLS LAST, t.district ${dir} NULLS LAST, t.sub_district ${dir} NULLS LAST, t.address_details ${dir} NULLS LAST, t.id DESC`;
       } else {
-          const allowedColumns = ["nationality", "detected_date", "detected_location", "is_victim", "date_of_birth", "national_id", "address", "return_date", "result", "channel"];
+          const allowedColumns = ["nationality", "detected_date", "is_victim", "date_of_birth", "national_id", "return_date", "result", "channel"];
           if (allowedColumns.includes(sortBy)) {
               orderClause = `ORDER BY t.${sortBy} ${dir} NULLS LAST, t.id DESC`;
           }
@@ -240,6 +248,22 @@ exports.getDashboardStats = async (req, res) => {
       color: r.color 
     }));
 
+    // 🌟 ดึงข้อมูลกราฟจังหวัด (Top 6)
+    const provFieldForChart = type === "repatriated" ? "province" : "detected_location_province";
+    const provinceChartQuery = `
+      SELECT 
+        COALESCE(NULLIF(TRIM(t.${provFieldForChart}), ''), 'ไม่ระบุ') as name, 
+        COUNT(*) as value 
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${baseWhere} 
+      GROUP BY 1 
+      ORDER BY value DESC 
+      LIMIT 6
+    `;
+    const provinceChartRes = await pool.query(provinceChartQuery, baseParams);
+    charts.province = provinceChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
+
     let allNatsRes = { rows: [] };
     if (type === "illegal") {
       allNatsRes = await pool.query(`SELECT DISTINCT COALESCE(t.nationality, 'ไม่ระบุ') as nat FROM illegal_immigrants t WHERE t.nationality IS NOT NULL AND t.nationality != '' ORDER BY nat`);
@@ -258,7 +282,7 @@ exports.getDashboardStats = async (req, res) => {
     const allCreatorsRes = await pool.query(`SELECT DISTINCT u.name as creator FROM ${tableName} t JOIN users u ON t.created_by = u.id WHERE u.name IS NOT NULL ORDER BY u.name`);
 
     const provField = type === "repatriated" ? "province" : "detected_location_province";
-    const allProvincesRes = await pool.query(`SELECT DISTINCT COALESCE(t.${provField}, 'ไม่ระบุ') as prov FROM ${tableName} t WHERE t.${provField} IS NOT NULL AND t.${provField} != '' ORDER BY prov`);
+    const allProvincesRes = await pool.query(`SELECT DISTINCT COALESCE(NULLIF(TRIM(t.${provField}), ''), 'ไม่ระบุ') as prov FROM ${tableName} t ORDER BY prov`);
 
     res.status(200).json({
       success: true,

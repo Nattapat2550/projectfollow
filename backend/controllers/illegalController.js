@@ -45,6 +45,54 @@ const splitThaiAddress = (fullAddress) => {
         str = str.replace(subMatch[0], '').trim();
     }
     
+    // Clean/Normalize matched province, district, sub_district
+    if (province) {
+        let p = province.replace(/^(จังหวัด|จ\.|จว\.)/, '').trim();
+        if (["กรุงเทพฯ", "กรุงเทพ", "กทม", "กทม.", "กรุงเทพมหานคร"].includes(p)) {
+            province = "กรุงเทพมหานคร";
+        } else if (p === "โคราช") {
+            province = "นครราชสีมา";
+        } else {
+            const found = thaiAddresses.find(addr => addr.province.includes(p) || p.includes(addr.province));
+            if (found) province = found.province;
+            else province = p;
+        }
+    }
+    
+    if (district) {
+        let d = district.replace(/^(อำเภอ|เขต|อ\.)/, '').trim();
+        if (province && thaiAddresses.length > 0) {
+            const found = thaiAddresses.find(addr => addr.province === province && (addr.amphoe.includes(d) || d.includes(addr.amphoe)));
+            if (found) district = found.amphoe;
+            else district = d;
+        } else if (thaiAddresses.length > 0) {
+            const found = thaiAddresses.find(addr => addr.amphoe.includes(d) || d.includes(addr.amphoe));
+            if (found) district = found.amphoe;
+            else district = d;
+        } else {
+            district = d;
+        }
+    }
+    
+    if (sub_district) {
+        let s = sub_district.replace(/^(ตำบล|แขวง|ต\.)/, '').trim();
+        if (province && district && thaiAddresses.length > 0) {
+            const found = thaiAddresses.find(addr => addr.province === province && addr.amphoe === district && (addr.district.includes(s) || s.includes(addr.district)));
+            if (found) sub_district = found.district;
+            else sub_district = s;
+        } else if (province && thaiAddresses.length > 0) {
+            const found = thaiAddresses.find(addr => addr.province === province && (addr.district.includes(s) || s.includes(addr.district)));
+            if (found) sub_district = found.district;
+            else sub_district = s;
+        } else if (thaiAddresses.length > 0) {
+            const found = thaiAddresses.find(addr => addr.district.includes(s) || s.includes(addr.district));
+            if (found) sub_district = found.district;
+            else sub_district = s;
+        } else {
+            sub_district = s;
+        }
+    }
+
     // Smart autofill using thai_addresses.json
     if (sub_district && (!district || !province) && thaiAddresses.length > 0) {
         // Find all matches for this sub_district
