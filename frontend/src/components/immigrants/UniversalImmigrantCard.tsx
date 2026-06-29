@@ -86,7 +86,7 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
   const isIllegal = type === "illegal";
   const flagUrl = getFlagUrl(data.nationality);
 
-  // ชื่อ ไทย-อังกฤษ
+  // แยกชื่อ ไทย-อังกฤษ
   const fullNameTh = `${data.first_name_th || ""}${data.middle_name_th ? " " + data.middle_name_th : ""} ${data.last_name_th || ""}`.trim();
   const fullNameEn = data.first_name_en
     ? `${data.first_name_en}${data.middle_name_en ? " " + data.middle_name_en : ""} ${data.last_name_en ?? ""}`.trim()
@@ -100,7 +100,6 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
     if (data.date_of_birth) {
       return formatDate(data.date_of_birth);
     }
-    // สำหรับ Repatriated Persons ที่อาจเก็บแยกเป็นวันเดือนปี
     if (data.birth_day && data.birth_month && data.birth_year) {
       const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
       const m = thMonths[data.birth_month - 1] || data.birth_month;
@@ -123,7 +122,7 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
       ].filter(Boolean).join(" ");
       
       if (subParts) parts.push(subParts);
-      return parts.join(" | ") || "ไม่ระบุสถานที่";
+      return parts.join(" | ") || "-";
     } else {
       const parts = [];
       if (data.address_details) parts.push(data.address_details);
@@ -138,23 +137,20 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
       ].filter(Boolean).join(" ");
       
       if (subParts) parts.push(subParts);
-      return parts.join(" ") || "ไม่ระบุที่อยู่";
+      return parts.join(" ") || "-";
     }
   };
 
-  // ตรวจสอบสถานะผู้เสียหาย (เขียว / เหลือง / แดง)
-  let victimStatusStr = "ไม่คัดกรอง";
+  // ตรวจสอบสถานะผู้เสียหาย (ไม่มี Emoji)
+  let victimStatusStr = "ไม่คัดกรองสถานะ";
   let victimColorClass = "text-yellow-700 bg-yellow-100 border-yellow-400";
-  let victimIcon = "❓";
 
   if (data.is_victim === true) {
-    victimStatusStr = "เป็นผู้เสียหาย";
+    victimStatusStr = "เป็นผู้เสียหายจากการค้ามนุษย์";
     victimColorClass = "text-red-700 bg-red-100 border-red-400";
-    victimIcon = "⚠️";
   } else if (data.is_victim === false) {
-    victimStatusStr = "ไม่เป็นผู้เสียหาย";
+    victimStatusStr = "ไม่เป็นผู้เสียหายจากการค้ามนุษย์";
     victimColorClass = "text-green-700 bg-green-100 border-green-400";
-    victimIcon = "✅";
   }
 
   return (
@@ -163,47 +159,50 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
       {/* Header ตรงกลางด้านบน */}
       <div className="absolute top-[3%] left-0 w-full text-center">
         <p className="font-bold text-emerald-950 tracking-wide" style={{ fontSize: "clamp(12px, 2.8vw, 24px)" }}>
-          {isIllegal ? "ผู้ลักลอบเข้าประเทศ (ผู้แอบ)" : "ผู้ถูกส่งตัวกลับ"}
+          {isIllegal ? "ผู้ลักลอบเข้าประเทศ" : "ผู้ถูกส่งตัวกลับ"}
         </p>
       </div>
 
-      <div className="absolute inset-0 top-[12%] flex p-[4%] pt-0 gap-[4%]">
+      <div className="absolute inset-0 top-[11%] flex p-[4%] pt-0 gap-[3%]">
         
-        {/* คอลัมน์ซ้าย (รายละเอียดข้อมูล - เหมือนบัตรประชาชน) */}
-        <div className="flex flex-col flex-1 gap-[3%] min-w-0">
+        {/* คอลัมน์ซ้าย (รายละเอียดข้อมูล) */}
+        <div className="flex flex-col flex-1 gap-[2%] min-w-0">
           
-          {/* แถว 1: ชื่อ-นามสกุล (แยก ไทย - อังกฤษ) */}
-          <div className="flex flex-col gap-[4%]">
-            <ILabel>ชื่อ - นามสกุล / Name</ILabel>
-            <IBox noTruncate>
-              <div className="font-bold truncate text-[1.1em] text-emerald-950">{fullNameTh || "ไม่ระบุชื่อ"}</div>
-              <div className="truncate text-[0.85em] opacity-80 mt-[1%] font-medium">{fullNameEn || "-"}</div>
-            </IBox>
+          {/* แถว 1: ชื่อ-นามสกุล (แยกกล่อง ไทย - อังกฤษ) */}
+          <div className="flex gap-[3%]">
+            <div className="flex flex-col gap-[3%] flex-1">
+              <ILabel>ชื่อ - นามสกุล</ILabel>
+              <IBox>{fullNameTh || "-"}</IBox>
+            </div>
+            <div className="flex flex-col gap-[3%] flex-1">
+              <ILabel>Name</ILabel>
+              <IBox>{fullNameEn || "-"}</IBox>
+            </div>
           </div>
 
-          {/* แถว 2: เลขที่บัตร (อยู่ใต้ชื่อ) */}
-          <div className="flex gap-[4%]">
-            <div className="flex flex-col gap-[6%] flex-1">
+          {/* แถว 2: เลขที่บัตร */}
+          <div className="flex gap-[3%]">
+            <div className="flex flex-col gap-[3%] flex-1">
               <ILabel>เลขประจำตัวประชาชน</ILabel>
               <IBox mono>{formatNationalId(data.national_id) || "-"}</IBox>
             </div>
-            <div className="flex flex-col gap-[6%] flex-1">
-              <ILabel>เลขที่หนังสือเดินทาง</ILabel>
+            <div className="flex flex-col gap-[3%] flex-1">
+              <ILabel>เลขที่หนังสือเดินทาง (Passport ID)</ILabel>
               <IBox mono>{data.passport_id || "-"}</IBox>
             </div>
           </div>
 
           {/* แถว 3: วันเกิด / เพศ-อายุ / สัญชาติ */}
-          <div className="flex gap-[4%]">
-            <div className="flex flex-col gap-[6%] flex-[1.2]">
+          <div className="flex gap-[3%]">
+            <div className="flex flex-col gap-[3%] flex-[1.2]">
               <ILabel>วันเดือนปีเกิด / DOB</ILabel>
               <IBox>{getDobText()}</IBox>
             </div>
-            <div className="flex flex-col gap-[6%] flex-[0.8]">
+            <div className="flex flex-col gap-[3%] flex-[0.8]">
               <ILabel>เพศ/อายุ</ILabel>
               <IBox>{data.gender || "-"}{data.age ? ` (${data.age})` : ""}</IBox>
             </div>
-            <div className="flex flex-col gap-[6%] flex-1">
+            <div className="flex flex-col gap-[3%] flex-1">
               <ILabel>สัญชาติ</ILabel>
               <IBox>
                 <div className="flex items-center gap-1.5">
@@ -214,14 +213,33 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
             </div>
           </div>
 
-          {/* แถว 4: สถานที่ และ ข้อมูลเพิ่มเติม */}
-          <div className="flex flex-col gap-[4%]">
+          {/* แถว 4: สถานที่ */}
+          <div className="flex flex-col gap-[2%]">
             <ILabel>{isIllegal ? "สถานที่ทำงาน / จุดตรวจพบ" : "ที่อยู่ปัจจุบันตามบันทึก"}</ILabel>
             <IBox noTruncate>
               <div className="truncate">{getLocationText()}</div>
-              {!isIllegal && (
-                <div className="truncate text-[0.85em] opacity-80 mt-[0.8%] font-medium">
-                  ช่องทาง: {data.channel || "-"} | สถานะ: {data.result || "-"} | คดี: {data.number_of_case || 0}
+            </IBox>
+          </div>
+
+          {/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
+          <div className="flex flex-col gap-[2%] flex-1 mb-1">
+            <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
+            <IBox noTruncate className="h-full">
+              {isIllegal ? (
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 w-full" style={{ fontSize: "0.85em" }}>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1 w-full" style={{ fontSize: "0.75em" }}>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">รายได้/เดือน:</span> {data.salary || "-"}</div>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">คดี/หมายจับ:</span> {data.number_of_case || "0"} / {data.number_of_warrant || "0"}</div>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">ตัวชี้วัดเหยื่อ:</span> {data.victim_indicator || "-"}</div>
+                  <div className="truncate"><span className="font-semibold text-emerald-950">ช่องทาง/สถานะ:</span> {data.channel || "-"} / {data.result || "-"}</div>
+                  <div className="col-span-2 truncate"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               )}
             </IBox>
@@ -246,9 +264,8 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
             )}
           </div>
 
-          {/* ป้ายสถานะผู้เสียหาย (แดง / เหลือง / เขียว) */}
-          <span className={`w-full text-center ${victimColorClass} font-bold border rounded-full px-2 py-1 mb-[5%] flex items-center justify-center gap-1`} style={{ fontSize: "clamp(8px, 1.2vw, 12px)" }}>
-            <span>{victimIcon}</span>
+          {/* ป้ายสถานะผู้เสียหาย (ไม่มี Emoji) */}
+          <span className={`w-full text-center ${victimColorClass} font-bold border rounded-full px-2 py-1 mb-[5%] flex items-center justify-center`} style={{ fontSize: "clamp(8px, 1.1vw, 12px)" }}>
             <span>{victimStatusStr}</span>
           </span>
 
@@ -268,12 +285,12 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
 // Styled Components ภายใน
 // ----------------------------------------------------------------------
 function ILabel({ children, className = "" }: { children: React.ReactNode; className?: string; }) {
-  return <span className={`font-bold text-emerald-950 ${className}`} style={{ fontSize: "clamp(5px, 1.3vw, 11px)" }}>{children}</span>;
+  return <span className={`font-bold text-emerald-950 ${className}`} style={{ fontSize: "clamp(5px, 1.2vw, 11px)" }}>{children}</span>;
 }
 
 function IBox({ children, mono = false, noTruncate = false, className = "" }: { children: React.ReactNode; mono?: boolean; noTruncate?: boolean; className?: string; }) {
   return (
-    <div className={`bg-[#B8E8D4] rounded-md text-emerald-900 font-medium ${mono ? "font-mono tracking-tight" : ""} ${noTruncate ? "flex flex-col justify-center" : "truncate"} ${className}`} style={{ fontSize: "clamp(6px, 1.5vw, 13px)", padding: "4% 6%", minHeight: "18%" }}>
+    <div className={`bg-[#B8E8D4] rounded-md text-emerald-900 font-medium ${mono ? "font-mono tracking-tight" : ""} ${noTruncate ? "flex flex-col justify-center" : "truncate"} ${className}`} style={{ fontSize: "clamp(6px, 1.3vw, 12px)", padding: "2.5% 4%" }}>
       {children}
     </div>
   );
