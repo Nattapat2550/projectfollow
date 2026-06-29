@@ -156,7 +156,7 @@ exports.createIllegal = async (req, res) => {
         photo_url = driveRes.webViewLink;
       }
       if (req.files.passport_photo) {
-        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_PASSPORT);
         passport_photo_url = driveRes.webViewLink;
       }
     }
@@ -222,7 +222,7 @@ exports.updateIllegal = async (req, res) => {
             try { await deleteFromDrive(oldFileId); } catch (delErr) { console.error(delErr.message); }
           }
         }
-        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_PASSPORT);
         passport_photo_url = driveRes.webViewLink;
       }
     }

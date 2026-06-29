@@ -40,7 +40,7 @@ exports.createRepatriated = async (req, res) => {
         photo_url = driveRes.webViewLink;
       }
       if (req.files.passport_photo) {
-        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_PASSPORT);
         passport_photo_url = driveRes.webViewLink;
       }
     }
@@ -110,7 +110,7 @@ exports.updateRepatriated = async (req, res) => {
           const oldFileId = extractDriveFileId(existingData.passport_photo_url);
           if (oldFileId) { try { await deleteFromDrive(oldFileId); } catch (e) { } }
         }
-        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_ID);
+        const driveRes = await uploadToDrive(req.files.passport_photo[0], process.env.GOOGLE_DRIVE_FOLDER_PASSPORT);
         passport_photo_url = driveRes.webViewLink;
       }
     }
