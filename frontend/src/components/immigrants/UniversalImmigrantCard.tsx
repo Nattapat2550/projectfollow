@@ -224,14 +224,17 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
           {/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
           <div className="flex flex-col gap-[2%] flex-1 mb-1">
             <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-            <IBox noTruncate className="h-full">
+            {/* บังคับชิดบนซ้ายด้วย !justify-start และ text-left */}
+            <IBox noTruncate className="h-full !justify-start text-left pt-[2%]">
               {isIllegal ? (
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1 w-full" style={{ fontSize: "0.85em" }}>
+                // ขยาย font ฝั่ง Illegal เป็น 0.95em
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 w-full" style={{ fontSize: "0.95em" }}>
                   <div className="truncate"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
                   <div className="truncate"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-x-2 gap-y-1 w-full" style={{ fontSize: "0.75em" }}>
+                // ขยาย font ฝั่ง Repatriated เป็น 0.85em
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 w-full" style={{ fontSize: "0.85em" }}>
                   <div className="truncate"><span className="font-semibold text-emerald-950">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
                   <div className="truncate"><span className="font-semibold text-emerald-950">รายได้/เดือน:</span> {data.salary || "-"}</div>
                   <div className="truncate"><span className="font-semibold text-emerald-950">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
