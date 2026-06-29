@@ -224,25 +224,24 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
           {/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
           <div className="flex flex-col gap-[2%] flex-1 mb-1">
             <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-            {/* บังคับชิดบนซ้ายด้วย !justify-start และ text-left */}
-            <IBox noTruncate className="h-full !justify-start text-left pt-[2%]">
+            <IBox noTruncate className="h-full !justify-start text-left pt-[2%] overflow-hidden">
               {isIllegal ? (
-                // ขยาย font ฝั่ง Illegal เป็น 0.95em
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 w-full" style={{ fontSize: "0.95em" }}>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
+                // เปลี่ยนเป็น flex-col จัดเรียงบรรทัดละหัวข้อ และใช้ break-words เพื่อให้ขึ้นบรรทัดใหม่เมื่อข้อความยาว
+                <div className="flex flex-col gap-y-1.5 w-full" style={{ fontSize: "0.95em" }}>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               ) : (
-                // ขยาย font ฝั่ง Repatriated เป็น 0.85em
-                <div className="grid grid-cols-3 gap-x-2 gap-y-1.5 w-full" style={{ fontSize: "0.85em" }}>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">รายได้/เดือน:</span> {data.salary || "-"}</div>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">คดี/หมายจับ:</span> {data.number_of_case || "0"} / {data.number_of_warrant || "0"}</div>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">ตัวชี้วัดเหยื่อ:</span> {data.victim_indicator || "-"}</div>
-                  <div className="truncate"><span className="font-semibold text-emerald-950">ช่องทาง/สถานะ:</span> {data.channel || "-"} / {data.result || "-"}</div>
-                  <div className="col-span-2 truncate"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
+                // เปลี่ยนเป็น flex-col เช่นเดียวกัน
+                <div className="flex flex-col gap-y-1.5 w-full" style={{ fontSize: "0.85em" }}>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">รายได้/เดือน:</span> {data.salary || "-"}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">คดี/หมายจับ:</span> {data.number_of_case || "0"} / {data.number_of_warrant || "0"}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">ตัวชี้วัดเหยื่อ:</span> {data.victim_indicator || "-"}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">ช่องทาง/สถานะ:</span> {data.channel || "-"} / {data.result || "-"}</div>
+                  <div className="break-words"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               )}
             </IBox>
