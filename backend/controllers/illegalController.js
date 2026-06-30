@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const xlsx = require("xlsx");
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
-const { safeParseDate, normalizeNationality, processName, processVictimStatus, findValue, determineGender, parseThaiDateToDate } = require("../utils/immigrantHelpers");
+const { safeParseDate, normalizeNationality, processName, processVictimStatus, findValue, determineGender, parseThaiDateToDate, calculateDOBFromAge } = require("../utils/immigrantHelpers");
 
 let thaiAddresses = [];
 try {
@@ -45,7 +45,6 @@ const splitThaiAddress = (fullAddress) => {
         str = str.replace(subMatch[0], '').trim();
     }
     
-    // Clean/Normalize matched province, district, sub_district
     if (province) {
         let p = province.replace(/^(จังหวัด|จ\.|จว\.)/, '').trim();
         if (["กรุงเทพฯ", "กรุงเทพ", "กทม", "กทม.", "กรุงเทพมหานคร"].includes(p)) {
@@ -93,16 +92,11 @@ const splitThaiAddress = (fullAddress) => {
         }
     }
 
-    // Smart autofill using thai_addresses.json
     if (sub_district && (!district || !province) && thaiAddresses.length > 0) {
-        // Find all matches for this sub_district
         const matches = thaiAddresses.filter(addr => addr.district === sub_district);
-        
         if (matches.length > 0) {
-            // Check if it's unique across the country (i.e., all matches have the same district/province)
             const uniqueDistricts = new Set(matches.map(m => m.amphoe));
             const uniqueProvinces = new Set(matches.map(m => m.province));
-            
             if (uniqueDistricts.size === 1 && uniqueProvinces.size === 1) {
                 if (!district) district = matches[0].amphoe;
                 if (!province) province = matches[0].province;
@@ -167,20 +161,25 @@ exports.createIllegal = async (req, res) => {
     let passport_id = data.passport_id ? String(data.passport_id).trim() : null;
     if (passport_id === "") passport_id = null;
 
-    // ลบ warrant ออก, ใส่ note
+    let dob = safeParseDate(data.date_of_birth);
+    if (!dob && data.age) {
+        dob = calculateDOBFromAge(data.age);
+    }
+
     const query = `
       INSERT INTO illegal_immigrants 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-        passport_id, gender, nationality, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, screening_details, is_victim, detected_date, note, photo_url, passport_photo_url, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+        passport_id, gender, nationality, date_of_birth, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, screening_details, is_victim, detected_date, note, photo_url, passport_photo_url, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
       RETURNING *;
     `;
     const values = [
       id, data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
+      dob,
       data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, data.workplace || null, data.screening_details || null,
-      data.is_victim === "true" || data.is_victim === true || false,
+      data.is_victim || 'PENDING',  // <-- ใช้เป็น PENDING เมื่อไม่มีการส่งค่ามาให้
       safeParseDate(data.detected_date), data.note || null, photo_url, passport_photo_url, created_by
     ];
 
@@ -230,19 +229,25 @@ exports.updateIllegal = async (req, res) => {
     let passport_id = data.passport_id ? String(data.passport_id).trim() : null;
     if (passport_id === "") passport_id = null;
 
+    let dob = safeParseDate(data.date_of_birth);
+    if (!dob && data.age) {
+        dob = calculateDOBFromAge(data.age);
+    }
+
     const query = `
       UPDATE illegal_immigrants SET 
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
-        passport_id=$7, gender=$8, nationality=$9, detected_location_details=$10, detected_location_sub_district=$11, detected_location_district=$12, detected_location_province=$13, workplace=$14, screening_details=$15, 
-        is_victim=$16, detected_date=$17, note=$18, photo_url=$19, passport_photo_url=$20, updated_at=NOW()
-      WHERE id=$21 RETURNING *;
+        passport_id=$7, gender=$8, nationality=$9, date_of_birth=$10, detected_location_details=$11, detected_location_sub_district=$12, detected_location_district=$13, detected_location_province=$14, workplace=$15, screening_details=$16, 
+        is_victim=$17, detected_date=$18, note=$19, photo_url=$20, passport_photo_url=$21, updated_at=NOW()
+      WHERE id=$22 RETURNING *;
     `;
     const values = [
       data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
+      dob,
       data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, data.workplace || null, data.screening_details || null,
-      data.is_victim === "true" || data.is_victim === true || false,
+      data.is_victim || 'PENDING',  // <-- ใช้เป็น PENDING เมื่อไม่มีการส่งค่ามาให้
       safeParseDate(data.detected_date), data.note || null, photo_url, passport_photo_url, id
     ];
 
@@ -325,7 +330,6 @@ exports.uploadExcelIllegal = async (req, res) => {
         let rawPass = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
         let passport = rawPass ? String(rawPass).replace(/\s/g, '').trim() : null;
         
-        // แก้ไข: เปลี่ยน String ว่างให้เป็น null เพื่อป้องกัน Error Duplicate Key
         if (passport === "") passport = null;
         if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null"].includes(passport.toLowerCase())) passport = null;
 
@@ -333,6 +337,16 @@ exports.uploadExcelIllegal = async (req, res) => {
 
         const locationRaw = findValue(row, "สถานที่ตรวจพบ");
         const parsedLocation = splitThaiAddress(locationRaw ? String(locationRaw) : "");
+
+        let dob = null;
+        let rawDOB = findValue(row, "วันเกิด") || findValue(row, "Date of Birth");
+        if (rawDOB) {
+            dob = safeParseDate(rawDOB);
+        }
+        if (!dob) {
+            let rawAge = findValue(row, "อายุ") || findValue(row, "Age");
+            if (rawAge) dob = calculateDOBFromAge(rawAge);
+        }
 
         preview_data.push({
           ลำดับที่อ่านได้: i + 1,
@@ -344,6 +358,7 @@ exports.uploadExcelIllegal = async (req, res) => {
           last_name_en: (hasName && !isThai && lname && lname.trim() !== "") ? lname.trim() : null,
           nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
           passport_id: passport,
+          date_of_birth: dob ? dob.toISOString().split('T')[0] : null,
           detected_location_details: parsedLocation.details,
           detected_location_sub_district: parsedLocation.sub_district,
           detected_location_district: parsedLocation.district,
@@ -351,7 +366,7 @@ exports.uploadExcelIllegal = async (req, res) => {
           workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")).trim() : null,
           gender: determineGender(row, prefix),
           detected_date: dateObj ? dateObj.toISOString().split('T')[0] : null,
-          is_victim: typeof isVictim === 'boolean' ? isVictim : false,
+          is_victim: isVictim || 'PENDING',
           screening_details: details,
           raw_data_from_excel: row
         });
@@ -371,8 +386,8 @@ exports.uploadExcelIllegal = async (req, res) => {
     const insertQuery = `
       INSERT INTO illegal_immigrants 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       nationality, passport_id, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, gender, detected_date, is_victim, screening_details, note, created_by) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20);
+       nationality, passport_id, date_of_birth, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, gender, detected_date, is_victim, screening_details, note, created_by) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21);
     `;
 
     for (let i = 0; i < allJsonData.length; i++) {
@@ -384,7 +399,6 @@ exports.uploadExcelIllegal = async (req, res) => {
       let rawPass = findValue(row, "เลขหนังสือเดินทาง") || findValue(row, "Passport");
       let passport_id = rawPass ? String(rawPass).replace(/\s/g, '').trim() : null;
       
-      // แก้ไข: เปลี่ยน String ว่างให้เป็น null ป้องกัน Duplicate Key Constraint
       if (passport_id === "") passport_id = null;
       if (passport_id && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null"].includes(passport_id.toLowerCase())) {
           passport_id = null;
@@ -403,12 +417,22 @@ exports.uploadExcelIllegal = async (req, res) => {
       const workplace = findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")).trim() : null;
       const gender = determineGender(row, prefix) || null;
       const detected_date = parseThaiDateToDate(row._sheetName) || null;
-      const is_victim_bool = typeof isVictim === 'boolean' ? isVictim : false;
+      const is_victim_status = isVictim || 'PENDING';
+
+      let dob = null;
+      let rawDOB = findValue(row, "วันเกิด") || findValue(row, "Date of Birth");
+      if (rawDOB) {
+          dob = safeParseDate(rawDOB);
+      }
+      if (!dob) {
+          let rawAge = findValue(row, "อายุ") || findValue(row, "Age");
+          if (rawAge) dob = calculateDOBFromAge(rawAge);
+      }
 
       try {
          const insertValues = [
              uuidv4(), first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
-             nationality, passport_id, parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province, workplace, gender, detected_date, is_victim_bool, details || null, null, created_by
+             nationality, passport_id, dob, parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province, workplace, gender, detected_date, is_victim_status, details || null, null, created_by
          ];
          
          await pool.query(insertQuery, insertValues);

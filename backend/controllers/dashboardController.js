@@ -115,11 +115,21 @@ exports.getDashboardStats = async (req, res) => {
     }
 
     if (type === "illegal") {
-      if (isVictim === "true" || isVictim === "false") {
+      // 🟢 ปรับแก้การรับค่า is_victim ให้รองรับรูปแบบเดิมที่ Frontend อาจจะส่งมาเป็น "true"/"false" หรือส่งมาเป็น ENUM โดยตรง
+      if (isVictim === "true" || isVictim === "YES") {
         conditions.push(`t.is_victim = $${paramIndex}`);
-        queryParams.push(isVictim === "true");
+        queryParams.push('YES');
+        paramIndex++;
+      } else if (isVictim === "false" || isVictim === "NO") {
+        conditions.push(`t.is_victim = $${paramIndex}`);
+        queryParams.push('NO');
+        paramIndex++;
+      } else if (isVictim === "PENDING") {
+        conditions.push(`t.is_victim = $${paramIndex}`);
+        queryParams.push('PENDING');
         paramIndex++;
       }
+
       if (hasPassport === "true") {
         conditions.push(`t.passport_id IS NOT NULL AND t.passport_id ~ '\\S' AND LOWER(TRIM(t.passport_id)) NOT IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง')`);
       } else if (hasPassport === "false") {
@@ -197,7 +207,8 @@ exports.getDashboardStats = async (req, res) => {
     charts.gender = genderChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
 
     if (type === "illegal") {
-      const victimCountQuery = `SELECT COUNT(*) FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.is_victim = true`;
+      // 🟢 ปรับแก้การนับและจัดกลุ่ม is_victim ให้รองรับ ENUM ('YES', 'NO', 'PENDING')
+      const victimCountQuery = `SELECT COUNT(*) FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.is_victim = 'YES'`;
       const victimRes = await pool.query(victimCountQuery, baseParams);
       
       const passportValidCond = `t.passport_id IS NOT NULL AND t.passport_id ~ '\\S' AND LOWER(TRIM(t.passport_id)) NOT IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง')`;
@@ -207,7 +218,21 @@ exports.getDashboardStats = async (req, res) => {
       const natChartQuery = `SELECT COALESCE(t.nationality, 'ไม่ระบุ') as name, COUNT(*) as value FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC LIMIT 6`;
       const natChartRes = await pool.query(natChartQuery, baseParams);
 
-      const victimChartQuery = `SELECT CASE WHEN t.is_victim = true THEN 'เป็นผู้เสียหาย' ELSE 'ไม่เป็นผู้เสียหาย' END as name, COUNT(*) as value FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
+      // 🟢 ปรับแก้การแสดงผลชื่อบนกราฟ ให้รองรับสถานะ PENDING 
+      const victimChartQuery = `
+        SELECT 
+          CASE 
+            WHEN t.is_victim = 'YES' THEN 'เป็นผู้เสียหาย' 
+            WHEN t.is_victim = 'NO' THEN 'ไม่เป็นผู้เสียหาย'
+            ELSE 'รอดำเนินการคัดกรอง' 
+          END as name, 
+          COUNT(*) as value 
+        FROM illegal_immigrants t 
+        LEFT JOIN users u ON t.created_by = u.id 
+        ${baseWhere} 
+        GROUP BY 1 
+        ORDER BY value DESC
+      `;
       const victimChartRes = await pool.query(victimChartQuery, baseParams);
 
       const passportChartQuery = `SELECT CASE WHEN ${passportValidCond} THEN 'มีหนังสือเดินทาง' ELSE 'ไม่มีข้อมูล / ไม่มี' END as name, COUNT(*) as value FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;

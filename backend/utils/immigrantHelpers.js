@@ -42,6 +42,14 @@ const parseThaiDateToDate = (text) => {
   return new Date(`${year}-${thaiMonths[match[1]]}-01T00:00:00Z`);
 };
 
+const calculateDOBFromAge = (age) => {
+  const parsedAge = parseInt(age, 10);
+  if (isNaN(parsedAge) || parsedAge <= 0) return null;
+  const currentYear = new Date().getFullYear();
+  const birthYear = currentYear - parsedAge;
+  return new Date(`${birthYear}-01-01T00:00:00Z`);
+};
+
 const findValue = (rowObj, keyword) => {
   const cleanStr = (str) => str.replace(/[\s\-\–\—\_]+/g, '');
   const cleanKeyword = cleanStr(keyword);
@@ -71,10 +79,13 @@ const processVictimStatus = (row) => {
   const screeningStr = rawScreening != null ? String(rawScreening).trim() : "";
   const isNotEmpty = screeningStr !== "" && !["-", "–", "—"].includes(screeningStr);
 
-  if (isNotEmpty) return { isVictim: true, details: screeningStr };
+  if (isNotEmpty) return { isVictim: "YES", details: screeningStr };
 
   const emptyKey = Object.keys(row).find(k => k.startsWith("__EMPTY") && row[k] != null && String(row[k]).trim() !== "" && !["-", "–", "—"].includes(String(row[k]).trim()));
-  return { isVictim: false, details: emptyKey ? String(row[emptyKey]).trim() : "ไม่เป็นผู้เสียหาย (ไม่มีข้อความอธิบายในไฟล์)" };
+  
+  if (emptyKey) return { isVictim: "NO", details: String(row[emptyKey]).trim() };
+  
+  return { isVictim: "PENDING", details: "ไม่มีข้อมูลผลการคัดกรอง" };
 };
 
 const determineGender = (row, prefix) => {
@@ -131,7 +142,7 @@ const normalizeNationality = (rawNat) => {
       "ซีเรีย": "ซีเรีย", "syria": "ซีเรีย",
       "จอร์แดน": "จอร์แดน", "jordan": "จอร์แดน",
       "เลบานอน": "เลบานอน", "lebanon": "เลบานอน",
-      "โอมาน": "โอมาน", "oman": "โอมาน",
+      "โอมาน": "โอมาน", "โอมาน": "โอมาน",
       "สหราชอาณาจักร": "สหราชอาณาจักร", "อังกฤษ": "สหราชอาณาจักร", "uk": "สหราชอาณาจักร", "england": "สหราชอาณาจักร", "britain": "สหราชอาจักร", "united kingdom": "สหราชอาณาจักร", "british": "สหราชอาณาจักร",
       "รัสเซีย": "รัสเซีย", "russia": "รัสเซีย", "russian": "รัสเซีย",
       "ฝรั่งเศส": "ฝรั่งเศส", "france": "ฝรั่งเศส", "french": "ฝรั่งเศส",
@@ -188,6 +199,7 @@ module.exports = {
   convertBEtoAD,
   safeParseDate,
   parseThaiDateToDate,
+  calculateDOBFromAge,  
   findValue,
   processName,
   processVictimStatus,

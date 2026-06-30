@@ -1,7 +1,10 @@
--- สร้าง Enum สำหรับ result ก่อน (เปลี่ยนจาก repatriated_result_enum)
+-- สร้าง Enum สำหรับ result
 CREATE TYPE repatriate_result_enum AS ENUM ('SUCCESS', 'FAILED', 'PENDING');
 
--- สร้างตาราง users ก่อน เพื่อให้ตารางอื่นอ้างอิง Foreign Key (created_by) ได้
+-- สร้าง Enum สำหรับสถานะผู้เสียหาย (is_victim)
+CREATE TYPE victim_status_enum AS ENUM ('YES', 'NO', 'PENDING');
+
+-- สร้างตาราง users ก่อน
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(50) NOT NULL,
@@ -14,7 +17,7 @@ CREATE TABLE users (
 CREATE TABLE illegal_immigrants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
-    -- ข้อมูลพื้นฐานบุคคล (ซิงค์ให้เหมือนกับ Repatriated)
+    -- ข้อมูลพื้นฐานบุคคล 
     first_name_th VARCHAR(255) NOT NULL,
     middle_name_th VARCHAR(255),
     last_name_th VARCHAR(255) NOT NULL,
@@ -23,7 +26,6 @@ CREATE TABLE illegal_immigrants (
     last_name_en VARCHAR(255),
     gender VARCHAR(50),
     date_of_birth DATE,
-    age INT,
     national_id VARCHAR(50) ,
     passport_id VARCHAR(255) ,
     nationality VARCHAR(255),
@@ -35,7 +37,7 @@ CREATE TABLE illegal_immigrants (
     detected_location_sub_district VARCHAR(255),
     detected_location_district VARCHAR(255),
     detected_location_province VARCHAR(255),
-    is_victim BOOLEAN,
+    is_victim victim_status_enum NOT NULL DEFAULT 'PENDING',  -- เปลี่ยนเป็น ENUM แล้ว
     detected_date DATE,
     workplace VARCHAR(255),
     screening_details TEXT,
@@ -47,11 +49,11 @@ CREATE TABLE illegal_immigrants (
     created_by UUID REFERENCES users(id) ON DELETE SET NULL
 );
 
--- ตาราง ส่งกลับ (Repatriated Persons) เปลี่ยนจาก Repatriated Persons
+-- ตาราง ส่งกลับ (Repatriated Persons)
 CREATE TABLE repatriated_persons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
-    -- ข้อมูลพื้นฐานบุคคล (ซิงค์ให้เหมือนกับ Illegal)
+    -- ข้อมูลพื้นฐานบุคคล 
     first_name_th VARCHAR(255) NOT NULL,
     middle_name_th VARCHAR(255),
     last_name_th VARCHAR(255) NOT NULL,
@@ -60,10 +62,9 @@ CREATE TABLE repatriated_persons (
     last_name_en VARCHAR(255),
     gender VARCHAR(50),
     date_of_birth DATE,
-    age INT,
-    national_id VARCHAR(50) NOT NULL,  -- คงค่า NOT NULL ไว้เผื่อใช้เป็นหลัก
+    national_id VARCHAR(50) NOT NULL,
     passport_id VARCHAR(255) ,
-    nationality VARCHAR(255),                 -- เพิ่มเข้ามาใหม่
+    nationality VARCHAR(255),                 
     photo_url TEXT,
     passport_photo_url TEXT,
     
