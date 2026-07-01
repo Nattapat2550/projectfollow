@@ -260,15 +260,16 @@ export default function TestUpload2Page() {
 
                         <div className="grid grid-cols-2 gap-4 mb-3 pb-3 border-b border-(--wrapper)">
                           <div>
-                            <span className="text-[10px] font-semibold text-(--header) opacity-50 uppercase block mb-1">ข้อมูลส่วนบุคคล (อายุ/วันเกิด/เพศ)</span>
-                            <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: age]</span> <span className="font-medium">{row.age || renderNull()}</span></div>
+                            <span className="text-[10px] font-semibold text-(--header) opacity-50 uppercase block mb-1">ข้อมูลส่วนบุคคล (วันเกิด/เพศ/สัญชาติ)</span>
                             <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: dob]</span> <span className="font-medium">{row.dob || renderNull()}</span></div>
                             <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: gender]</span> <span className="font-medium text-(--blueText)">{row.gender || renderNull()}</span></div>
+                            <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: nationality]</span> <span className="font-medium text-(--blueText)">{row.nationality || renderNull()}</span></div>
                           </div>
                           <div>
                             <span className="text-[10px] font-semibold text-(--header) opacity-50 uppercase block mb-1">เอกสาร / รูปภาพ</span>
                             <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: national_id]</span> <span className="font-mono">{row.id_card || renderNull()}</span></div>
                             <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: passport_id]</span> <span className="font-mono">{row.passport || renderNull()}</span></div>
+                            <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: result]</span> <span className="font-medium text-(--orangeText)">{row.result || renderNull()}</span></div>
                             <div className="text-sm mt-1">
                               <span className="text-(--header) opacity-50 block mb-2">[DB: photo_url]</span> 
                               {row.photo_url && (row.photo_url.startsWith('data:image') || row.photo_url.startsWith('http')) ? (
@@ -297,12 +298,42 @@ export default function TestUpload2Page() {
                             </div>
                           </div>
                           <div className="bg-(--container) p-2 rounded-md border border-(--wrapper)">
-                            <span className="text-(--blueText) text-xs font-semibold block">ข้อมูลการคดี / หมายจับ:</span>
+                            <span className="text-(--blueText) text-xs font-semibold block">ข้อมูลการคดี / หมายจับ / สถานะ:</span>
                             <div className="text-sm mt-1 text-(--header)">
                                 <span className="opacity-60 text-xs mr-2">[DB: case_id_count] จำนวนคดี:</span> <span className="font-semibold">{row.case_id_count || 0}</span><br/>
-                                <span className="opacity-60 text-xs mr-2">[DB: warrant] หมายจับ:</span> <span className="font-semibold">{row.warrant || 0}</span>
+                                <span className="opacity-60 text-xs mr-2">[DB: warrant] หมายจับ:</span> <span className="font-semibold">{row.warrant || 0}</span><br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: victim_indicator] ข้อบ่งชี้:</span> {row.victim_indicator || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: responsible_agency] หน่วยงาน:</span> {row.responsible_agency || renderNull()}
                             </div>
                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-3 pb-3 border-b border-(--wrapper)">
+                          <div className="bg-(--container) p-2 rounded-md border border-(--wrapper)">
+                            <span className="text-(--blueText) text-xs font-semibold block">ข้อมูลสถานที่ทำงาน:</span>
+                            <div className="text-sm mt-1 text-(--header)">
+                                <span className="opacity-60 text-xs mr-2">[DB: building] ตึก:</span> {row.building || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: floor] ชั้น:</span> {row.floor || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: room] ห้อง:</span> {row.room || renderNull()}
+                            </div>
+                          </div>
+                          <div className="bg-(--container) p-2 rounded-md border border-(--wrapper)">
+                            <span className="text-(--blueText) text-xs font-semibold block">ข้อมูลหน้าที่และรายได้:</span>
+                            <div className="text-sm mt-1 text-(--header)">
+                                <span className="opacity-60 text-xs mr-2">[DB: job_type] ประเภทงาน:</span> {row.job_type || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: role] ทำหน้าที่:</span> {row.role || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: salary] เงินเดือน:</span> {row.salary || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: paid_by] รับเงินจาก:</span> {row.paid_by || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: payment_method] ช่องทาง:</span> {row.payment_method || renderNull()}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-(--container) p-2 rounded-md border border-(--wrapper) mb-3">
+                           <span className="text-(--blueText) text-xs font-semibold block">ข้อมูลเพิ่มเติม:</span>
+                           <div className="text-sm mt-1 text-(--header)">
+                               <span className="opacity-60 text-xs mr-2">[DB: note] หมายเหตุ:</span> {row.note || renderNull()}
+                           </div>
                         </div>
                       </td>
                       <td className="p-4 align-top bg-(--button)">

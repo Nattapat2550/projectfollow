@@ -8,7 +8,7 @@ const path = require('path');
 
 let thaiAddresses = [];
 try {
-    const addressPath = path.join(__dirname, '../../frontend/public/thai_addresses.json');
+    const addressPath = path.join(__dirname, '../data/thai_addresses.json');
     thaiAddresses = JSON.parse(fs.readFileSync(addressPath, 'utf-8'));
 } catch (err) {
     console.error("Could not load thai_addresses.json for address parsing", err);
@@ -262,9 +262,9 @@ exports.uploadExcel = async (req, res) => {
                     last_name_th: thName.last || "ไม่ระบุ",
                     first_name_en: enName.first || null,
                     last_name_en: enName.last || null,
-                    age: parseInt(row["อายุ(ปี)"]) || null,
                     dob: dobDate ? dobDate.toISOString().split('T')[0] : "ไม่ระบุ",
                     gender: autoGender,
+                    nationality: "ไทย",
                     id_card: id_card,
                     passport: row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).trim() : null,
                     photo_url: photo_url_preview,
@@ -272,8 +272,20 @@ exports.uploadExcel = async (req, res) => {
                     sub_district: parsedLocation.sub_district,
                     district: parsedLocation.district,
                     province: parsedLocation.province,
+                    building: row["ตึก ที่ทำงาน"] ? String(row["ตึก ที่ทำงาน"]) : null,
+                    floor: row["ชั้น ที่ทำงาน"] ? String(row["ชั้น ที่ทำงาน"]) : null,
+                    room: row["ห้อง ที่ทำงาน"] ? String(row["ห้อง ที่ทำงาน"]) : null,
+                    job_type: row["ประเภทงาน"] ? String(row["ประเภทงาน"]) : null,
+                    role: row["ทำหน้าที่"] ? String(row["ทำหน้าที่"]) : null,
+                    salary: row["เงินเดือนที่ได้รับ(บาท)"] ? String(row["เงินเดือนที่ได้รับ(บาท)"]) : null,
+                    paid_by: row["รับเงินเดือนจากใคร"] ? String(row["รับเงินเดือนจากใคร"]) : null,
+                    payment_method: row["ช่องทางการรับเงินเดือน"] ? String(row["ช่องทางการรับเงินเดือน"]) : null,
                     case_id_count: parseInt(row["จำนวน Case ID"]) || 0,
                     warrant: parseInt(row["หมายจับ"]) || 0,
+                    victim_indicator: row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
+                    responsible_agency: row["หน่วยงานที่รับผิดชอบ"] ? String(row["หน่วยงานที่รับผิดชอบ"]) : null,
+                    note: row["หมายเหตุ"] ? String(row["หมายเหตุ"]) : null,
+                    result: "PENDING",
                     raw_data_from_excel: row
                 });
             }
@@ -346,7 +358,7 @@ exports.uploadExcel = async (req, res) => {
                 const values = [
                     thName.first || "ไม่ระบุ", thName.middle || null, thName.last || "ไม่ระบุ",
                     enName.first || null, enName.middle || null, enName.last || null,
-                    dobDate, autoGender, isNaN(parsedAge) ? null : parsedAge, id_card, passport,
+                    dobDate, autoGender, id_card, passport,
                     parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province,
                     row["ตึก ที่ทำงาน"] ? String(row["ตึก ที่ทำงาน"]) : null,
                     row["ชั้น ที่ทำงาน"] ? String(row["ชั้น ที่ทำงาน"]) : null,
@@ -360,32 +372,34 @@ exports.uploadExcel = async (req, res) => {
                     isNaN(warrantCount) ? 0 : warrantCount,
                     row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
                     row["หน่วยงานที่รับผิดชอบ"] ? String(row["หน่วยงานที่รับผิดชอบ"]) : null,
-                    row["หมายเหตุ"] ? String(row["หมายเหตุ"]) : null
+                    row["หมายเหตุ"] ? String(row["หมายเหตุ"]) : null,
+                    "ไทย",
+                    "PENDING"
                 ];
 
                 if (existingId) {
                     let updateQ = `UPDATE repatriated_persons SET 
                         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
-                        date_of_birth=$7, gender=$8, age=$9, national_id=$10, passport_id=$11, address_details=$12, sub_district=$13, district=$14, province=$15,
-                        building=$16, floor=$17, room=$18, job_type=$19, role=$20, salary=$21, paid_by=$22, payment_method=$23,
-                        number_of_case=$24, number_of_warrant=$25, victim_indicator=$26, responsible_agency=$27, note=$28, updated_at=NOW()`;
+                        date_of_birth=$7, gender=$8, national_id=$9, passport_id=$10, address_details=$11, sub_district=$12, district=$13, province=$14,
+                        building=$15, floor=$16, room=$17, job_type=$18, role=$19, salary=$20, paid_by=$21, payment_method=$22,
+                        number_of_case=$23, number_of_warrant=$24, victim_indicator=$25, responsible_agency=$26, note=$27, nationality=$28, result=$29, updated_at=NOW()`;
                     
                     const updateVals = [...values];
                     if (drivePhotoUrl) {
-                        updateQ += `, photo_url=$29 WHERE id=$30`;
+                        updateQ += `, photo_url=$30 WHERE id=$31`;
                         updateVals.push(drivePhotoUrl, existingId);
                     } else {
-                        updateQ += ` WHERE id=$29`;
+                        updateQ += ` WHERE id=$30`;
                         updateVals.push(existingId);
                     }
                     await pool.query(updateQ, updateVals);
                 } else {
                     const insertQ = `INSERT INTO repatriated_persons (
                         id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
-                        date_of_birth, gender, age, national_id, passport_id, address_details, sub_district, district, province,
+                        date_of_birth, gender, national_id, passport_id, address_details, sub_district, district, province,
                         building, floor, room, job_type, role, salary, paid_by, payment_method,
-                        number_of_case, number_of_warrant, victim_indicator, responsible_agency, note, photo_url, created_by
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)`;
+                        number_of_case, number_of_warrant, victim_indicator, responsible_agency, note, nationality, result, photo_url, created_by
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)`;
                     await pool.query(insertQ, [uuidv4(), ...values, drivePhotoUrl || null, created_by]);
                 }
 
@@ -395,8 +409,6 @@ exports.uploadExcel = async (req, res) => {
             }
 
             if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].current = i + 1;
-            
-            await delay(200); 
         }
 
         if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';

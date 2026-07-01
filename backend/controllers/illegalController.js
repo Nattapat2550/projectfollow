@@ -8,7 +8,7 @@ const { safeParseDate, normalizeNationality, processName, processVictimStatus, f
 
 let thaiAddresses = [];
 try {
-    const addressPath = path.join(__dirname, '../../frontend/public/thai_addresses.json');
+    const addressPath = path.join(__dirname, '../data/thai_addresses.json');
     thaiAddresses = JSON.parse(fs.readFileSync(addressPath, 'utf-8'));
 } catch (err) {
     console.error("Could not load thai_addresses.json for address parsing", err);
