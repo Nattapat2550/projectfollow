@@ -11,6 +11,7 @@ const testUpload2Routes = require("./routes/testUpload2");
 const authRoutes = require("./routes/auth"); // นำเข้า Auth Route
 
 const app = express();
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(helmet());
 // Middleware

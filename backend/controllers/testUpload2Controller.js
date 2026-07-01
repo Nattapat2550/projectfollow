@@ -500,8 +500,7 @@ exports.uploadExcel = async (req, res) => {
                 });
             } else {
                 insertRows.push({
-                    id: uuidv4(),
-                    values: [...values, pRow.drivePhotoUrl || null, created_by],
+                    values: [uuidv4(), ...values, pRow.drivePhotoUrl || null, created_by],
                     index: pRow.index
                 });
             }
