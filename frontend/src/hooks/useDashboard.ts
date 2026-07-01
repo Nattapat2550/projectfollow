@@ -178,11 +178,8 @@ export function useDashboard() {
   
   // กราฟเพศใหม่
   const genderChart = formatStandardChartData(dashboardData?.charts?.gender, dashboardData?.stats?.total, 2);
+  const victimChart = formatStandardChartData(dashboardData?.charts?.victim, dashboardData?.stats?.total, 3);
 
-  const victimChart = (dashboardData?.charts?.victim || []).map(d => ({ 
-    ...d, 
-    color: d.name === "เป็นผู้เสียหาย" ? "var(--chart-1)" : "var(--chart-3)" 
-  }));
   const passportChart = (dashboardData?.charts?.passport || []).map(d => ({ 
     ...d, 
     color: d.name === "มีหนังสือเดินทาง" ? "var(--chart-2)" : "var(--chart-4)" 
