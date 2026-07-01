@@ -391,13 +391,7 @@ exports.uploadExcelIllegal = async (req, res) => {
 
     let processedCount = 0;
     let errors = [];
-
-    const insertQuery = `
-      INSERT INTO illegal_immigrants 
-      (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       nationality, passport_id, date_of_birth, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, gender, detected_date, is_victim, screening_details, note, created_by) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21);
-    `;
+    const insertRows = [];
 
     for (let i = 0; i < allJsonData.length; i++) {
       const row = allJsonData[i];
@@ -438,32 +432,67 @@ exports.uploadExcelIllegal = async (req, res) => {
           if (rawAge) dob = calculateDOBFromAge(rawAge);
       }
 
+      const insertValues = [
+          uuidv4(), first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
+          nationality, passport_id, dob, parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province, workplace, gender, detected_date, is_victim_status, details || null, null, created_by
+      ];
+
+      insertRows.push({
+          values: insertValues,
+          index: i
+      });
+    }
+
+    const fields = [
+      'id', 'first_name_th', 'middle_name_th', 'last_name_th', 'first_name_en', 'middle_name_en', 'last_name_en', 
+      'nationality', 'passport_id', 'date_of_birth', 'detected_location_details', 'detected_location_sub_district', 'detected_location_district', 'detected_location_province', 'workplace', 'gender', 'detected_date', 'is_victim', 'screening_details', 'note', 'created_by'
+    ];
+
+    const chunkSize = Math.floor(60000 / fields.length);
+    for (let c = 0; c < insertRows.length; c += chunkSize) {
+      const chunk = insertRows.slice(c, c + chunkSize);
+      const values = [];
+      const valueStrings = [];
+
+      for (let i = 0; i < chunk.length; i++) {
+          const rowValues = chunk[i].values;
+          const placeholders = fields.map((_, fIdx) => `$${values.length + fIdx + 1}`).join(', ');
+          valueStrings.push(`(${placeholders})`);
+          values.push(...rowValues);
+      }
+
       try {
-         const insertValues = [
-             uuidv4(), first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
-             nationality, passport_id, dob, parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province, workplace, gender, detected_date, is_victim_status, details || null, null, created_by
-         ];
-         
-         await pool.query(insertQuery, insertValues);
-         processedCount++;
-         
-         if (jobId && global.uploadProgress[jobId]) {
-             global.uploadProgress[jobId].successCount = processedCount;
-         }
+          const insertQ = `INSERT INTO illegal_immigrants (${fields.join(', ')}) VALUES ${valueStrings.join(', ')}`;
+          await pool.query(insertQ, values);
+          processedCount += chunk.length;
       } catch (dbErr) {
-         console.error(`\n❌ [DB Error] แถวที่ ${i+1}: ${dbErr.message}`);
-         errors.push(`แถว ${i+1}: ${dbErr.message}`);
-         if (jobId && global.uploadProgress[jobId]) {
-             global.uploadProgress[jobId].failedCount = (global.uploadProgress[jobId].failedCount || 0) + 1;
-         }
+          console.error("Batch insert failed, falling back to sequential:", dbErr.message);
+          for (const item of chunk) {
+              try {
+                  const singleInsertQ = `INSERT INTO illegal_immigrants (${fields.join(', ')}) VALUES (${fields.map((_, fIdx) => `$${fIdx + 1}`).join(', ')})`;
+                  await pool.query(singleInsertQ, item.values);
+                  processedCount++;
+              } catch (singleErr) {
+                  errors.push(`แถวที่ ${item.index + 1}: ${singleErr.message}`);
+              }
+          }
       }
 
       if (jobId && global.uploadProgress[jobId]) {
-         global.uploadProgress[jobId].current = i + 1;
+          global.uploadProgress[jobId].current = processedCount;
+          global.uploadProgress[jobId].successCount = processedCount;
+          global.uploadProgress[jobId].failedCount = errors.length;
       }
     }
 
-    if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
+     if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
+
+    if (processedCount === 0 && allJsonData.length > 0) {
+        return res.status(400).json({
+            success: false,
+            message: `ไม่สามารถบันทึกข้อมูลลงฐานข้อมูลได้: ${errors[0] || 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล'}`
+        });
+    }
 
     if (processedCount > 0) {
         cache.clear();

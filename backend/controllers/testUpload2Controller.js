@@ -563,6 +563,13 @@ exports.uploadExcel = async (req, res) => {
 
         if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
 
+        if (successCount === 0 && rawData.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `ไม่สามารถบันทึกข้อมูลลงฐานข้อมูลได้: ${errors[0] || 'เกิดข้อผิดพลาดในการตรวจสอบข้อมูล'}`
+            });
+        }
+
         res.status(200).json({
             success: true,
             message: `อัปโหลดและบันทึกข้อมูลสำเร็จ ${successCount} จาก ${rawData.length} รายการ`,
