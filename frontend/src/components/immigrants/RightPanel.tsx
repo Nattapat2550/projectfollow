@@ -174,8 +174,8 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
             <h3 className="text-xl font-bold text-(--header) mb-2">ข้อมูลคัดกรอง</h3>
             
             <div className={`w-full text-center py-2 px-4 rounded-lg font-bold text-sm border shadow-sm ${
-              (data.is_victim === true || data.is_victim === "YES" || data.is_victim === "true") ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 
-              (data.is_victim === false || data.is_victim === "NO" || data.is_victim === "false") ? 'bg-red-100 text-red-700 border-red-300' : 
+              (data.is_victim === true || data.is_victim === "YES" || data.is_victim === "true") ? 'bg-red-100 text-red-700 border-red-300' : 
+              (data.is_victim === false || data.is_victim === "NO" || data.is_victim === "false") ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 
               'bg-(--yellowBG) text-(--yellowText) border-(--yellowBorder)'
             }`}>
               {(data.is_victim === true || data.is_victim === "YES" || data.is_victim === "true") ? "เข้าข่ายเป็นผู้เสียหายจากการค้ามนุษย์" : 

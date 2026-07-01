@@ -311,11 +311,11 @@ export default function TestUploadPage() {
                           <div className="mb-2">
                             <span className="text- (--header)] opacity-60 text-xs mr-2">[DB: is_victim] Status:</span>
                             {row.is_victim === "YES" ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-(--greenBG) text-(--greenText) border border-(--greenBorder)">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-300">
                                 YES (เป็นผู้เสียหาย)
                               </span>
                             ) : row.is_victim === "NO" ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-300">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
                                 NO (ไม่เป็นผู้เสียหาย)
                               </span>
                             ) : (

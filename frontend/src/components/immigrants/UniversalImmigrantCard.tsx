@@ -147,10 +147,10 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
 
   if (data.is_victim === "YES" || data.is_victim === true || data.is_victim === "true") {
     victimStatusStr = "เป็นผู้เสียหาย";
-    victimColorClass = "text-green-700 bg-green-100 border-green-400";
+    victimColorClass = "text-red-700 bg-red-100 border-red-400";
   } else if (data.is_victim === "NO" || data.is_victim === false || data.is_victim === "false") {
     victimStatusStr = "ไม่เป็นผู้เสียหาย";
-    victimColorClass = "text-red-700 bg-red-100 border-red-400";
+    victimColorClass = "text-green-700 bg-green-100 border-green-400";
   }
 
   return (
