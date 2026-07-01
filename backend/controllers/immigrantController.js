@@ -2,12 +2,19 @@
 
 const pool = require("../config/db");
 const dashboardService = require("../services/dashboardService"); 
+const cache = require("../utils/cache");
 
 exports.getAllData = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 100;
     const offset = (page - 1) * limit;
+
+    const cacheKey = `getAllData_page_${page}_limit_${limit}`;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
 
     // ทำการ LEFT JOIN กับตาราง users เพื่อเอาชื่อคนอัพโหลด (creator_name) และสี (creator_color) ออกมาแสดงในตารางข้อมูลทั้งหมดด้วย
     const [immigrantsRes, immigrantsCountRes, repatriatedsRes, repatriatedsCountRes] = await Promise.all([
@@ -29,7 +36,7 @@ exports.getAllData = async (req, res) => {
       pool.query("SELECT COUNT(*) FROM repatriated_persons")
     ]);
 
-    res.status(200).json({ 
+    const responsePayload = { 
       success: true, 
       data: { 
         // ใช้คีย์ immigrants ตามที่กำหนด (และใส่คีย์เดิมสำรองไว้เพื่อความปลอดภัยของระบบ)
@@ -44,7 +51,10 @@ exports.getAllData = async (req, res) => {
           limit: limit 
         }
       } 
-    });
+    };
+
+    cache.set(cacheKey, responsePayload);
+    res.status(200).json(responsePayload);
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server Error" });
@@ -62,6 +72,12 @@ exports.getDashboardData = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
+
+    const cacheKey = `getDashboardData_type_${type}_page_${page}_limit_${limit}_${JSON.stringify(req.query)}`;
+    const cachedData = cache.get(cacheKey);
+    if (cachedData) {
+      return res.status(200).json(cachedData);
+    }
 
     // 🟢 สร้าง SQL Query จาก Service
     const { whereClause, params, orderClause } = dashboardService.buildDashboardQuerySQL(req.query, type);
@@ -91,7 +107,7 @@ exports.getDashboardData = async (req, res) => {
 
     const totalItems = parseInt(countRes.rows[0].count);
 
-    res.status(200).json({ 
+    const responsePayload = { 
       success: true, 
       tableData: dataRes.rows, 
       meta: { 
@@ -100,7 +116,10 @@ exports.getDashboardData = async (req, res) => {
         currentPage: page, 
         limit: limit 
       } 
-    });
+    };
+
+    cache.set(cacheKey, responsePayload);
+    res.status(200).json(responsePayload);
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Error", error: err.message });

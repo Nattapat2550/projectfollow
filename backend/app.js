@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
+const fs = require("fs");
 
 const immigrantRoutes = require("./routes/immigrants");
 const dashboardRoutes = require("./routes/dashboard");
@@ -21,8 +22,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// เสิร์ฟไฟล์รูปภาพ/ไฟล์แนบแบบ Public
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+let uploadsPath = "./uploads";
+if (!fs.existsSync(uploadsPath) && fs.existsSync("./backend/uploads")) {
+  uploadsPath = "./backend/uploads";
+}
+app.use("/uploads", express.static(uploadsPath));
 
 // 🟢 เพิ่ม Route หน้าแรก (Root) เอาไว้ตอบกลับ ServerAwaker โดยเฉพาะ
 app.get("/", (req, res) => {

@@ -2,6 +2,7 @@ const pool = require("../config/db");
 const { v4: uuidv4 } = require("uuid"); 
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
 const { safeParseDate } = require("../utils/immigrantHelpers");
+const cache = require("../utils/cache");
 
 exports.getRepatriatedById = async (req, res) => {
   try {
@@ -77,6 +78,7 @@ exports.createRepatriated = async (req, res) => {
     ];
 
     const result = await pool.query(query, values);
+    cache.clear();
     res.status(201).json({ success: true, data: result.rows[0], message: "บันทึกข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
@@ -145,6 +147,7 @@ exports.updateRepatriated = async (req, res) => {
     ];
 
     const result = await pool.query(query, values);
+    cache.clear();
     res.status(200).json({ success: true, data: result.rows[0], message: "แก้ไขข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
@@ -169,6 +172,7 @@ exports.deleteRepatriated = async (req, res) => {
     }
     
     await pool.query("DELETE FROM repatriated_persons WHERE id = $1", [id]);
+    cache.clear();
     res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });

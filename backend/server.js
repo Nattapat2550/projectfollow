@@ -1,7 +1,13 @@
 const dotenv = require("dotenv");
+const fs = require("fs");
 
 // 1. โหลด config.env ก่อนที่จะ require ไฟล์อื่นๆ ที่ต้องใช้ process.env
-dotenv.config({ path: "./config/config.env" });
+
+let envPath = "./config/config.env";
+if (!fs.existsSync(envPath) && fs.existsSync("./backend/config/config.env")) {
+  envPath = "./backend/config/config.env";
+}
+dotenv.config({ path: envPath });
 
 // 2. นำเข้าไฟล์ db.js
 const pool = require("./config/db");

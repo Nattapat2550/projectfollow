@@ -5,10 +5,16 @@ const { v4: uuidv4 } = require("uuid");
 const { uploadToDrive } = require("../services/googleDriveService"); 
 const fs = require('fs');
 const path = require('path');
+const cache = require("../utils/cache");
 
 let thaiAddresses = [];
 try {
-    const addressPath = path.join(__dirname, '../data/thai_addresses.json');
+    let addressPath = "./data/thai_addresses.json";
+    if (!fs.existsSync(addressPath)) {
+        if (fs.existsSync("./backend/data/thai_addresses.json")) {
+            addressPath = "./backend/data/thai_addresses.json";
+        }
+    }
     thaiAddresses = JSON.parse(fs.readFileSync(addressPath, 'utf-8'));
 } catch (err) {
     console.error("Could not load thai_addresses.json for address parsing", err);
@@ -80,6 +86,22 @@ const uploadWithRetry = async (fileObj, folderId, maxRetries = 5) => {
             await delay(attempt * 2000); 
         }
     }
+};
+
+const limitConcurrency = async (tasks, limit) => {
+    const results = [];
+    const executing = new Set();
+    for (const task of tasks) {
+        const p = Promise.resolve().then(() => task());
+        results.push(p);
+        executing.add(p);
+        const clean = () => executing.delete(p);
+        p.then(clean, clean);
+        if (executing.size >= limit) {
+            await Promise.race(executing);
+        }
+    }
+    return Promise.all(results);
 };
 
 const splitThaiAddress = (fullAddress) => {
@@ -299,116 +321,245 @@ exports.uploadExcel = async (req, res) => {
 
         const created_by = req.user ? req.user.id : null;
 
+        // 1. Gather all id_cards and passports to query db in ONE go
+        const nationalIds = [];
+        const passportIds = [];
         for (let i = 0; i < rawData.length; i++) {
             const row = rawData[i];
-            const rawThName = row["ชื่อ สกุล (ไทย)"];
-            const rawEnName = row["ชื่อ สกุล (อังกฤษ)"];
-            const thName = splitName(rawThName);
-            const enName = splitName(rawEnName);
-            const autoGender = determineGenderFromName(rawThName) || determineGenderFromName(rawEnName) || (row["เพศ"] ? String(row["เพศ"]).trim() : null);
-
-            let drivePhotoUrl = null;
-
-            if (imagesMap[i + 1]) {
-                try {
-                    const tempFileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${imagesMap[i + 1].extension}`;
-                    
-                    const driveResult = await uploadWithRetry({ 
-                        originalname: tempFileName, 
-                        mimetype: `image/${imagesMap[i + 1].extension}`, 
-                        buffer: imagesMap[i + 1].buffer 
-                    }, process.env.GOOGLE_DRIVE_FOLDER_ID);
-                    
-                    if (driveResult && driveResult.webViewLink) {
-                        drivePhotoUrl = driveResult.webViewLink; 
-                    }
-                } catch (e) { 
-                    console.error("Drive Upload Final Error:", e);
-                    errors.push(`แถวที่ ${i + 1}: อัปโหลดรูปภาพไม่สำเร็จ (${e.message})`);
-                }
-            } else if (row["รูปจาก ทร.14"]) {
-                drivePhotoUrl = String(row["รูปจาก ทร.14"]);
-            }
-
             const raw_id = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"];
-            const id_card = raw_id ? String(raw_id).replace(/[^0-9a-zA-Z]/g, '') : `NO_ID_${Date.now()}_${i}`;
+            const id_card = raw_id ? String(raw_id).replace(/[^0-9a-zA-Z]/g, '') : null;
             
             let passport = row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).replace(/\s/g, '').trim() : null;
             if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null", "ไม่มีหนังสือเดินทาง"].includes(passport.toLowerCase())) passport = null;
 
-            const dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
-            const caseCount = parseInt(row["จำนวน Case ID"]);
-            const warrantCount = parseInt(row["หมายจับ"]);
-            const parsedAge = parseInt(row["อายุ(ปี)"]);
+            if (id_card) nationalIds.push(id_card);
+            if (passport) passportIds.push(passport);
+        }
 
+        // 2. Fetch existing records matching national_id OR passport_id
+        const existingMap = new Map(); // Key: 'nat_ID' or 'pass_ID', Value: uuid
+        if (nationalIds.length > 0 || passportIds.length > 0) {
             try {
-                let existingId = null;
-                if (!id_card.startsWith("NO_ID_")) {
-                    const natCheck = await pool.query("SELECT id FROM repatriated_persons WHERE national_id = $1", [id_card]);
-                    if (natCheck.rows.length > 0) existingId = natCheck.rows[0].id;
+                const existingRes = await pool.query(
+                    `SELECT id, national_id, passport_id 
+                     FROM repatriated_persons 
+                     WHERE (national_id = ANY($1::varchar[])) OR (passport_id = ANY($2::varchar[]))`,
+                    [nationalIds, passportIds]
+                );
+                for (const row of existingRes.rows) {
+                    if (row.national_id) existingMap.set('nat_' + row.national_id, row.id);
+                    if (row.passport_id) existingMap.set('pass_' + row.passport_id, row.id);
                 }
-                if (!existingId && passport) {
-                    const passCheck = await pool.query("SELECT id FROM repatriated_persons WHERE passport_id = $1", [passport]);
-                    if (passCheck.rows.length > 0) existingId = passCheck.rows[0].id;
-                }
+            } catch (queryErr) {
+                console.error("Error fetching existing records in batch:", queryErr);
+            }
+        }
 
-                const locationRaw = row["ที่อยู่"] ? String(row["ที่อยู่"]) : "";
-                const parsedLocation = splitThaiAddress(locationRaw);
+        // 3. Create tasks to process rows concurrently (Google Drive uploads first)
+        let currentProgress = 0;
+        const processedRows = [];
 
-                const values = [
-                    thName.first || "ไม่ระบุ", thName.middle || null, thName.last || "ไม่ระบุ",
-                    enName.first || null, enName.middle || null, enName.last || null,
-                    dobDate, autoGender, id_card, passport,
-                    parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province,
-                    row["ตึก ที่ทำงาน"] ? String(row["ตึก ที่ทำงาน"]) : null,
-                    row["ชั้น ที่ทำงาน"] ? String(row["ชั้น ที่ทำงาน"]) : null,
-                    row["ห้อง ที่ทำงาน"] ? String(row["ห้อง ที่ทำงาน"]) : null,
-                    row["ประเภทงาน"] ? String(row["ประเภทงาน"]) : null,
-                    row["ทำหน้าที่"] ? String(row["ทำหน้าที่"]) : null,
-                    row["เงินเดือนที่ได้รับ(บาท)"] ? String(row["เงินเดือนที่ได้รับ(บาท)"]) : null,
-                    row["รับเงินเดือนจากใคร"] ? String(row["รับเงินเดือนจากใคร"]) : null,
-                    row["ช่องทางการรับเงินเดือน"] ? String(row["ช่องทางการรับเงินเดือน"]) : null,
-                    isNaN(caseCount) ? 0 : caseCount,
-                    isNaN(warrantCount) ? 0 : warrantCount,
-                    row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
-                    row["หน่วยงานที่รับผิดชอบ"] ? String(row["หน่วยงานที่รับผิดชอบ"]) : null,
-                    row["หมายเหตุ"] ? String(row["หมายเหตุ"]) : null,
-                    "ไทย",
-                    "PENDING"
-                ];
+        const driveTasks = rawData.map((row, i) => {
+            return async () => {
+                try {
+                    const rawThName = row["ชื่อ สกุล (ไทย)"];
+                    const rawEnName = row["ชื่อ สกุล (อังกฤษ)"];
+                    const thName = splitName(rawThName);
+                    const enName = splitName(rawEnName);
+                    const autoGender = determineGenderFromName(rawThName) || determineGenderFromName(rawEnName) || (row["เพศ"] ? String(row["เพศ"]).trim() : null);
 
-                if (existingId) {
-                    let updateQ = `UPDATE repatriated_persons SET 
-                        first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
-                        date_of_birth=$7, gender=$8, national_id=$9, passport_id=$10, address_details=$11, sub_district=$12, district=$13, province=$14,
-                        building=$15, floor=$16, room=$17, job_type=$18, role=$19, salary=$20, paid_by=$21, payment_method=$22,
-                        number_of_case=$23, number_of_warrant=$24, victim_indicator=$25, responsible_agency=$26, note=$27, nationality=$28, result=$29, updated_at=NOW()`;
-                    
-                    const updateVals = [...values];
-                    if (drivePhotoUrl) {
-                        updateQ += `, photo_url=$30 WHERE id=$31`;
-                        updateVals.push(drivePhotoUrl, existingId);
-                    } else {
-                        updateQ += ` WHERE id=$30`;
-                        updateVals.push(existingId);
+                    let drivePhotoUrl = null;
+
+                    if (imagesMap[i + 1]) {
+                        try {
+                            const tempFileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${imagesMap[i + 1].extension}`;
+                            
+                            const driveResult = await uploadWithRetry({ 
+                                originalname: tempFileName, 
+                                mimetype: `image/${imagesMap[i + 1].extension}`, 
+                                buffer: imagesMap[i + 1].buffer 
+                            }, process.env.GOOGLE_DRIVE_FOLDER_ID);
+                            
+                            if (driveResult && driveResult.webViewLink) {
+                                drivePhotoUrl = driveResult.webViewLink; 
+                            }
+                        } catch (e) { 
+                            console.error("Drive Upload Final Error:", e);
+                            errors.push(`แถวที่ ${i + 1}: อัปโหลดรูปภาพไม่สำเร็จ (${e.message})`);
+                        }
+                    } else if (row["รูปจาก ทร.14"]) {
+                        drivePhotoUrl = String(row["รูปจาก ทร.14"]);
                     }
-                    await pool.query(updateQ, updateVals);
-                } else {
-                    const insertQ = `INSERT INTO repatriated_persons (
-                        id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
-                        date_of_birth, gender, national_id, passport_id, address_details, sub_district, district, province,
-                        building, floor, room, job_type, role, salary, paid_by, payment_method,
-                        number_of_case, number_of_warrant, victim_indicator, responsible_agency, note, nationality, result, photo_url, created_by
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)`;
-                    await pool.query(insertQ, [uuidv4(), ...values, drivePhotoUrl || null, created_by]);
+
+                    const raw_id = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"];
+                    const id_card = raw_id ? String(raw_id).replace(/[^0-9a-zA-Z]/g, '') : `NO_ID_${Date.now()}_${i}`;
+                    
+                    let passport = row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).replace(/\s/g, '').trim() : null;
+                    if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null", "ไม่มีหนังสือเดินทาง"].includes(passport.toLowerCase())) passport = null;
+
+                    const dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
+                    const caseCount = parseInt(row["จำนวน Case ID"]);
+                    const warrantCount = parseInt(row["หมายจับ"]);
+
+                    const locationRaw = row["ที่อยู่"] ? String(row["ที่อยู่"]) : "";
+                    const parsedLocation = splitThaiAddress(locationRaw);
+
+                    processedRows[i] = {
+                        index: i,
+                        thName,
+                        enName,
+                        autoGender,
+                        drivePhotoUrl,
+                        id_card,
+                        passport,
+                        dobDate,
+                        caseCount,
+                        warrantCount,
+                        parsedLocation,
+                        row
+                    };
+                } catch (err) {
+                    errors.push(`แถวที่ ${i + 1}: เกิดข้อผิดพลาดในการประมวลผลข้อมูล (${err.message})`);
                 }
 
-                successCount++;
-            } catch (dbErr) {
-                errors.push(`แถวที่ ${i + 1}: ${dbErr.message}`);
+                currentProgress++;
+                if (jobId && global.uploadProgress[jobId]) {
+                    // Google Drive uploads represent first 50% of the progress
+                    global.uploadProgress[jobId].current = Math.round((currentProgress / rawData.length) * (rawData.length * 0.5));
+                }
+            };
+        });
+
+        // Run Google Drive uploads concurrently with a limit of 20
+        await limitConcurrency(driveTasks, 20);
+
+        // 4. Partition into updates (concurrently) and inserts (batch insert)
+        const insertRows = [];
+        const updateTasks = [];
+
+        for (let i = 0; i < processedRows.length; i++) {
+            const pRow = processedRows[i];
+            if (!pRow) continue;
+
+            let existingId = null;
+            if (!pRow.id_card.startsWith("NO_ID_")) {
+                existingId = existingMap.get('nat_' + pRow.id_card);
+            }
+            if (!existingId && pRow.passport) {
+                existingId = existingMap.get('pass_' + pRow.passport);
             }
 
-            if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].current = i + 1;
+            const values = [
+                pRow.thName.first || "ไม่ระบุ", pRow.thName.middle || null, pRow.thName.last || "ไม่ระบุ",
+                pRow.enName.first || null, pRow.enName.middle || null, pRow.enName.last || null,
+                pRow.dobDate, pRow.autoGender, pRow.id_card, pRow.passport,
+                pRow.parsedLocation.details, pRow.parsedLocation.sub_district, pRow.parsedLocation.district, pRow.parsedLocation.province,
+                pRow.row["ตึก ที่ทำงาน"] ? String(pRow.row["ตึก ที่ทำงาน"]) : null,
+                pRow.row["ชั้น ที่ทำงาน"] ? String(pRow.row["ชั้น ที่ทำงาน"]) : null,
+                pRow.row["ห้อง ที่ทำงาน"] ? String(pRow.row["ห้อง ที่ทำงาน"]) : null,
+                pRow.row["ประเภทงาน"] ? String(pRow.row["ประเภทงาน"]) : null,
+                pRow.row["ทำหน้าที่"] ? String(pRow.row["ทำหน้าที่"]) : null,
+                pRow.row["เงินเดือนที่ได้รับ(บาท)"] ? String(pRow.row["เงินเดือนที่ได้รับ(บาท)"]) : null,
+                pRow.row["รับเงินเดือนจากใคร"] ? String(pRow.row["รับเงินเดือนจากใคร"]) : null,
+                pRow.row["ช่องทางการรับเงินเดือน"] ? String(pRow.row["ช่องทางการรับเงินเดือน"]) : null,
+                isNaN(pRow.caseCount) ? 0 : pRow.caseCount,
+                isNaN(pRow.warrantCount) ? 0 : pRow.warrantCount,
+                pRow.row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(pRow.row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
+                pRow.row["หน่วยงานที่รับผิดชอบ"] ? String(pRow.row["หน่วยงานที่รับผิดชอบ"]) : null,
+                pRow.row["หมายเหตุ"] ? String(pRow.row["หมายเหตุ"]) : null,
+                "ไทย",
+                "PENDING"
+            ];
+
+            if (existingId) {
+                updateTasks.push(async () => {
+                    try {
+                        let updateQ = `UPDATE repatriated_persons SET 
+                            first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
+                            date_of_birth=$7, gender=$8, national_id=$9, passport_id=$10, address_details=$11, sub_district=$12, district=$13, province=$14,
+                            building=$15, floor=$16, room=$17, job_type=$18, role=$19, salary=$20, paid_by=$21, payment_method=$22,
+                            number_of_case=$23, number_of_warrant=$24, victim_indicator=$25, responsible_agency=$26, note=$27, nationality=$28, result=$29, updated_at=NOW()`;
+                        
+                        const updateVals = [...values];
+                        if (pRow.drivePhotoUrl) {
+                            updateQ += `, photo_url=$30 WHERE id=$31`;
+                            updateVals.push(pRow.drivePhotoUrl, existingId);
+                        } else {
+                            updateQ += ` WHERE id=$30`;
+                            updateVals.push(existingId);
+                        }
+                        await pool.query(updateQ, updateVals);
+                        successCount++;
+                    } catch (dbErr) {
+                        errors.push(`แถวที่ ${pRow.index + 1}: ${dbErr.message}`);
+                    }
+                    currentProgress++;
+                    if (jobId && global.uploadProgress[jobId]) {
+                        global.uploadProgress[jobId].current = Math.round((currentProgress / (rawData.length * 2)) * rawData.length);
+                    }
+                });
+            } else {
+                insertRows.push({
+                    id: uuidv4(),
+                    values: [...values, pRow.drivePhotoUrl || null, created_by],
+                    index: pRow.index
+                });
+            }
+        }
+
+        // 5. Execute batch inserts
+        if (insertRows.length > 0) {
+            const fields = [
+                'id', 'first_name_th', 'middle_name_th', 'last_name_th', 'first_name_en', 'middle_name_en', 'last_name_en',
+                'date_of_birth', 'gender', 'national_id', 'passport_id', 'address_details', 'sub_district', 'district', 'province',
+                'building', 'floor', 'room', 'job_type', 'role', 'salary', 'paid_by', 'payment_method',
+                'number_of_case', 'number_of_warrant', 'victim_indicator', 'responsible_agency', 'note', 'nationality', 'result', 'photo_url', 'created_by'
+            ];
+
+            const chunkSize = Math.floor(60000 / fields.length);
+            for (let c = 0; c < insertRows.length; c += chunkSize) {
+                const chunk = insertRows.slice(c, c + chunkSize);
+                const values = [];
+                const valueStrings = [];
+
+                for (let i = 0; i < chunk.length; i++) {
+                    const rowValues = chunk[i].values;
+                    const placeholders = fields.map((_, fIdx) => `$${values.length + fIdx + 1}`).join(', ');
+                    valueStrings.push(`(${placeholders})`);
+                    values.push(...rowValues);
+                }
+
+                try {
+                    const insertQ = `INSERT INTO repatriated_persons (${fields.join(', ')}) VALUES ${valueStrings.join(', ')}`;
+                    await pool.query(insertQ, values);
+                    successCount += chunk.length;
+                } catch (dbErr) {
+                    console.error("Batch insert failed, falling back to sequential:", dbErr.message);
+                    for (const item of chunk) {
+                        try {
+                            const singleInsertQ = `INSERT INTO repatriated_persons (${fields.join(', ')}) VALUES (${fields.map((_, fIdx) => `$${fIdx + 1}`).join(', ')})`;
+                            await pool.query(singleInsertQ, item.values);
+                            successCount++;
+                        } catch (singleErr) {
+                            errors.push(`แถวที่ ${item.index + 1}: ${singleErr.message}`);
+                        }
+                    }
+                }
+                currentProgress += chunk.length;
+                if (jobId && global.uploadProgress[jobId]) {
+                    global.uploadProgress[jobId].current = Math.round((currentProgress / (rawData.length * 2)) * rawData.length);
+                }
+            }
+        }
+
+        // 6. Execute updates concurrently (limit = 20)
+        if (updateTasks.length > 0) {
+            await limitConcurrency(updateTasks, 20);
+        }
+
+        // 7. Clear read Cache on successful database operations
+        if (successCount > 0) {
+            cache.clear();
         }
 
         if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';

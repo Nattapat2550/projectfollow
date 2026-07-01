@@ -5,10 +5,16 @@ const path = require('path');
 const xlsx = require("xlsx");
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
 const { safeParseDate, normalizeNationality, processName, processVictimStatus, findValue, determineGender, parseThaiDateToDate, calculateDOBFromAge } = require("../utils/immigrantHelpers");
+const cache = require("../utils/cache");
 
 let thaiAddresses = [];
 try {
-    const addressPath = path.join(__dirname, '../data/thai_addresses.json');
+    let addressPath = "./data/thai_addresses.json";
+    if (!fs.existsSync(addressPath)) {
+        if (fs.existsSync("./backend/data/thai_addresses.json")) {
+            addressPath = "./backend/data/thai_addresses.json";
+        }
+    }
     thaiAddresses = JSON.parse(fs.readFileSync(addressPath, 'utf-8'));
 } catch (err) {
     console.error("Could not load thai_addresses.json for address parsing", err);
@@ -184,6 +190,7 @@ exports.createIllegal = async (req, res) => {
     ];
 
     const result = await pool.query(query, values);
+    cache.clear();
     res.status(201).json({ success: true, data: result.rows[0], message: "บันทึกข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
@@ -252,6 +259,7 @@ exports.updateIllegal = async (req, res) => {
     ];
 
     const result = await pool.query(query, values);
+    cache.clear();
     res.status(200).json({ success: true, data: result.rows[0], message: "แก้ไขข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
@@ -276,6 +284,7 @@ exports.deleteIllegal = async (req, res) => {
     }
     
     await pool.query("DELETE FROM illegal_immigrants WHERE id = $1", [id]);
+    cache.clear();
     res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server Error", error: err.message });
@@ -456,6 +465,9 @@ exports.uploadExcelIllegal = async (req, res) => {
 
     if (jobId && global.uploadProgress[jobId]) global.uploadProgress[jobId].status = 'completed';
 
+    if (processedCount > 0) {
+        cache.clear();
+    }
     res.status(200).json({ 
         success: true, 
         message: `นำเข้าข้อมูลลงฐานข้อมูลสมบูรณ์ จำนวน ${processedCount} รายการ`,
