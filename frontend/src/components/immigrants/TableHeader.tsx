@@ -52,7 +52,7 @@ export default function TableHeader({ sortField, sortDirection, onSort, type }: 
     <thead className="bg-muted/30 border-b border-(--wrapper)">
       <tr>
         <Th field="name" className="w-[20%]">ชื่อ - นามสกุล</Th>
-        <Th field="date_of_birth" className="w-[15%]">วันเกิด / อายุ</Th>
+        <Th field="date_of_birth" className="w-[15%]">วันเกิด (อายุ)</Th>
         <Th field="national_id" className="w-[15%]">เลขประจำตัว</Th>
         <Th field="address" className="w-[20%]">สถานที่ตรวจพบ</Th>
         <Th field="return_date" className="w-[10%]">วันที่ส่งกลับ</Th>

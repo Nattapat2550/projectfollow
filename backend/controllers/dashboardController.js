@@ -29,6 +29,7 @@ exports.getDashboardStats = async (req, res) => {
       isVictim = "ทั้งหมด",
       hasPassport = "ทั้งหมด",
       creator = "ทั้งหมด", 
+      ageGroup = "ทั้งหมด",
       page = 1,
       limit = 50,
       sortBy,             
@@ -86,7 +87,7 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
 
-    if (type === "illegal" && nationality && nationality !== "ทั้งหมด") {
+    if (nationality && nationality !== "ทั้งหมด") {
       conditions.push(`t.nationality = $${paramIndex}`);
       queryParams.push(nationality);
       paramIndex++;
@@ -143,6 +144,20 @@ exports.getDashboardStats = async (req, res) => {
       conditions.push(`u.name = $${paramIndex}`);
       queryParams.push(creator);
       paramIndex++;
+    }
+
+    if (ageGroup && ageGroup !== "ทั้งหมด") {
+      if (ageGroup === "0-18 ปี") {
+        conditions.push(`EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) <= 18`);
+      } else if (ageGroup === "19-30 ปี") {
+        conditions.push(`EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) BETWEEN 19 AND 30`);
+      } else if (ageGroup === "31-50 ปี") {
+        conditions.push(`EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) BETWEEN 31 AND 50`);
+      } else if (ageGroup === "51 ปีขึ้นไป") {
+        conditions.push(`EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) >= 51`);
+      } else if (ageGroup === "ไม่ระบุ") {
+        conditions.push(`t.date_of_birth IS NULL`);
+      }
     }
 
     let whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -217,9 +232,6 @@ exports.getDashboardStats = async (req, res) => {
       const passportCountQuery = `SELECT COUNT(*) FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} ${passportValidCond}`;
       const passportRes = await pool.query(passportCountQuery, baseParams);
 
-      const natChartQuery = `SELECT COALESCE(t.nationality, 'ไม่ระบุ') as name, COUNT(*) as value FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC LIMIT 6`;
-      const natChartRes = await pool.query(natChartQuery, baseParams);
-
       // 🟢 ปรับแก้การแสดงผลชื่อบนกราฟ ให้รองรับสถานะ PENDING 
       const victimChartQuery = `
         SELECT 
@@ -242,7 +254,6 @@ exports.getDashboardStats = async (req, res) => {
 
       stats.victims = parseInt(victimRes.rows[0].count);
       stats.hasPassport = parseInt(passportRes.rows[0].count);
-      charts.nationality = natChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
       charts.victim = victimChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
       charts.passport = passportChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     } else {
@@ -272,6 +283,10 @@ exports.getDashboardStats = async (req, res) => {
       charts.channel = channelChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
       charts.victim = victimChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     }
+
+    const natChartQuery = `SELECT COALESCE(t.nationality, 'ไม่ระบุ') as name, COUNT(*) as value FROM ${tableName} t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC LIMIT 6`;
+    const natChartRes = await pool.query(natChartQuery, baseParams);
+    charts.nationality = natChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
 
     const creatorChartQuery = `
       SELECT 
@@ -309,9 +324,38 @@ exports.getDashboardStats = async (req, res) => {
     charts.province = provinceChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
 
     let allNatsRes = { rows: [] };
-    if (type === "illegal") {
-      allNatsRes = await pool.query(`SELECT DISTINCT COALESCE(t.nationality, 'ไม่ระบุ') as nat FROM illegal_immigrants t WHERE t.nationality IS NOT NULL AND t.nationality != '' ORDER BY nat`);
-    }
+
+    // กราฟช่วงอายุ
+    const ageChartQuery = `
+      SELECT 
+        CASE 
+          WHEN EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) <= 18 THEN '0-18 ปี'
+          WHEN EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) BETWEEN 19 AND 30 THEN '19-30 ปี'
+          WHEN EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) BETWEEN 31 AND 50 THEN '31-50 ปี'
+          WHEN EXTRACT(YEAR FROM age(CURRENT_DATE, t.date_of_birth)) >= 51 THEN '51 ปีขึ้นไป'
+          ELSE 'ไม่ระบุ'
+        END as name, COUNT(*) as value
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${baseWhere} 
+      GROUP BY 1 ORDER BY value DESC
+    `;
+    const ageChartRes = await pool.query(ageChartQuery, baseParams);
+    charts.ageGroup = ageChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
+
+    // กราฟแนวโน้มวันที่ (แยกรายเดือน)
+    const dateTrendQuery = `
+      SELECT TO_CHAR(DATE_TRUNC('month', t.${dateField}), 'Mon YYYY') as name, COUNT(*) as value
+      FROM ${tableName} t LEFT JOIN users u ON t.created_by = u.id
+      ${baseWhere ? baseWhere + " AND " : "WHERE "} t.${dateField} IS NOT NULL
+      GROUP BY DATE_TRUNC('month', t.${dateField}), TO_CHAR(DATE_TRUNC('month', t.${dateField}), 'Mon YYYY')
+      ORDER BY DATE_TRUNC('month', t.${dateField}) ASC
+      LIMIT 12
+    `;
+    const dateTrendRes = await pool.query(dateTrendQuery, baseParams);
+    charts.dateTrend = dateTrendRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
+
+    allNatsRes = await pool.query(`SELECT DISTINCT COALESCE(t.nationality, 'ไม่ระบุ') as nat FROM ${tableName} t WHERE t.nationality IS NOT NULL AND t.nationality != '' ORDER BY nat`);
 
     const allGendersRes = await pool.query(`
       SELECT DISTINCT 
@@ -334,7 +378,7 @@ exports.getDashboardStats = async (req, res) => {
         totalItems,
         totalPages: Math.ceil(totalItems / limitNum) || 1,
         currentPage: pageNum,
-        allNationalities: type === "illegal" ? ["ทั้งหมด", ...allNatsRes.rows.map(r => r.nat)] : ["ทั้งหมด"],
+        allNationalities: ["ทั้งหมด", ...allNatsRes.rows.map(r => r.nat)],
         allProvinces: ["ทั้งหมด", ...allProvincesRes.rows.map(r => r.prov)],
         allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen)],
         allCreators: ["ทั้งหมด", ...allCreatorsRes.rows.map(r => r.creator)]

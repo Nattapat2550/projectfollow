@@ -1,6 +1,18 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
 
+export const helperFormatDOBAndAge = (dob: string | null, age: number | string | null): string => {
+  let ageStr = age ? `${age} ปี` : "";
+  if (dob) {
+    const d = new Date(dob);
+    if (!isNaN(d.getTime())) {
+      const dateStr = d.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" });
+      return `${dateStr}${ageStr ? ` (${ageStr})` : ""}`;
+    }
+  }
+  return ageStr || "-";
+};
+
 export default function TableRow({ person, isMock, type }: { person: any, isMock: boolean, type: "repatriated" | "illegal" }) {
   
   const ActionButtons = () => {
@@ -64,7 +76,7 @@ export default function TableRow({ person, isMock, type }: { person: any, isMock
            {person.first_name_th} {person.last_name_th}
         </td>
         <td className="p-4 align-middle text-muted-foreground truncate">
-          {person.date_of_birth || "ไม่ระบุ"} {person.age ? `(${person.age} ปี)` : ""}
+          {helperFormatDOBAndAge(person.date_of_birth, person.age)}
         </td>
         <td className="p-4 align-middle text-muted-foreground truncate" title={person.national_id || person.passport_id || "ไม่ระบุ"}>
           {person.national_id || person.passport_id || "ไม่ระบุ"}

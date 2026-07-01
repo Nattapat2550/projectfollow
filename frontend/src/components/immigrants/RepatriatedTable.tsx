@@ -3,6 +3,35 @@
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
+export const helperFormatDOBAndAge = (dob: string | null, age: number | string | null): string => {
+  let computedAge = age;
+  
+  if (dob && !computedAge) {
+    const birthDate = new Date(dob);
+    if (!isNaN(birthDate.getTime())) {
+      const today = new Date();
+      let ageNum = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        ageNum--;
+      }
+      if (ageNum >= 0) {
+        computedAge = ageNum;
+      }
+    }
+  }
+
+  let ageStr = computedAge ? `${computedAge} ปี` : "";
+  if (dob) {
+    const d = new Date(dob);
+    if (!isNaN(d.getTime())) {
+      const dateStr = d.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "numeric" });
+      return `${dateStr}${ageStr ? ` (${ageStr})` : ""}`;
+    }
+  }
+  return ageStr || "-";
+};
+
 export type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "is_victim";
 
 interface RepatriatedTableProps {
@@ -40,7 +69,7 @@ export default function RepatriatedTable({ data, sortField, sortDirection, onSor
         <thead>
           <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
             <Th field="name" width="w-[20%]">ชื่อ-สกุล</Th>
-            <Th field="date_of_birth" width="w-[15%]">วัน/เดือน/ปีเกิด</Th>
+            <Th field="date_of_birth" width="w-[15%]">วันเกิด (อายุ)</Th>
             <Th field="national_id" width="w-[15%]">เลขประจำตัว</Th>
             <Th field="address" width="w-[20%]">ที่อยู่</Th>
             <Th field="return_date" width="w-[15%]">วันที่ส่งกลับ</Th>
@@ -68,8 +97,7 @@ export default function RepatriatedTable({ data, sortField, sortDirection, onSor
                     {fullName}
                   </td>
                   <td className="px-4 py-3 border-r truncate" style={{ borderColor: "var(--wrapper)" }}>
-                    {person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString("th-TH", { day: '2-digit', month: '2-digit', year: 'numeric' }) : "ไม่ระบุ"}
-                    {person.age ? ` (${person.age} ปี)` : ""}
+                    {helperFormatDOBAndAge(person.date_of_birth, person.age)}
                   </td>
                   <td className="px-4 py-3 border-r truncate" style={{ borderColor: "var(--wrapper)" }} title={nationalId}>
                     {nationalId}
