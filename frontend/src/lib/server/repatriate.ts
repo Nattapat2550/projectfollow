@@ -67,7 +67,8 @@ export async function getRepatriateData(
 				number_of_case: item.number_of_case || 0,
 				number_of_warrant: item.number_of_warrant || 0,
 				
-				is_victim: item.victim_indicator ? item.victim_indicator.includes("มีข้อบ่งชี้") : null,
+				is_victim: item.is_victim === "YES" ? true : item.is_victim === "NO" ? false : null,
+				screening_details: item.screening_details || null,
 			};
 		});
 

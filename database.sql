@@ -1,6 +1,3 @@
--- สร้าง Enum สำหรับ result
-CREATE TYPE repatriate_result_enum AS ENUM ('SUCCESS', 'FAILED', 'PENDING');
-
 -- สร้าง Enum สำหรับสถานะผู้เสียหาย (is_victim)
 CREATE TYPE victim_status_enum AS ENUM ('YES', 'NO', 'PENDING');
 
@@ -87,14 +84,14 @@ CREATE TABLE repatriated_persons (
     -- ข้อมูลทางคดีและหน่วยงาน
     number_of_case INT NOT NULL DEFAULT 0,
     number_of_warrant INT NOT NULL DEFAULT 0,
-    victim_indicator VARCHAR(255),
+    is_victim victim_status_enum NOT NULL DEFAULT 'PENDING',
     responsible_agency VARCHAR(255),
     
     -- ข้อมูลการส่งกลับและอื่นๆ
     return_date DATE,
     channel VARCHAR(255),
     note TEXT,
-    result repatriate_result_enum NOT NULL DEFAULT 'PENDING',
+    screening_details TEXT,
 
     -- ส่วนที่เก็บข้อมูลคนที่เพิ่มและเวลาที่เพิ่ม
     created_at TIMESTAMP DEFAULT NOW(),

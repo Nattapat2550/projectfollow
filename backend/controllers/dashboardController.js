@@ -114,8 +114,8 @@ exports.getDashboardStats = async (req, res) => {
       }
     }
 
-    if (type === "illegal") {
-      // 🟢 ปรับแก้การรับค่า is_victim ให้รองรับรูปแบบเดิมที่ Frontend อาจจะส่งมาเป็น "true"/"false" หรือส่งมาเป็น ENUM โดยตรง
+    // 🟢 ปรับแก้การรับค่า is_victim ให้รองรับรูปแบบเดิมที่ Frontend อาจจะส่งมาเป็น "true"/"false" หรือส่งมาเป็น ENUM โดยตรง
+    if (isVictim) {
       if (isVictim === "true" || isVictim === "YES") {
         conditions.push(`t.is_victim = $${paramIndex}`);
         queryParams.push('YES');
@@ -129,7 +129,9 @@ exports.getDashboardStats = async (req, res) => {
         queryParams.push('PENDING');
         paramIndex++;
       }
+    }
 
+    if (type === "illegal") {
       if (hasPassport === "true") {
         conditions.push(`t.passport_id IS NOT NULL AND t.passport_id ~ '\\S' AND LOWER(TRIM(t.passport_id)) NOT IN ('-', 'ไม่มี', 'ไม่ระบุ', 'none', 'n/a', 'null', 'ไม่มีหนังสือเดินทาง')`);
       } else if (hasPassport === "false") {
@@ -224,7 +226,7 @@ exports.getDashboardStats = async (req, res) => {
           CASE 
             WHEN t.is_victim = 'YES' THEN 'เป็นผู้เสียหาย' 
             WHEN t.is_victim = 'NO' THEN 'ไม่เป็นผู้เสียหาย'
-            ELSE 'รอดำเนินการคัดกรอง' 
+            ELSE 'ไม่คัดกรองสถานะ' 
           END as name, 
           COUNT(*) as value 
         FROM illegal_immigrants t 
@@ -244,14 +246,31 @@ exports.getDashboardStats = async (req, res) => {
       charts.victim = victimChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
       charts.passport = passportChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     } else {
-      const successCountQuery = `SELECT COUNT(*) FROM repatriated_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.result = 'SUCCESS'`;
-      const successRes = await pool.query(successCountQuery, baseParams);
+      const victimCountQuery = `SELECT COUNT(*) FROM repatriated_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.is_victim = 'YES'`;
+      const victimRes = await pool.query(victimCountQuery, baseParams);
 
       const channelChartQuery = `SELECT COALESCE(t.channel, 'ไม่ระบุช่องทาง') as name, COUNT(*) as value FROM repatriated_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
       const channelChartRes = await pool.query(channelChartQuery, baseParams);
 
-      stats.success = parseInt(successRes.rows[0].count);
+      const victimChartQuery = `
+        SELECT 
+          CASE 
+            WHEN t.is_victim = 'YES' THEN 'เป็นผู้เสียหาย' 
+            WHEN t.is_victim = 'NO' THEN 'ไม่เป็นผู้เสียหาย'
+            ELSE 'ไม่คัดกรองสถานะ' 
+          END as name, 
+          COUNT(*) as value 
+        FROM repatriated_persons t 
+        LEFT JOIN users u ON t.created_by = u.id 
+        ${baseWhere} 
+        GROUP BY 1 
+        ORDER BY value DESC
+      `;
+      const victimChartRes = await pool.query(victimChartQuery, baseParams);
+
+      stats.victims = parseInt(victimRes.rows[0].count);
       charts.channel = channelChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
+      charts.victim = victimChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     }
 
     const creatorChartQuery = `

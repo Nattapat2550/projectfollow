@@ -45,12 +45,11 @@ Tracks persons processed for deportation/repatriation.
   * `paid_by`, `payment_method`: `VARCHAR(255)`
   * `number_of_case`: `INT` (Default `0`)
   * `number_of_warrant`: `INT` (Default `0`)
-  * `victim_indicator`: `VARCHAR(255)`
+  * `is_victim`: `victim_status_enum` (Enum values: `'YES'`, `'NO'`, `'PENDING'`)
   * `responsible_agency`: `VARCHAR(255)`
   * `return_date`: `DATE`
   * `channel`: `VARCHAR(255)` (Repatriation pathway)
   * `note`: `TEXT`
-  * `result`: `repatriate_result_enum` (Enum values: `'SUCCESS'`, `'FAILED'`, `'PENDING'`)
 * **Metadata:** `created_at`, `updated_at` (`TIMESTAMP`), `created_by` (`UUID` referencing `users.id`)
 
 ---

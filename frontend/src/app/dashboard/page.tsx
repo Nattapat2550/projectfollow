@@ -102,6 +102,7 @@ function DashboardContent() {
                   <option value="ทั้งหมด">ทั้งหมด</option>
                   <option value="true">เป็นผู้เสียหาย</option>
                   <option value="false">ไม่เป็นผู้เสียหาย</option>
+                  <option value="PENDING">ไม่คัดกรองสถานะ</option>
                 </select>
               </div>
               <div className="flex flex-col gap-2">
@@ -195,6 +196,7 @@ function DashboardContent() {
                       <>
                         {(!visibleCharts.length || visibleCharts.includes("province")) && derived.provinceChart.length > 0 && <BarChart data={derived.provinceChart} title="จังหวัด (Top 6)" />}
                         {(!visibleCharts.length || visibleCharts.includes("gender")) && derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
+                        {(!visibleCharts.length || visibleCharts.includes("victim")) && derived.victimChart.length > 0 && <BarChart data={derived.victimChart} title="สถานะผู้เสียหาย" />}
                         {(!visibleCharts.length || visibleCharts.includes("channel")) && derived.channelChart.length > 0 && <BarChart data={derived.channelChart} title="ช่องทางการส่งกลับ" />}
                         {(!visibleCharts.length || visibleCharts.includes("creator")) && derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>

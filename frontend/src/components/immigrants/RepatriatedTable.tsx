@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
-export type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "result";
+export type SortField = "name" | "date_of_birth" | "national_id" | "address" | "return_date" | "is_victim";
 
 interface RepatriatedTableProps {
   data: any[];
@@ -41,10 +41,10 @@ export default function RepatriatedTable({ data, sortField, sortDirection, onSor
           <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
             <Th field="name" width="w-[20%]">ชื่อ-สกุล</Th>
             <Th field="date_of_birth" width="w-[15%]">วัน/เดือน/ปีเกิด</Th>
-            <Th field="national_id" width="w-[20%]">เลขประจำตัว</Th>
+            <Th field="national_id" width="w-[15%]">เลขประจำตัว</Th>
             <Th field="address" width="w-[20%]">ที่อยู่</Th>
             <Th field="return_date" width="w-[15%]">วันที่ส่งกลับ</Th>
-            <Th field="result" width="w-[10%]">สถานะ</Th>
+            <Th field="is_victim" width="w-[15%]">สถานะผู้เสียหาย</Th>
           </tr>
         </thead>
         <tbody>
@@ -81,9 +81,13 @@ export default function RepatriatedTable({ data, sortField, sortDirection, onSor
                     {person.return_date ? new Date(person.return_date).toLocaleDateString("th-TH") : "รอการส่งกลับ"}
                   </td>
                   <td className="px-4 py-3 font-medium truncate">
-                    {person.result === "SUCCESS" && <span style={{ color: "var(--greenText)" }}>สำเร็จ</span>}
-                    {person.result === "FAILED" && <span style={{ color: "var(--redText)" }}>ล้มเหลว</span>}
-                    {(!person.result || person.result === "PENDING") && <span style={{ color: "var(--yellowText)" }}>รอดำเนินการ</span>}
+                    {person.is_victim === "YES" ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">เป็นผู้เสียหาย</span>
+                    ) : person.is_victim === "NO" ? (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">ไม่เป็นผู้เสียหาย</span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-zinc-400">ไม่คัดกรองสถานะ</span>
+                    )}
                   </td>
                 </tr>
               );

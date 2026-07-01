@@ -304,10 +304,14 @@ exports.uploadExcel = async (req, res) => {
                     payment_method: row["ช่องทางการรับเงินเดือน"] ? String(row["ช่องทางการรับเงินเดือน"]) : null,
                     case_id_count: parseInt(row["จำนวน Case ID"]) || 0,
                     warrant: parseInt(row["หมายจับ"]) || 0,
-                    victim_indicator: row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
+                    is_victim: (() => {
+                        const vi = row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]).trim() : "";
+                        if (vi.includes("ไม่มี")) return 'NO';
+                        if (vi.includes("มี")) return 'YES';
+                        return 'PENDING';
+                    })(),
                     responsible_agency: row["หน่วยงานที่รับผิดชอบ"] ? String(row["หน่วยงานที่รับผิดชอบ"]) : null,
                     note: row["หมายเหตุ"] ? String(row["หมายเหตุ"]) : null,
-                    result: "PENDING",
                     raw_data_from_excel: row
                 });
             }
@@ -449,6 +453,14 @@ exports.uploadExcel = async (req, res) => {
                 existingId = existingMap.get('pass_' + pRow.passport);
             }
 
+            let is_victim_val = 'PENDING';
+            const vi = pRow.row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(pRow.row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]).trim() : "";
+            if (vi.includes("ไม่มี")) {
+                is_victim_val = 'NO';
+            } else if (vi.includes("มี")) {
+                is_victim_val = 'YES';
+            }
+
             const values = [
                 pRow.thName.first || "ไม่ระบุ", pRow.thName.middle || null, pRow.thName.last || "ไม่ระบุ",
                 pRow.enName.first || null, pRow.enName.middle || null, pRow.enName.last || null,
@@ -464,11 +476,10 @@ exports.uploadExcel = async (req, res) => {
                 pRow.row["ช่องทางการรับเงินเดือน"] ? String(pRow.row["ช่องทางการรับเงินเดือน"]) : null,
                 isNaN(pRow.caseCount) ? 0 : pRow.caseCount,
                 isNaN(pRow.warrantCount) ? 0 : pRow.warrantCount,
-                pRow.row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"] ? String(pRow.row["มีข้อบ่งชี้ / ไม่มีข้อบ่งชี้ (เหยื่อ)"]) : null,
+                is_victim_val,
                 pRow.row["หน่วยงานที่รับผิดชอบ"] ? String(pRow.row["หน่วยงานที่รับผิดชอบ"]) : null,
                 pRow.row["หมายเหตุ"] ? String(pRow.row["หมายเหตุ"]) : null,
-                "ไทย",
-                "PENDING"
+                "ไทย"
             ];
 
             if (existingId) {
@@ -478,14 +489,14 @@ exports.uploadExcel = async (req, res) => {
                             first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
                             date_of_birth=$7, gender=$8, national_id=$9, passport_id=$10, address_details=$11, sub_district=$12, district=$13, province=$14,
                             building=$15, floor=$16, room=$17, job_type=$18, role=$19, salary=$20, paid_by=$21, payment_method=$22,
-                            number_of_case=$23, number_of_warrant=$24, victim_indicator=$25, responsible_agency=$26, note=$27, nationality=$28, result=$29, updated_at=NOW()`;
+                            number_of_case=$23, number_of_warrant=$24, is_victim=$25, responsible_agency=$26, note=$27, nationality=$28, updated_at=NOW()`;
                         
                         const updateVals = [...values];
                         if (pRow.drivePhotoUrl) {
-                            updateQ += `, photo_url=$30 WHERE id=$31`;
+                            updateQ += `, photo_url=$29 WHERE id=$30`;
                             updateVals.push(pRow.drivePhotoUrl, existingId);
                         } else {
-                            updateQ += ` WHERE id=$30`;
+                            updateQ += ` WHERE id=$29`;
                             updateVals.push(existingId);
                         }
                         await pool.query(updateQ, updateVals);
@@ -512,7 +523,7 @@ exports.uploadExcel = async (req, res) => {
                 'id', 'first_name_th', 'middle_name_th', 'last_name_th', 'first_name_en', 'middle_name_en', 'last_name_en',
                 'date_of_birth', 'gender', 'national_id', 'passport_id', 'address_details', 'sub_district', 'district', 'province',
                 'building', 'floor', 'room', 'job_type', 'role', 'salary', 'paid_by', 'payment_method',
-                'number_of_case', 'number_of_warrant', 'victim_indicator', 'responsible_agency', 'note', 'nationality', 'result', 'photo_url', 'created_by'
+                'number_of_case', 'number_of_warrant', 'is_victim', 'responsible_agency', 'note', 'nationality', 'photo_url', 'created_by'
             ];
 
             const chunkSize = Math.floor(60000 / fields.length);

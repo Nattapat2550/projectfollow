@@ -131,17 +131,18 @@ export default function ImmigrantEditForm({
             <div><label className={labelClass}>หน่วยงานที่รับผิดชอบ</label><input type="text" name="responsible_agency" value={formData.responsible_agency || ""} onChange={handleInputChange} className={inputClass} /></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">
-            <div><label className={labelClass}>สถานะผลลัพธ์คดี</label>
-               <select name="result" value={formData.result || "PENDING"} onChange={handleInputChange} className={inputClass}>
-                 <option value="PENDING">PENDING</option><option value="SUCCESS">SUCCESS</option><option value="FAILED">FAILED</option>
-               </select>
-             </div>
+          <div className="mb-5">
+            <label className={labelClass}>สถานะผู้เสียหาย</label>
+            <select name="is_victim" value={formData.is_victim || "PENDING"} onChange={handleInputChange} className={inputClass}>
+              <option value="PENDING">ไม่คัดกรองสถานะ</option>
+              <option value="YES">เป็นผู้เสียหาย</option>
+              <option value="NO">ไม่เป็นผู้เสียหาย</option>
+            </select>
           </div>
 
-          <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
-            <input type="checkbox" id="victim_indicator" name="victim_indicator" checked={formData.victim_indicator === true || formData.victim_indicator === "true"} onChange={handleCheckboxChange} className="w-4 h-4 cursor-pointer" />
-            <label htmlFor="victim_indicator" className="text-sm font-bold cursor-pointer text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์ (Victim Indicator)</label>
+          <div className="mb-5">
+            <label className={labelClass}>บันทึกรายละเอียดผลการคัดกรอง</label>
+            <textarea name="screening_details" value={formData.screening_details || ""} onChange={handleInputChange} rows={3} className={inputClass} />
           </div>
         </>
       ) : (
@@ -161,9 +162,13 @@ export default function ImmigrantEditForm({
             <div><label className={labelClass}>แขวง/ตำบล</label><AutocompleteInput name="detected_location_sub_district" value={formData.detected_location_sub_district || ""} options={detSubDistrictOptions} onChange={handleInputChange} onSelectOption={handleSelectDetSubDistrict} className={inputClass} /></div>
           </div>
           
-          <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
-            <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim === true || formData.is_victim === "true"} onChange={handleCheckboxChange} className="w-4 h-4 cursor-pointer" />
-            <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
+          <div className="mb-5">
+            <label className={labelClass}>สถานะผู้เสียหาย</label>
+            <select name="is_victim" value={formData.is_victim || "PENDING"} onChange={handleInputChange} className={inputClass}>
+              <option value="PENDING">ไม่คัดกรองสถานะ</option>
+              <option value="YES">เป็นผู้เสียหาย</option>
+              <option value="NO">ไม่เป็นผู้เสียหาย</option>
+            </select>
           </div>
 
           <div className="mb-5">

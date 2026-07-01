@@ -20,7 +20,7 @@ export default function CreateIllegalImmigrant() {
     first_name_en: "", middle_name_en: "", last_name_en: "",
     passport_id: "", gender: "", nationality: "",
     detected_date: "", detected_location_details: "", detected_location_sub_district: "", 
-    detected_location_district: "", detected_location_province: "", is_victim: false,
+    detected_location_district: "", detected_location_province: "", is_victim: "PENDING",
     workplace: "", screening_details: "", note: "", photo_url: "",
   });
 
@@ -205,9 +205,13 @@ export default function CreateIllegalImmigrant() {
           <div><label className={labelClass}>สถานที่ทำงานปลายทาง</label><input type="text" name="workplace" value={formData.workplace} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
-        <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
-          <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim} onChange={handleInputChange} className="w-4 h-4 text-black! dark:text-white! focus:ring-(--header) border-gray-300 rounded cursor-pointer" />
-          <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer select-none text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
+        <div className="mb-5">
+          <label className={labelClass}>สถานะผู้เสียหาย</label>
+          <select name="is_victim" value={formData.is_victim} onChange={handleInputChange} className={inputClass}>
+            <option value="PENDING">ไม่คัดกรองสถานะ</option>
+            <option value="YES">เป็นผู้เสียหาย</option>
+            <option value="NO">ไม่เป็นผู้เสียหาย</option>
+          </select>
         </div>
 
         <div className="mb-5">

@@ -23,7 +23,7 @@ export async function getImmigrantData(
 			passport_id: item.passport_id || null,
 			detected_location: item.detected_location_details ? `${item.detected_location_details} ${item.detected_location_sub_district ? 'ต.'+item.detected_location_sub_district : ''} ${item.detected_location_district ? 'อ.'+item.detected_location_district : ''} ${item.detected_location_province ? 'จ.'+item.detected_location_province : ''}` : "ไม่ระบุสถานที่",
 			detected_date: item.detected_date ? new Date(item.detected_date).toISOString() : null,
-			is_victim: item.is_victim ?? null,
+			is_victim: item.is_victim === "YES" ? true : item.is_victim === "NO" ? false : null,
 			image_url: item.photo_url || null,
 		}));
 		const offset = page * limit;
@@ -63,7 +63,7 @@ export async function getSingleImmigrantData(id: string): Promise<any | null> {
 				passport_id: item.passport_id || null,
 				detected_location: item.detected_location_details ? `${item.detected_location_details} ${item.detected_location_sub_district ? 'ต.'+item.detected_location_sub_district : ''} ${item.detected_location_district ? 'อ.'+item.detected_location_district : ''} ${item.detected_location_province ? 'จ.'+item.detected_location_province : ''}` : "ไม่ระบุสถานที่",
 				detected_date: item.detected_date ? new Date(item.detected_date).toISOString() : null,
-				is_victim: item.is_victim ?? null,
+				is_victim: item.is_victim === "YES" ? true : item.is_victim === "NO" ? false : null,
 				image_url: item.photo_url || null,
 			};
 		}

@@ -1,6 +1,6 @@
 import { ChevronUp, ChevronDown } from "lucide-react";
 
-export type SortField = "name" | "date_of_birth" | "detected_date" | "national_id" | "nationality" | "address" | "detected_location" | "is_victim" | "return_date" | "result";
+export type SortField = "name" | "date_of_birth" | "detected_date" | "national_id" | "nationality" | "address" | "detected_location" | "is_victim" | "return_date";
 
 interface TableHeaderProps {
   sortField: SortField | null;
@@ -56,7 +56,7 @@ export default function TableHeader({ sortField, sortDirection, onSort, type }: 
         <Th field="national_id" className="w-[15%]">เลขประจำตัว</Th>
         <Th field="address" className="w-[20%]">สถานที่ตรวจพบ</Th>
         <Th field="return_date" className="w-[10%]">วันที่ส่งกลับ</Th>
-        <Th field="result" className="w-[10%]">สถานะ</Th>
+        <Th field="is_victim" className="w-[10%]">สถานะผู้เสียหาย</Th>
         <th className="p-4 font-semibold text-(--header) w-[10%] truncate">จัดการ</th>
       </tr>
     </thead>

@@ -37,13 +37,17 @@ export default function TableRow({ person, isMock, type }: { person: any, isMock
           {person.detected_location_details ? `${person.detected_location_details} ${person.detected_location_sub_district ? 'ต.'+person.detected_location_sub_district : ''} ${person.detected_location_district ? 'อ.'+person.detected_location_district : ''} ${person.detected_location_province ? 'จ.'+person.detected_location_province : ''}` : "ไม่ระบุสถานที่"}
         </td>
         <td className="p-4 align-middle truncate">
-          {person.is_victim ? (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          {person.is_victim === "YES" ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
               เป็นผู้เสียหาย
+            </span>
+          ) : person.is_victim === "NO" ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              ไม่เป็นผู้เสียหาย
             </span>
           ) : (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-zinc-400">
-              ไม่ใช่
+              ไม่คัดกรองสถานะ
             </span>
           )}
         </td>
@@ -72,9 +76,9 @@ export default function TableRow({ person, isMock, type }: { person: any, isMock
           {person.return_date ? new Date(person.return_date).toLocaleDateString('th-TH') : "รอการส่งกลับ"}
         </td>
         <td className="p-4 align-middle text-sm truncate">
-           {person.result === "SUCCESS" && <span className="text-emerald-600 font-semibold bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-full">สำเร็จ</span>}
-           {person.result === "FAILED" && <span className="text-red-600 font-semibold bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-full">ล้มเหลว</span>}
-           {(!person.result || person.result === "PENDING") && <span className="text-amber-600 font-semibold bg-amber-100 dark:bg-amber-900/30 px-2 py-1 rounded-full">รอดำเนินการ</span>}
+           {person.is_victim === "YES" && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">เป็นผู้เสียหาย</span>}
+           {person.is_victim === "NO" && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">ไม่เป็นผู้เสียหาย</span>}
+           {(!person.is_victim || person.is_victim === "PENDING") && <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-zinc-400">ไม่คัดกรองสถานะ</span>}
         </td>
         <td className="p-4 align-middle">
           <ActionButtons />

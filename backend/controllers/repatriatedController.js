@@ -1,7 +1,7 @@
 const pool = require("../config/db"); 
 const { v4: uuidv4 } = require("uuid"); 
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
-const { safeParseDate } = require("../utils/immigrantHelpers");
+const { safeParseDate, normalizeNationality } = require("../utils/immigrantHelpers");
 const cache = require("../utils/cache");
 
 exports.getRepatriatedById = async (req, res) => {
@@ -53,8 +53,8 @@ exports.createRepatriated = async (req, res) => {
       INSERT INTO repatriated_persons 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
        passport_id, nationality, national_id, gender, age, date_of_birth, return_date, number_of_case, 
-       number_of_warrant, channel, result, address_details, sub_district, district, province, building, floor, room, job_type, 
-       role, salary, paid_by, payment_method, victim_indicator, responsible_agency, note, photo_url, passport_photo_url, created_by)
+       number_of_warrant, channel, address_details, sub_district, district, province, building, floor, room, job_type, 
+       role, salary, paid_by, payment_method, is_victim, responsible_agency, screening_details, note, photo_url, passport_photo_url, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
       RETURNING *;
     `;
@@ -68,13 +68,13 @@ exports.createRepatriated = async (req, res) => {
       safeParseDate(data.return_date),
       data.number_of_case ? parseInt(data.number_of_case) : 0,
       data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
-      data.channel || null, data.result || "PENDING",
+      data.channel || null,
       data.address_details || "ไม่ระบุ", data.sub_district || null, data.district || null, data.province || null, 
       data.building || null, data.floor || null, data.room || null,
       data.job_type || null, data.role || null, data.salary || null, 
       data.paid_by || null, data.payment_method || null,
-      data.victim_indicator === "true" || data.victim_indicator === true || false,
-      data.responsible_agency || null, data.note || null, photo_url, passport_photo_url, created_by
+      data.is_victim || 'PENDING',
+      data.responsible_agency || null, data.screening_details || null, data.note || null, photo_url, passport_photo_url, created_by
     ];
 
     const result = await pool.query(query, values);
@@ -121,10 +121,10 @@ exports.updateRepatriated = async (req, res) => {
       UPDATE repatriated_persons SET 
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
         passport_id=$7, nationality=$8, national_id=$9, gender=$10, age=$11, date_of_birth=$12, return_date=$13, 
-        number_of_case=$14, number_of_warrant=$15, channel=$16, result=$17, 
-        address_details=$18, sub_district=$19, district=$20, province=$21, building=$22, floor=$23, room=$24, job_type=$25, 
-        role=$26, salary=$27, paid_by=$28, payment_method=$29, victim_indicator=$30, responsible_agency=$31, 
-        note=$32, photo_url=$33, passport_photo_url=$34, updated_at=NOW()
+        number_of_case=$14, number_of_warrant=$15, channel=$16, 
+        address_details=$17, sub_district=$18, district=$19, province=$20, building=$21, floor=$22, room=$23, job_type=$24, 
+        role=$25, salary=$26, paid_by=$27, payment_method=$28, is_victim=$29, responsible_agency=$30, 
+        screening_details=$31, note=$32, photo_url=$33, passport_photo_url=$34, updated_at=NOW()
       WHERE id=$35 RETURNING *;
     `;
     const values = [
@@ -137,13 +137,13 @@ exports.updateRepatriated = async (req, res) => {
       safeParseDate(data.return_date),
       data.number_of_case ? parseInt(data.number_of_case) : 0,
       data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
-      data.channel || null, data.result || "PENDING",
+      data.channel || null,
       data.address_details || "ไม่ระบุ", data.sub_district || null, data.district || null, data.province || null,
       data.building || null, data.floor || null, data.room || null,
       data.job_type || null, data.role || null, data.salary || null, 
       data.paid_by || null, data.payment_method || null,
-      data.victim_indicator === "true" || data.victim_indicator === true || false,
-      data.responsible_agency || null, data.note || null, photo_url, passport_photo_url, id
+      data.is_victim || 'PENDING',
+      data.responsible_agency || null, data.screening_details || null, data.note || null, photo_url, passport_photo_url, id
     ];
 
     const result = await pool.query(query, values);

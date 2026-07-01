@@ -21,9 +21,9 @@ export default function CreateRepatriatedImmigrant() {
     passport_id: "", nationality: "", national_id: "", gender: "",
     date_of_birth: "", age: "", return_date: "",
     number_of_case: "", number_of_warrant: "", channel: "",
-    result: "PENDING", address_details: "", sub_district: "", district: "", province: "", building: "", floor: "", room: "",
+    address_details: "", sub_district: "", district: "", province: "", building: "", floor: "", room: "",
     job_type: "", role: "", salary: "", paid_by: "", payment_method: "",
-    victim_indicator: false, responsible_agency: "", note: "", photo_url: "",
+    is_victim: "PENDING", responsible_agency: "", screening_details: "", note: "", photo_url: "",
   });
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -238,16 +238,18 @@ export default function CreateRepatriatedImmigrant() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">
-           <div><label className={labelClass}>สถานะผลลัพธ์คดี</label>
-            <select name="result" value={formData.result} onChange={handleInputChange} className={inputClass}>
-              <option value="PENDING">PENDING</option><option value="SUCCESS">SUCCESS</option><option value="FAILED">FAILED</option>
+           <div><label className={labelClass}>สถานะผู้เสียหาย</label>
+            <select name="is_victim" value={formData.is_victim} onChange={handleInputChange} className={inputClass}>
+              <option value="PENDING">ไม่คัดกรองสถานะ</option>
+              <option value="YES">เป็นผู้เสียหาย</option>
+              <option value="NO">ไม่เป็นผู้เสียหาย</option>
             </select>
           </div>
         </div>
 
-        <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
-          <input type="checkbox" id="victim_indicator" name="victim_indicator" checked={formData.victim_indicator} onChange={handleInputChange} className="w-4 h-4 text-black! dark:text-white! focus:ring-(--header) border-gray-300 rounded cursor-pointer" />
-          <label htmlFor="victim_indicator" className="text-sm font-bold cursor-pointer select-none text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์ (Victim Indicator)</label>
+        <div className="mb-5">
+          <label className={labelClass}>รายละเอียดการคัดกรอง (Screening Details)</label>
+          <textarea name="screening_details" value={formData.screening_details} onChange={handleInputChange} rows={3} className={inputClass} />
         </div>
 
         <div className="mb-5">

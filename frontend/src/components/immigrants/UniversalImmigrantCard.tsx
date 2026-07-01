@@ -145,12 +145,12 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
   let victimStatusStr = "ไม่คัดกรองสถานะ";
   let victimColorClass = "text-yellow-700 bg-yellow-100 border-yellow-400";
 
-  if (data.is_victim === true) {
-    victimStatusStr = "เป็นผู้เสียหายจากการค้ามนุษย์";
-    victimColorClass = "text-red-700 bg-red-100 border-red-400";
-  } else if (data.is_victim === false) {
-    victimStatusStr = "ไม่เป็นผู้เสียหายจากการค้ามนุษย์";
+  if (data.is_victim === "YES" || data.is_victim === true || data.is_victim === "true") {
+    victimStatusStr = "เป็นผู้เสียหาย";
     victimColorClass = "text-green-700 bg-green-100 border-green-400";
+  } else if (data.is_victim === "NO" || data.is_victim === false || data.is_victim === "false") {
+    victimStatusStr = "ไม่เป็นผู้เสียหาย";
+    victimColorClass = "text-red-700 bg-red-100 border-red-400";
   }
 
   return (
@@ -224,24 +224,31 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
           {/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
           <div className="flex flex-col gap-[2%] flex-1 mb-1">
             <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-            <IBox noTruncate className="h-full !justify-start text-left pt-[2%] overflow-hidden">
+            <IBox noTruncate className="h-full justify-start! text-left pt-[2%] overflow-hidden">
               {isIllegal ? (
                 // เปลี่ยนเป็น flex-col จัดเรียงบรรทัดละหัวข้อ และใช้ break-words เพื่อให้ขึ้นบรรทัดใหม่เมื่อข้อความยาว
                 <div className="flex flex-col gap-y-1.5 w-full" style={{ fontSize: "0.95em" }}>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               ) : (
                 // เปลี่ยนเป็น flex-col เช่นเดียวกัน
                 <div className="flex flex-col gap-y-1.5 w-full" style={{ fontSize: "0.85em" }}>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">รายได้/เดือน:</span> {data.salary || "-"}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">คดี/หมายจับ:</span> {data.number_of_case || "0"} / {data.number_of_warrant || "0"}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">ตัวชี้วัดเหยื่อ:</span> {data.victim_indicator || "-"}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">ช่องทาง/สถานะ:</span> {data.channel || "-"} / {data.result || "-"}</div>
-                  <div className="break-words"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">รายได้/เดือน:</span> {data.salary || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">คดี/หมายจับ:</span> {data.number_of_case || "0"} / {data.number_of_warrant || "0"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
+                  {(data.is_victim === true || data.is_victim === false || data.is_victim === "YES" || data.is_victim === "NO" || data.is_victim === "true" || data.is_victim === "false") && (
+                    <div className="wrap-break-wordword">
+                      <span className="font-semibold text-emerald-950">สถานะผู้เสียหาย:</span> {
+                        (data.is_victim === true || data.is_victim === "YES" || data.is_victim === "true") ? "เป็นผู้เสียหาย" : "ไม่เป็นผู้เสียหาย"
+                      }
+                    </div>
+                  )}
+                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">ช่องทาง:</span> {data.channel || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               )}
             </IBox>

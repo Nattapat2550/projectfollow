@@ -149,7 +149,7 @@ export function useDashboard() {
     if (!dashboardData) return [];
     return filterType === "illegal"
       ? [ { label: "จำนวนทั้งหมดที่พบตามตัวกรอง", value: dashboardData.stats.total }, { label: "เป็นผู้เสียหาย (ค้ามนุษย์)", value: dashboardData.stats.victims || 0 }, { label: "ผู้มีหนังสือเดินทาง", value: dashboardData.stats.hasPassport || 0 } ]
-      : [ { label: "จำนวนทั้งหมดที่พบตามตัวกรอง", value: dashboardData.stats.total }, { label: "ส่งกลับสำเร็จ", value: dashboardData.stats.success || 0 } ];
+      : [ { label: "จำนวนทั้งหมดที่พบตามตัวกรอง", value: dashboardData.stats.total }, { label: "เป็นผู้เสียหาย", value: dashboardData.stats.victims || 0 } ];
   })();
 
   const formatStandardChartData = (raw: any[] = [], total: number = 0, colorOffset: number = 0) => {

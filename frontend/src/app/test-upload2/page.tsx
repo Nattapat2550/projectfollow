@@ -269,7 +269,6 @@ export default function TestUpload2Page() {
                             <span className="text-[10px] font-semibold text-(--header) opacity-50 uppercase block mb-1">เอกสาร / รูปภาพ</span>
                             <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: national_id]</span> <span className="font-mono">{row.id_card || renderNull()}</span></div>
                             <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: passport_id]</span> <span className="font-mono">{row.passport || renderNull()}</span></div>
-                            <div className="text-sm"><span className="text-(--header) opacity-50 mr-1">[DB: result]</span> <span className="font-medium text-(--orangeText)">{row.result || renderNull()}</span></div>
                             <div className="text-sm mt-1">
                               <span className="text-(--header) opacity-50 block mb-2">[DB: photo_url]</span> 
                               {row.photo_url && (row.photo_url.startsWith('data:image') || row.photo_url.startsWith('http')) ? (
@@ -302,7 +301,7 @@ export default function TestUpload2Page() {
                             <div className="text-sm mt-1 text-(--header)">
                                 <span className="opacity-60 text-xs mr-2">[DB: case_id_count] จำนวนคดี:</span> <span className="font-semibold">{row.case_id_count || 0}</span><br/>
                                 <span className="opacity-60 text-xs mr-2">[DB: warrant] หมายจับ:</span> <span className="font-semibold">{row.warrant || 0}</span><br/>
-                                <span className="opacity-60 text-xs mr-2">[DB: victim_indicator] ข้อบ่งชี้:</span> {row.victim_indicator || renderNull()}<br/>
+                                <span className="opacity-60 text-xs mr-2">[DB: is_victim] สถานะผู้เสียหาย:</span> {row.is_victim === "YES" ? "เป็นผู้เสียหาย" : row.is_victim === "NO" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ"}<br/>
                                 <span className="opacity-60 text-xs mr-2">[DB: responsible_agency] หน่วยงาน:</span> {row.responsible_agency || renderNull()}
                             </div>
                           </div>
