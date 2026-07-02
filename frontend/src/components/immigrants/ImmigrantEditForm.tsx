@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Save, X, Camera as ImageIcon } from "lucide-react";
+import { Save, X, Camera as ImageIcon } from "lucide-react"; // เปลี่ยนเป็น Camera ป้องกัน Error เวอร์ชัน
 import { useAddressOptions } from "@/hooks/useAddressOptions";
 import AutocompleteInput from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
-
 
 interface ImmigrantEditFormProps {
   id: string;
@@ -28,10 +27,38 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
   const router = useRouter();
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
+  // 🟢 ฟังก์ชันแปลงลิงก์อัจฉริยะ (ดึงมาจากหน้าการ์ดที่แสดงผลได้สำเร็จ)
   const getFullImageUrl = (url: string) => {
     if (!url) return null;
-    if (url.startsWith("http")) return url;
-    return `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+    if (url.startsWith("blob:")) return url; // ถ้าเป็นรูปที่เพิ่งกดเลือกจากเครื่อง ให้โชว์ตรงๆ
+
+    let driveId = "";
+    
+    // ดักจับและแกะ ID ของ Google Drive
+    const matchFileD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (matchFileD && matchFileD[1]) {
+      driveId = matchFileD[1];
+    } else {
+      const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (matchId && matchId[1]) {
+        driveId = matchId[1];
+      }
+    }
+
+    // ถ้าเป็น Google Drive ให้แปลงเป็น Thumbnail + ผ่าน Proxy แก้ CORS
+    if (driveId) {
+      const thumbnailUrl = `https://drive.google.com/thumbnail?id=${driveId}&sz=w800`;
+      return `https://wsrv.nl/?url=${encodeURIComponent(thumbnailUrl)}`;
+    }
+    
+    // ถ้าเป็นลิงก์ภายนอกอื่นๆ ให้ผ่าน Proxy แก้ CORS
+    if (url.startsWith("http")) {
+      return `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+    }
+    
+    // ถ้าเป็น Path รูปในระบบ Backend ของเราเอง
+    const fullUrl = `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(fullUrl)}`;
   };
 
   const [formData, setFormData] = useState<any>({});
@@ -42,23 +69,21 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
 
-  // 🟢 พระเอกของเรา: เมื่อมี initialData ส่งเข้ามา ให้เอาข้อมูลเก่ายัดใส่ฟอร์มทันที
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       const startingData = { ...initialData };
       
-      // แปลงวันที่ให้อยู่ในฟอร์แมตที่ช่องกรอก Input Date รับได้
       if (startingData.detected_date) startingData.detected_date = formatDateForInput(startingData.detected_date);
       if (startingData.date_of_birth) startingData.date_of_birth = formatDateForInput(startingData.date_of_birth);
       if (startingData.return_date) startingData.return_date = formatDateForInput(startingData.return_date);
 
       setFormData(startingData);
       
-      // แปลง URL รูปภาพ
+      // เรียกใช้ฟังก์ชันแปลงลิงก์ใหม่ตอนดึงข้อมูลเก่ามาใส่ฟอร์ม
       if (startingData.photo_url) setImagePreview(getFullImageUrl(startingData.photo_url));
       if (startingData.passport_photo_url) setPassportImagePreview(getFullImageUrl(startingData.passport_photo_url));
     }
-  }, [initialData]); // ทำงานทุกครั้งที่ initialData เปลี่ยนแปลง
+  }, [initialData]);
 
   const defaultImage = personType === "illegal" ? "/enter.png" : "/return.png";
   const inputClass = "w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all";
@@ -142,7 +167,6 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
     }
   };
 
-  // เช็คว่าถ้าฟอร์มยังไม่ได้ข้อมูลเก่ามา ให้ขึ้น Loading ป้องกันหน้าขาว
   if (!formData || Object.keys(formData).length === 0) {
     return <div className="p-10 text-center">กำลังดึงข้อมูลเก่า...</div>;
   }
@@ -159,12 +183,19 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
           </div>
 
           <form onSubmit={handleSave} className="max-w-5xl mx-auto">
-            {/* ---------------- รูปภาพ (แชร์ร่วมกัน) ---------------- */}
+            {/* ---------------- รูปภาพ ---------------- */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 bg-background p-6 rounded-xl border border-(--wrapper)">
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปภาพประจำตัว</h3>
                 <div className="flex flex-col items-start gap-4">
-                  <img src={imagePreview || defaultImage} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" />
+                  {/* 🟢 เพิ่ม onError ดักจับถ้ารูปพังให้สลับไปใช้รูป Default อัตโนมัติ */}
+                  <img 
+                    src={imagePreview || defaultImage} 
+                    alt="Preview" 
+                    referrerPolicy="no-referrer" 
+                    onError={(e) => { e.currentTarget.src = defaultImage; }}
+                    className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" 
+                  />
                   <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
                     <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
@@ -174,7 +205,14 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปถ่ายพาสปอร์ต</h3>
                 <div className="flex flex-col items-start gap-4">
-                  <img src={passportImagePreview || defaultImage} alt="Passport Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" />
+                  {/* 🟢 เพิ่ม onError ดักจับถ้ารูปพังให้สลับไปใช้รูป Default อัตโนมัติ */}
+                  <img 
+                    src={passportImagePreview || defaultImage} 
+                    alt="Passport Preview" 
+                    referrerPolicy="no-referrer" 
+                    onError={(e) => { e.currentTarget.src = defaultImage; }}
+                    className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" 
+                  />
                   <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
                     <input type="file" accept="image/*" onChange={handlePassportImageChange} className="hidden" />
@@ -183,7 +221,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
               </div>
             </div>
 
-            {/* ---------------- ข้อมูลส่วนบุคคล (แชร์ร่วมกัน) ---------------- */}
+            {/* ---------------- ข้อมูลส่วนบุคคล ---------------- */}
             <h3 className="text-xl font-bold text-(--header) mb-4 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
               <div><label className={labelClass}>ชื่อต้นภาษาไทย *</label><input type="text" name="first_name_th" value={formData.first_name_th || ""} onChange={handleInputChange} required className={inputClass} /></div>
@@ -227,7 +265,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
                 
                 <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
                   <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim === true || formData.is_victim === "true"} onChange={handleCheckboxChange} className="w-4 h-4 cursor-pointer" />
-                  <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
+                  <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer !text-black dark:!text-white">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
                 </div>
 
                 <div className="mb-5">
@@ -290,7 +328,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
               </>
             )}
 
-            {/* ---------------- หมายเหตุและปุ่มกด (แชร์ร่วมกัน) ---------------- */}
+            {/* ---------------- หมายเหตุและปุ่มกด ---------------- */}
             <div className="mb-5 mt-8">
               <label className={labelClass}>หมายเหตุเพิ่มเติม (Note)</label>
               <textarea name="note" value={formData.note || ""} onChange={handleInputChange} rows={3} className={inputClass} />
