@@ -24,7 +24,11 @@ export default function ImmigrantEditForm({ id, personType }: ImmigrantEditFormP
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
 
-  const inputClass = "w-full border p-2 rounded bg-background !text-black dark:!text-white border-(--wrapper)";
+  // กำหนดรูป Default ตามประเภท (คุณสามารถปรับ Path รูปให้ตรงกับในโฟลเดอร์ public ของคุณได้)
+  const defaultImage = personType === "illegal" ? "/images/enter.png" : "/images/return.png";
+
+  // 🟢 ปรับลดขนาดฟอนต์ด้วย text-sm
+  const inputClass = "w-full border p-2 text-sm rounded bg-background !text-black dark:!text-white border-(--wrapper)";
   const labelClass = "block text-xs font-bold mb-2 !text-black dark:!text-white";
 
   // Address Hooks สำหรับฟอร์มทั้ง 2 แบบ
@@ -154,39 +158,23 @@ export default function ImmigrantEditForm({ id, personType }: ImmigrantEditFormP
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปภาพประจำตัว</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {imagePreview ? (
-                    <>
-                      <img src={imagePreview} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" />
-                      <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
-                        <ImageIcon size={16} /> แก้ไขรูปประจำตัว
-                        <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                      </label>
-                    </>
-                  ) : (
-                    <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
-                      <ImageIcon size={16} /> อัปโหลดรูปประจำตัว
-                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                    </label>
-                  )}
+                  {/* 🟢 แสดงรูป Default หากไม่มีรูป */}
+                  <img src={imagePreview || defaultImage} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm bg-stone-100 dark:bg-stone-800" />
+                  <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
+                    <ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
+                    <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                  </label>
                 </div>
               </div>
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปถ่ายพาสปอร์ต</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {passportImagePreview ? (
-                    <>
-                      <img src={passportImagePreview} alt="Passport Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm" />
-                      <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
-                        <ImageIcon size={16} /> แก้ไขรูปพาสปอร์ต
-                        <input type="file" accept="image/*" onChange={handlePassportImageChange} className="hidden" />
-                      </label>
-                    </>
-                  ) : (
-                    <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
-                      <ImageIcon size={16} /> อัปโหลดรูปพาสปอร์ต
-                      <input type="file" accept="image/*" onChange={handlePassportImageChange} className="hidden" />
-                    </label>
-                  )}
+                  {/* 🟢 แสดงรูป Default หากไม่มีรูป */}
+                  <img src={passportImagePreview || defaultImage} alt="Passport Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm bg-stone-100 dark:bg-stone-800" />
+                  <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
+                    <ImageIcon size={16} /> {passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
+                    <input type="file" accept="image/*" onChange={handlePassportImageChange} className="hidden" />
+                  </label>
                 </div>
               </div>
             </div>
