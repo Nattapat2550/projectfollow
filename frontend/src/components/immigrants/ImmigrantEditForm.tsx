@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Save, X, Image as ImageIcon } from "lucide-react";
+import { Save, X, Camera as ImageIcon } from "lucide-react";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
 import AutocompleteInput from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
+
 
 interface ImmigrantEditFormProps {
   id: string;
