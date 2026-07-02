@@ -172,7 +172,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
   }
 
   return (
-    <div className="max-w-2xl mx-auto my-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-gray-100 dark:border-zinc-800 overflow-hidden">
+    <div className="max-w-2xl mx-auto my-4 bg-(--container) rounded-2xl shadow-xl border border-gray-100 dark:border-zinc-800 overflow-hidden">
       <div className="p-6 sm:p-8">
       
         <form onSubmit={handleSave} className="w-full">
