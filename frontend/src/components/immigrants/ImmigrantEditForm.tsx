@@ -149,8 +149,15 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
       if (imageFile) submitData.append("photo", imageFile);
       if (passportFile) submitData.append("passport_photo", passportFile);
 
+      // 🟢 1. ดึง token จาก cookie ของเบราว์เซอร์
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+
       const res = await fetch(`${backendUrl}/api/v1/immigrants/${personType}/${id}`, {
         method: "PUT",
+        // 🟢 2. เพิ่ม headers และแนบ token เข้าไป
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
         body: submitData,
       });
 
