@@ -25,12 +25,12 @@ export default function ImmigrantEditForm({ id, personType, onCancel }: Immigran
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [passportFile, setPassportFile] = useState<File | null>(null);
 
-  // กำหนดรูป Default ตามประเภท (คุณสามารถปรับ Path รูปให้ตรงกับในโฟลเดอร์ public ของคุณได้)
+  // กำหนดรูป Default ตามประเภท (ดึงจากโฟลเดอร์ public)
   const defaultImage = personType === "illegal" ? "/enter.png" : "/return.png";
 
-  // 🟢 ปรับลดขนาดฟอนต์ด้วย text-sm
-  const inputClass = "w-full border p-2 text-sm rounded bg-background !text-black dark:!text-white border-(--wrapper)";
-  const labelClass = "block text-xs font-bold mb-2 !text-black dark:!text-white";
+  // 🟢 ปรับลดขนาดและ Padding ให้เท่ากับหน้าตารางหลัก
+  const inputClass = "w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all";
+  const labelClass = "block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
 
   // Address Hooks สำหรับฟอร์มทั้ง 2 แบบ
   const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(formData.province || "", formData.district || "");
@@ -51,8 +51,22 @@ export default function ImmigrantEditForm({ id, personType, onCancel }: Immigran
         if (json.return_date) json.return_date = new Date(json.return_date).toISOString().split('T')[0];
         
         setFormData(json);
-        if (json.photo_url) setImagePreview(json.photo_url);
-        if (json.passport_photo_url) setPassportImagePreview(json.passport_photo_url);
+        
+        // 🟢 ตรวจสอบและจัดการ URL ของรูปประจำตัว เพื่อแก้ปัญหารูปไม่โหลด
+        if (json.photo_url) {
+          const fullPhotoUrl = json.photo_url.startsWith("http") 
+            ? json.photo_url 
+            : `${backendUrl}${json.photo_url.startsWith("/") ? "" : "/"}${json.photo_url}`;
+          setImagePreview(fullPhotoUrl);
+        }
+        
+        // 🟢 ตรวจสอบและจัดการ URL ของรูปพาสปอร์ต
+        if (json.passport_photo_url) {
+          const fullPassportUrl = json.passport_photo_url.startsWith("http") 
+            ? json.passport_photo_url 
+            : `${backendUrl}${json.passport_photo_url.startsWith("/") ? "" : "/"}${json.passport_photo_url}`;
+          setPassportImagePreview(fullPassportUrl);
+        }
       } catch (error) {
         console.error(error);
         alert("เกิดข้อผิดพลาดในการดึงข้อมูล");
@@ -159,8 +173,8 @@ export default function ImmigrantEditForm({ id, personType, onCancel }: Immigran
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปภาพประจำตัว</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {/* 🟢 แสดงรูป Default หากไม่มีรูป */}
-                  <img src={imagePreview || defaultImage} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm bg-stone-100 dark:bg-stone-800" />
+                  {/* 🟢 แสดงรูป Default หากไม่มีรูป และลบขอบสีเทาออก */}
+                  <img src={imagePreview || defaultImage} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" />
                   <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
                     <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
@@ -170,8 +184,8 @@ export default function ImmigrantEditForm({ id, personType, onCancel }: Immigran
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปถ่ายพาสปอร์ต</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {/* 🟢 แสดงรูป Default หากไม่มีรูป */}
-                  <img src={passportImagePreview || defaultImage} alt="Passport Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl border border-(--wrapper) shadow-sm bg-stone-100 dark:bg-stone-800" />
+                  {/* 🟢 แสดงรูป Default หากไม่มีรูป และลบขอบสีเทาออก */}
+                  <img src={passportImagePreview || defaultImage} alt="Passport Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" />
                   <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
                     <input type="file" accept="image/*" onChange={handlePassportImageChange} className="hidden" />
