@@ -40,12 +40,8 @@ export default function ImmigrantDetailPage() {
 
       {states.isEditing ? (
         <ImmigrantEditForm 
-          personType={states.personType}
-          formData={states.formData}
-          isSaving={states.isSaving}
-          imagePreview={states.imagePreview}
-          passportImagePreview={states.passportImagePreview}
-          handlers={handlers}
+          id={id}
+          personType={states.personType as "illegal" | "repatriated"}
           onCancel={() => actions.setIsEditing(false)}
         />
       ) : (

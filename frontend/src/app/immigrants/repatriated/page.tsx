@@ -148,7 +148,24 @@ function RepatriatedPageContent() {
 
     if (result.isConfirmed) {
       // Excel
-      const ws = XLSX.utils.json_to_sheet(selectedRows);
+      const selectedData = selectedRows.map((person: any) => {
+        const row: any = {
+          "ชื่อ-สกุล": `${person.first_name_th || ""} ${person.last_name_th || ""}`.trim(),
+          "วันเกิด": person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString("th-TH") : "-",
+          "เลขประจำตัว": person.national_id || person.passport_id || "ไม่ระบุ",
+          "ที่อยู่": [person.address_details, person.sub_district ? 'ต.'+person.sub_district : '', person.district ? 'อ.'+person.district : '', person.province ? 'จ.'+person.province : ''].filter(Boolean).join(' ') || "ไม่ระบุสถานที่",
+          "วันที่ส่งกลับ": person.return_date ? new Date(person.return_date).toLocaleDateString("th-TH") : "-",
+          "สถานะผู้เสียหาย": person.is_victim === "YES" || person.is_victim === true || person.is_victim === "true" ? "เป็นผู้เสียหาย" : person.is_victim === "NO" || person.is_victim === false || person.is_victim === "false" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ"
+        };
+        // นำคอลัมน์อื่นๆ ทั้งหมดจาก DB มาต่อท้าย
+        Object.keys(person).forEach(key => {
+          if (!["first_name_th", "last_name_th", "date_of_birth", "national_id", "passport_id", "address_details", "sub_district", "district", "province", "return_date", "is_victim", "id"].includes(key)) {
+            row[key] = person[key];
+          }
+        });
+        return row;
+      });
+      const ws = XLSX.utils.json_to_sheet(selectedData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Repatriated Immigrants");
       XLSX.writeFile(wb, "repatriated_immigrants.xlsx");

@@ -148,7 +148,23 @@ function IllegalPageContent() {
 
     if (result.isConfirmed) {
       // Excel
-      const ws = XLSX.utils.json_to_sheet(selectedRows);
+      const selectedData = selectedRows.map((person: any) => {
+        const row: any = {
+          "ชื่อ - นามสกุล": `${person.first_name_th || ""} ${person.last_name_th || ""}`.trim(),
+          "สัญชาติ": person.nationality || "ไม่ระบุ",
+          "วันที่ตรวจพบ": person.detected_date ? new Date(person.detected_date).toLocaleDateString("th-TH") : "ไม่ระบุ",
+          "สถานที่ตรวจพบ": [person.detected_location_details, person.detected_location_sub_district ? 'ต.'+person.detected_location_sub_district : '', person.detected_location_district ? 'อ.'+person.detected_location_district : '', person.detected_location_province ? 'จ.'+person.detected_location_province : ''].filter(Boolean).join(' ') || "ไม่ระบุสถานที่",
+          "สถานะผู้เสียหาย": person.is_victim === "YES" || person.is_victim === true || person.is_victim === "true" ? "เป็นผู้เสียหาย" : person.is_victim === "NO" || person.is_victim === false || person.is_victim === "false" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ"
+        };
+        // นำคอลัมน์อื่นๆ ทั้งหมดจาก DB มาต่อท้าย
+        Object.keys(person).forEach(key => {
+          if (!["first_name_th", "last_name_th", "nationality", "detected_date", "detected_location_details", "detected_location_sub_district", "detected_location_district", "detected_location_province", "is_victim", "id"].includes(key)) {
+            row[key] = person[key];
+          }
+        });
+        return row;
+      });
+      const ws = XLSX.utils.json_to_sheet(selectedData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Illegal Immigrants");
       XLSX.writeFile(wb, "illegal_immigrants.xlsx");
