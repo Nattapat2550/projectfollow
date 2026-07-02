@@ -147,7 +147,7 @@ export function useImmigrantDetail(id: string) {
 
   return { 
     states: { person, personType, loading, note, isEditing, formData, isSaving, imagePreview, passportImagePreview }, 
-    actions: { setNote, setIsEditing },
+    actions: { setNote, setIsEditing, fetchData },
     handlers: { handleInputChange, handleCheckboxChange, handleImageChange, handlePassportImageChange, handleSave }
   };
 }
