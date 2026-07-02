@@ -97,11 +97,6 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
     setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  const handleCheckboxChange = (e: any) => {
-    const { name, checked } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: checked }));
-  };
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setImageFile(e.target.files[0]);
@@ -270,7 +265,8 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
                 </div>
                 
                 <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
-                  <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim === true || formData.is_victim === "true"} onChange={handleCheckboxChange} className="w-4 h-4 cursor-pointer" />
+                  {/* คอลัมน์ is_victim ใน DB เป็น enum YES/NO/PENDING ไม่ใช่ boolean */}
+                  <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim === "YES"} onChange={(e) => setFormData((prev: any) => ({ ...prev, is_victim: e.target.checked ? "YES" : "NO" }))} className="w-4 h-4 cursor-pointer" />
                   <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer !text-black dark:!text-white">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
                 </div>
 
