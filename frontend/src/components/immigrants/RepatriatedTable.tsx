@@ -39,9 +39,13 @@ interface RepatriatedTableProps {
   sortField: SortField | null;
   sortDirection: "asc" | "desc";
   onSort: (field: SortField) => void;
+  isExportMode?: boolean;
+  selectedIds?: string[];
+  onToggleSelect?: (id: string) => void;
+  onSelectAll?: (selectAll: boolean) => void;
 }
 
-export default function RepatriatedTable({ data, sortField, sortDirection, onSort }: RepatriatedTableProps) {
+export default function RepatriatedTable({ data, sortField, sortDirection, onSort, isExportMode, selectedIds, onToggleSelect, onSelectAll }: RepatriatedTableProps) {
   const router = useRouter();
 
   const Th = ({ field, width, children }: { field: SortField; width?: string; children: React.ReactNode }) => (
@@ -68,6 +72,16 @@ export default function RepatriatedTable({ data, sortField, sortDirection, onSor
       <table className="w-full text-left border-collapse text-sm table-fixed">
         <thead>
           <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
+            {isExportMode && (
+              <th className="px-4 py-3 text-center border-r w-[50px] shrink-0" style={{ backgroundColor: "var(--container)", borderColor: "var(--wrapper)" }}>
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 cursor-pointer accent-(--blueText)"
+                  checked={data.length > 0 && data.every(p => selectedIds?.includes(p.id))}
+                  onChange={(e) => onSelectAll?.(e.target.checked)}
+                />
+              </th>
+            )}
             <Th field="name" width="w-[20%]">ชื่อ-สกุล</Th>
             <Th field="date_of_birth" width="w-[15%]">วันเกิด (อายุ)</Th>
             <Th field="national_id" width="w-[15%]">เลขประจำตัว</Th>
@@ -86,12 +100,28 @@ export default function RepatriatedTable({ data, sortField, sortDirection, onSor
               return (
                 <tr
                   key={person.id}
-                  onClick={() => router.push(`/immigrants/${person.id}`)}
+                  onClick={() => {
+                    if (isExportMode) {
+                      onToggleSelect?.(person.id);
+                    } else {
+                      router.push(`/immigrants/${person.id}`);
+                    }
+                  }}
                   className="cursor-pointer transition-colors"
-                  style={{ backgroundColor: "var(--background)", borderBottom: "1px solid var(--wrapper)" }}
+                  style={{ backgroundColor: selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)", borderBottom: "1px solid var(--wrapper)" }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--row-hover)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--background)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)")}
                 >
+                  {isExportMode && (
+                    <td className="px-4 py-3 text-center border-r" style={{ borderColor: "var(--wrapper)" }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 cursor-pointer accent-(--blueText)"
+                        checked={selectedIds?.includes(person.id)}
+                        onChange={() => onToggleSelect?.(person.id)}
+                      />
+                    </td>
+                  )}
                   {/* เปลี่ยนเป็น truncate ทั้งหมดและใส่ title ให้ hover ดูข้อความเต็มได้ */}
                   <td className="px-4 py-3 border-r truncate" style={{ borderColor: "var(--wrapper)" }} title={fullName}>
                     {fullName}

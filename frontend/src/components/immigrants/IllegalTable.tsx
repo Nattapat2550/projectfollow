@@ -10,9 +10,13 @@ interface IllegalTableProps {
   sortField: SortField | null;
   sortDirection: "asc" | "desc";
   onSort: (field: SortField) => void;
+  isExportMode?: boolean;
+  selectedIds?: string[];
+  onToggleSelect?: (id: string) => void;
+  onSelectAll?: (selectAll: boolean) => void;
 }
 
-export default function IllegalTable({ data, sortField, sortDirection, onSort }: IllegalTableProps) {
+export default function IllegalTable({ data, sortField, sortDirection, onSort, isExportMode, selectedIds, onToggleSelect, onSelectAll }: IllegalTableProps) {
   const router = useRouter();
 
   // เพิ่ม props width เพื่อกำหนดความกว้างคอลัมน์
@@ -40,6 +44,16 @@ export default function IllegalTable({ data, sortField, sortDirection, onSort }:
       <table className="w-full text-left border-collapse text-sm table-fixed">
         <thead>
           <tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
+            {isExportMode && (
+              <th className="px-4 py-3 text-center border-r w-[50px] shrink-0" style={{ backgroundColor: "var(--container)", borderColor: "var(--wrapper)" }}>
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 cursor-pointer accent-(--blueText)"
+                  checked={data.length > 0 && data.every(p => selectedIds?.includes(p.id))}
+                  onChange={(e) => onSelectAll?.(e.target.checked)}
+                />
+              </th>
+            )}
             <Th field="name" width="w-[25%]">ชื่อ - นามสกุล</Th>
             <Th field="nationality" width="w-[15%]">สัญชาติ</Th>
             <Th field="detected_date" width="w-[20%]">วันที่ตรวจพบ</Th>
@@ -54,12 +68,28 @@ export default function IllegalTable({ data, sortField, sortDirection, onSort }:
               return (
               <tr
                 key={person.id}
-                onClick={() => router.push(`/immigrants/${person.id}`)}
+                onClick={() => {
+                  if (isExportMode) {
+                    onToggleSelect?.(person.id);
+                  } else {
+                    router.push(`/immigrants/${person.id}`);
+                  }
+                }}
                 className="cursor-pointer transition-colors"
-                style={{ backgroundColor: "var(--background)", borderBottom: "1px solid var(--wrapper)" }}
+                style={{ backgroundColor: selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)", borderBottom: "1px solid var(--wrapper)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--row-hover)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--background)")}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)")}
               >
+                {isExportMode && (
+                  <td className="px-4 py-3 text-center border-r" style={{ borderColor: "var(--wrapper)" }} onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 cursor-pointer accent-(--blueText)"
+                      checked={selectedIds?.includes(person.id)}
+                      onChange={() => onToggleSelect?.(person.id)}
+                    />
+                  </td>
+                )}
                 <td className="px-4 py-3 truncate border-r" style={{ borderColor: "var(--wrapper)" }} title={fullName}>
                   {fullName}
                 </td>

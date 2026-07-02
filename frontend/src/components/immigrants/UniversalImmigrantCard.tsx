@@ -143,14 +143,14 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
 
   // ตรวจสอบสถานะผู้เสียหาย (ไม่มี Emoji)
   let victimStatusStr = "ไม่คัดกรองสถานะ";
-  let victimColorClass = "text-yellow-700 bg-yellow-100 border-yellow-400";
+  let victimColorClass = "text-[#a16207] bg-[#fef9c3] border-[#facc15]";
 
   if (data.is_victim === "YES" || data.is_victim === true || data.is_victim === "true") {
     victimStatusStr = "เป็นผู้เสียหาย";
-    victimColorClass = "text-red-700 bg-red-100 border-red-400";
+    victimColorClass = "text-[#b91c1c] bg-[#fee2e2] border-[#f87171]";
   } else if (data.is_victim === "NO" || data.is_victim === false || data.is_victim === "false") {
     victimStatusStr = "ไม่เป็นผู้เสียหาย";
-    victimColorClass = "text-green-700 bg-green-100 border-green-400";
+    victimColorClass = "text-[#15803d] bg-[#dcfce7] border-[#4ade80]";
   }
 
   return (
@@ -158,7 +158,7 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
       
       {/* Header ตรงกลางด้านบน */}
       <div className="absolute top-[3%] left-0 w-full text-center">
-        <p className="font-bold text-emerald-950 tracking-wide" style={{ fontSize: "clamp(12px, 2.8vw, 24px)" }}>
+        <p className="font-bold text-[#022c22] tracking-wide" style={{ fontSize: "clamp(12px, 2.8vw, 24px)" }}>
           {isIllegal ? "ผู้ลักลอบเข้าประเทศ" : "ผู้ถูกส่งตัวกลับ"}
         </p>
       </div>
@@ -228,27 +228,27 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
               {isIllegal ? (
                 // เปลี่ยนเป็น flex-col จัดเรียงบรรทัดละหัวข้อ และใช้ break-words เพื่อให้ขึ้นบรรทัดใหม่เมื่อข้อความยาว
                 <div className="flex flex-col gap-y-1.5 w-full" style={{ fontSize: "0.95em" }}>
-                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
-                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-[#022c22]">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               ) : (
                 // เปลี่ยนเป็น flex-col เช่นเดียวกัน
                 <div className="flex flex-col gap-y-1.5 w-full" style={{ fontSize: "0.85em" }}>
-                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
-                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">รายได้/เดือน:</span> {data.salary || "-"}</div>
-                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
-                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">คดี/หมายจับ:</span> {data.number_of_case || "0"} / {data.number_of_warrant || "0"}</div>
-                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">อาชีพ:</span> {data.job_type || "-"}{data.role ? ` (${data.role})` : ""}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-[#022c22]">รายได้/เดือน:</span> {data.salary || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}{data.payment_method ? ` (${data.payment_method})` : ""}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-[#022c22]">คดี/หมายจับ:</span> {data.number_of_case || "0"} / {data.number_of_warrant || "0"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
                   {(data.is_victim === true || data.is_victim === false || data.is_victim === "YES" || data.is_victim === "NO" || data.is_victim === "true" || data.is_victim === "false") && (
                     <div className="wrap-break-wordword">
-                      <span className="font-semibold text-emerald-950">สถานะผู้เสียหาย:</span> {
+                      <span className="font-semibold text-[#022c22]">สถานะผู้เสียหาย:</span> {
                         (data.is_victim === true || data.is_victim === "YES" || data.is_victim === "true") ? "เป็นผู้เสียหาย" : "ไม่เป็นผู้เสียหาย"
                       }
                     </div>
                   )}
-                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
-                  <div className="wrap-break-wordword"><span className="font-semibold text-emerald-950">ช่องทาง:</span> {data.channel || "-"}</div>
-                  <div className="wrap-break-word"><span className="font-semibold text-emerald-950">หมายเหตุ:</span> {data.note || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
+                  <div className="wrap-break-wordword"><span className="font-semibold text-[#022c22]">ช่องทาง:</span> {data.channel || "-"}</div>
+                  <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               )}
             </IBox>
@@ -258,7 +258,7 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
 
         {/* คอลัมน์ขวา (รูปภาพ ไว้ฝั่งขวา) */}
         <div className="flex flex-col items-center shrink-0" style={{ width: "30%" }}>
-          <div className="bg-white border border-emerald-200 rounded-xl flex items-end justify-center overflow-hidden shadow-inner relative w-full mb-[5%]" style={{ aspectRatio: "3/4" }}>
+          <div className="bg-white border border-[#a7f3d0] rounded-xl flex items-end justify-center overflow-hidden shadow-inner relative w-full mb-[5%]" style={{ aspectRatio: "3/4" }}>
             {data.photo_url || data.image_url ? (
                <img 
                  src={getDirectImageUrl(data.photo_url || data.image_url)} 
@@ -294,12 +294,12 @@ export default function UniversalImmigrantCard({ data, type }: UniversalImmigran
 // Styled Components ภายใน
 // ----------------------------------------------------------------------
 function ILabel({ children, className = "" }: { children: React.ReactNode; className?: string; }) {
-  return <span className={`font-bold text-emerald-950 ${className}`} style={{ fontSize: "clamp(5px, 1.2vw, 11px)" }}>{children}</span>;
+  return <span className={`font-bold text-[#022c22] ${className}`} style={{ fontSize: "clamp(5px, 1.2vw, 11px)" }}>{children}</span>;
 }
 
 function IBox({ children, mono = false, noTruncate = false, className = "" }: { children: React.ReactNode; mono?: boolean; noTruncate?: boolean; className?: string; }) {
   return (
-    <div className={`bg-[#B8E8D4] rounded-md text-emerald-900 font-medium ${mono ? "font-mono tracking-tight" : ""} ${noTruncate ? "flex flex-col justify-center" : "truncate"} ${className}`} style={{ fontSize: "clamp(6px, 1.3vw, 12px)", padding: "2.5% 4%" }}>
+    <div className={`bg-[#B8E8D4] rounded-md text-[#064e3b] font-medium ${mono ? "font-mono tracking-tight" : ""} ${noTruncate ? "flex flex-col justify-center" : "truncate"} ${className}`} style={{ fontSize: "clamp(6px, 1.3vw, 12px)", padding: "2.5% 4%" }}>
       {children}
     </div>
   );

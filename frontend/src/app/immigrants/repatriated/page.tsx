@@ -4,6 +4,11 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import RepatriatedTable, { SortField } from "@/components/immigrants/RepatriatedTable";
+import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCard";
+import Swal from "sweetalert2";
+import * as XLSX from "xlsx";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 function RepatriatedPageContent() {
   const searchParams = useSearchParams();
@@ -20,6 +25,12 @@ function RepatriatedPageContent() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [isExportMode, setIsExportMode] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const selectedIds = selectedRows.map(r => r.id);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -84,6 +95,97 @@ function RepatriatedPageContent() {
     setCurrentPage(1); 
   };
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    setIsExportMode(false);
+    setSelectedRows([]);
+  };
+
+  const handleCancelExport = () => {
+    setIsExportMode(false);
+    setSelectedRows([]);
+  };
+
+  const handleToggleSelect = (id: string) => {
+    const isSelected = selectedRows.some(r => r.id === id);
+    if (isSelected) {
+      setSelectedRows(prev => prev.filter(r => r.id !== id));
+    } else {
+      const person = tableRows.find((r: any) => r.id === id);
+      if (person) setSelectedRows(prev => [...prev, person]);
+    }
+  };
+
+  const handleSelectAll = (selectAll: boolean) => {
+    if (selectAll) {
+      const newRows = [...selectedRows];
+      tableRows.forEach((r: any) => {
+        if (!newRows.some(nr => nr.id === r.id)) newRows.push(r);
+      });
+      setSelectedRows(newRows);
+    } else {
+      const currentViewIds = tableRows.map((r: any) => r.id);
+      setSelectedRows(prev => prev.filter(r => !currentViewIds.includes(r.id)));
+    }
+  };
+
+  const handleExportConfirm = async () => {
+    if (selectedRows.length === 0) {
+      Swal.fire({ title: "เกิดข้อผิดพลาด", text: "กรุณาเลือกข้อมูลอย่างน้อย 1 รายการ", icon: "warning" });
+      return;
+    }
+    
+    const result = await Swal.fire({
+      title: "เลือกรูปแบบการ Export",
+      text: `คุณได้เลือกข้อมูล ${selectedRows.length} รายการ`,
+      icon: "question",
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: "Excel",
+      denyButtonText: "PDF",
+      cancelButtonText: "ยกเลิก"
+    });
+
+    if (result.isConfirmed) {
+      // Excel
+      const ws = XLSX.utils.json_to_sheet(selectedRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Repatriated Immigrants");
+      XLSX.writeFile(wb, "repatriated_immigrants.xlsx");
+      handleCancelExport();
+    } else if (result.isDenied) {
+      // PDF
+      setIsExporting(true);
+      Swal.fire({ title: "กำลังสร้าง PDF", text: "กรุณารอสักครู่...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      try {
+        let pdf: any = null;
+        for (let i = 0; i < selectedRows.length; i++) {
+          const id = selectedRows[i].id;
+          const element = document.getElementById(`pdf-card-${id}`);
+          if (element) {
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false });
+            const imgData = canvas.toDataURL("image/png");
+            
+            if (!pdf) {
+              pdf = new jsPDF("l", "px", [canvas.width, canvas.height]);
+            } else {
+              pdf.addPage([canvas.width, canvas.height], "l");
+            }
+            pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+          }
+        }
+        if (pdf) pdf.save("repatriated_immigrants.pdf");
+      } catch (err) {
+        console.error("PDF Export error:", err);
+        Swal.fire("เกิดข้อผิดพลาด", "ไม่สามารถสร้างไฟล์ PDF ได้", "error");
+      } finally {
+        setIsExporting(false);
+        handleCancelExport();
+        Swal.close();
+      }
+    }
+  };
+
   const tableRows = (data?.tableData || []).map((item: any) => {
     const firstName = !item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ"
       ? (item.first_name_en || "ไม่ระบุ")
@@ -120,9 +222,27 @@ function RepatriatedPageContent() {
           
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold text-(--header)">ข้อมูลผู้ถูกส่งกลับ (Repatriated)</h1>
-            <Link href="/immigrants/repatriated/create" className="px-4 py-2 bg-(--header) text-background font-bold rounded-sm hover:opacity-90 transition text-sm">
-              + เพิ่มข้อมูล
-            </Link>
+            <div className="flex gap-2">
+              {isExportMode ? (
+                <>
+                  <button onClick={handleCancelExport} className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-foreground font-bold rounded-sm hover:opacity-90 transition text-sm cursor-pointer">
+                    ยกเลิก
+                  </button>
+                  <button onClick={handleExportConfirm} disabled={isExporting} className="px-4 py-2 bg-(--blueText) text-(--button) font-bold rounded-sm hover:opacity-90 transition text-sm cursor-pointer disabled:opacity-50">
+                    {isExporting ? "กำลัง Export..." : `ยืนยัน (${selectedRows.length})`}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => setIsExportMode(true)} className="px-4 py-2 bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 font-bold rounded-sm hover:opacity-90 transition text-sm cursor-pointer">
+                    Export
+                  </button>
+                  <Link href="/immigrants/repatriated/create" className="px-4 py-2 bg-(--header) text-background font-bold rounded-sm hover:opacity-90 transition text-sm">
+                    + เพิ่มข้อมูล
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
 
           <div className="mb-6 flex items-center px-4 py-2 border rounded-sm shadow-[0_1px_2px_var(--shadow)] bg-(--container) border-(--wrapper) text-foreground focus-within:ring-2 focus-within:ring-(--header) transition-all">
@@ -168,6 +288,10 @@ function RepatriatedPageContent() {
                 sortField={sortField} 
                 sortDirection={sortDirection} 
                 onSort={handleSort} 
+                isExportMode={isExportMode}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
+                onSelectAll={handleSelectAll}
               />
 
               {totalPages > 0 && (() => {
@@ -193,7 +317,7 @@ function RepatriatedPageContent() {
                       <div className="flex items-center gap-1 sm:gap-2">
                         <button
                           disabled={currentPage === 1}
-                          onClick={() => setCurrentPage(1)}
+                          onClick={() => handlePageChange(1)}
                           className="px-3 py-2 border rounded-sm disabled:opacity-30 text-sm font-medium transition cursor-pointer bg-(--button) border-(--wrapper) hover:bg-(--row-hover) text-foreground"
                           title="หน้าแรกสุด"
                         >
@@ -201,7 +325,7 @@ function RepatriatedPageContent() {
                         </button>
                         <button
                           disabled={currentPage === 1}
-                          onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                          onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                           className="px-3 py-2 border rounded-sm disabled:opacity-30 text-sm font-medium transition cursor-pointer bg-(--button) border-(--wrapper) hover:bg-(--row-hover) text-foreground"
                           title="ก่อนหน้า"
                         >
@@ -212,7 +336,7 @@ function RepatriatedPageContent() {
                           {pageNumbers.map((page) => (
                             <button
                               key={page}
-                              onClick={() => setCurrentPage(page)}
+                              onClick={() => handlePageChange(page)}
                               className={`px-3 py-2 border rounded-sm text-sm font-medium transition cursor-pointer ${
                                 page === currentPage
                                   ? "bg-(--header) text-background font-bold pointer-events-none border-transparent"
@@ -226,7 +350,7 @@ function RepatriatedPageContent() {
 
                         <button
                           disabled={currentPage === totalPages}
-                          onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                          onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
                           className="px-3 py-2 border rounded-sm disabled:opacity-30 text-sm font-medium transition cursor-pointer bg-(--button) border-(--wrapper) hover:bg-(--row-hover) text-foreground"
                           title="ถัดไป"
                         >
@@ -234,7 +358,7 @@ function RepatriatedPageContent() {
                         </button>
                         <button
                           disabled={currentPage === totalPages}
-                          onClick={() => setCurrentPage(totalPages)}
+                          onClick={() => handlePageChange(totalPages)}
                           className="px-3 py-2 border rounded-sm disabled:opacity-30 text-sm font-medium transition cursor-pointer bg-(--button) border-(--wrapper) hover:bg-(--row-hover) text-foreground"
                           title="หน้าท้ายสุด"
                         >
@@ -249,6 +373,16 @@ function RepatriatedPageContent() {
 
         </div>
       </div>
+      
+      {isExportMode && selectedRows.length > 0 && (
+        <div style={{ position: "absolute", left: "-9999px", top: 0, fontFamily: "'Sarabun', sans-serif" }}>
+          {selectedRows.map((person: any) => (
+            <div key={person.id} id={`pdf-card-${person.id}`} style={{ width: "856px", height: "540px", backgroundColor: "white" }}>
+              <UniversalImmigrantCard data={person} type="repatriated" />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
