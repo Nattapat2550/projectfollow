@@ -172,48 +172,47 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
   }
 
   return (
-    <div className="w-full p-4 sm:p-6 text-foreground" style={{ backgroundColor: "var(--wrapper)", minHeight: "calc(100vh - 80px)" }}>
-      <div className="w-full" style={{ backgroundColor: "var(--wrapper)", borderRadius: "0.2rem", boxShadow: "4px 4px 0px rgba(0, 0, 0, 0.25)", overflow: "hidden" }}>
-        <div className="p-5 sm:p-6" style={{ backgroundColor: "var(--container)", minHeight: "calc(100vh - 120px)" }}>
-          
-          <div className="flex justify-between items-center mb-6 border-b border-(--wrapper) pb-4">
-            <h1 className="text-2xl font-bold text-(--header)">
-              {personType === "illegal" ? "แก้ไขข้อมูลผู้ลักลอบเข้าเมือง" : "แก้ไขข้อมูลผู้ถูกส่งกลับ"}
-            </h1>
-          </div>
-
-          <form onSubmit={handleSave} className="max-w-5xl mx-auto">
+    <div className="max-w-2xl mx-auto my-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-gray-100 dark:border-zinc-800 overflow-hidden">
+      <div className="p-6 sm:p-8">
+      
+        <form onSubmit={handleSave} className="w-full">
             {/* ---------------- รูปภาพ ---------------- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 bg-background p-6 rounded-xl border border-(--wrapper)">
+            {/* เปลี่ยน bg-background เป็น bg-white และล็อกสีกรอบเป็น border-gray-200 เสมอ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 bg-white p-6 rounded-xl border border-gray-200 text-slate-900 shadow-sm">
               <div>
-                <h3 className="text-lg font-bold text-(--header) mb-4">รูปภาพประจำตัว</h3>
+                {/* ล็อกสีข้อความเป็น text-slate-800 เพื่อให้อ่านออกเวลาระบบเป็น Dark Mode */}
+                <h3 className="text-lg font-bold text-slate-800 mb-4">รูปภาพประจำตัว</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {/* 🟢 เพิ่ม onError ดักจับถ้ารูปพังให้สลับไปใช้รูป Default อัตโนมัติ */}
+                  {/* ล็อกตัวรูปภาพให้มีพื้นหลัง bg-white และกรอบสีเทาอ่อน border-gray-200 ตลอดเวลา */}
                   <img 
                     src={imagePreview || defaultImage} 
                     alt="Preview" 
                     referrerPolicy="no-referrer" 
                     onError={(e) => { e.currentTarget.src = defaultImage; }}
-                    className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" 
+                    className="h-40 w-40 object-cover rounded-xl shadow-sm bg-white border border-gray-200 p-1" 
                   />
-                  <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
+                  {/* ล็อกสีปุ่มให้อยู่ในโทนเข้มเสมอกับพื้นหลังขาว */}
+                  <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
                     <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                   </label>
                 </div>
               </div>
+              
               <div>
-                <h3 className="text-lg font-bold text-(--header) mb-4">รูปถ่ายพาสปอร์ต</h3>
+                {/* ล็อกสีข้อความเป็น text-slate-800 */}
+                <h3 className="text-lg font-bold text-slate-800 mb-4">รูปถ่ายพาสปอร์ต</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {/* 🟢 เพิ่ม onError ดักจับถ้ารูปพังให้สลับไปใช้รูป Default อัตโนมัติ */}
+                  {/* ล็อกตัวรูปภาพให้มีพื้นหลัง bg-white และกรอบสีเทาอ่อน border-gray-200 ตลอดเวลา */}
                   <img 
                     src={passportImagePreview || defaultImage} 
                     alt="Passport Preview" 
                     referrerPolicy="no-referrer" 
                     onError={(e) => { e.currentTarget.src = defaultImage; }}
-                    className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" 
+                    className="h-40 w-40 object-cover rounded-xl shadow-sm bg-white border border-gray-200 p-1" 
                   />
-                  <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
+                  {/* ล็อกสีปุ่มให้อยู่ในโทนเข้มเสมอกับพื้นหลังขาว */}
+                  <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
                     <input type="file" accept="image/*" onChange={handlePassportImageChange} className="hidden" />
                   </label>
@@ -342,6 +341,5 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
 
         </div>
       </div>
-    </div>
   );
 }
