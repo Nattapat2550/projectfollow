@@ -178,10 +178,10 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
         <form onSubmit={handleSave} className="w-full">
             {/* ---------------- รูปภาพ ---------------- */}
             {/* เปลี่ยน bg-background เป็น bg-white และล็อกสีกรอบเป็น border-gray-200 เสมอ */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 bg-white p-6 rounded-xl border border-gray-200 text-slate-900 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 p-6 rounded-xl ">
               <div>
                 {/* ล็อกสีข้อความเป็น text-slate-800 เพื่อให้อ่านออกเวลาระบบเป็น Dark Mode */}
-                <h3 className="text-lg font-bold text-slate-800 mb-4">รูปภาพประจำตัว</h3>
+                <h3 className="text-lg font-bold mb-4">รูปภาพประจำตัว</h3>
                 <div className="flex flex-col items-start gap-4">
                   {/* ล็อกตัวรูปภาพให้มีพื้นหลัง bg-white และกรอบสีเทาอ่อน border-gray-200 ตลอดเวลา */}
                   <img 
@@ -201,7 +201,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
               
               <div>
                 {/* ล็อกสีข้อความเป็น text-slate-800 */}
-                <h3 className="text-lg font-bold text-slate-800 mb-4">รูปถ่ายพาสปอร์ต</h3>
+                <h3 className="text-lg font-bold mb-4">รูปถ่ายพาสปอร์ต</h3>
                 <div className="flex flex-col items-start gap-4">
                   {/* ล็อกตัวรูปภาพให้มีพื้นหลัง bg-white และกรอบสีเทาอ่อน border-gray-200 ตลอดเวลา */}
                   <img 
