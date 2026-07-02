@@ -136,7 +136,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
     setFormData((prev: any) => ({ ...prev, detected_location_sub_district: subDistrict, detected_location_district: district, detected_location_province: province }));
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
@@ -149,8 +149,8 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
       if (imageFile) submitData.append("photo", imageFile);
       if (passportFile) submitData.append("passport_photo", passportFile);
 
-      // 🟢 1. ดึง token จาก cookie ของเบราว์เซอร์
-      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      // 🟢 1. ดึง token จาก localStorage เหมือนหน้าอื่นๆ (cookie เป็น HttpOnly อ่านจาก JS ไม่ได้)
+      const token = localStorage.getItem("token");
 
       const res = await fetch(`${backendUrl}/api/v1/immigrants/${personType}/${id}`, {
         method: "PUT",
