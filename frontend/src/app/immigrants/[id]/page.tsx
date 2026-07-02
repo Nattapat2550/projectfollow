@@ -43,6 +43,7 @@ export default function ImmigrantDetailPage() {
           id={id}
           personType={states.personType as "illegal" | "repatriated"}
           onCancel={() => actions.setIsEditing(false)}
+          initialData={states.person}
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-7xl mx-auto items-start">
