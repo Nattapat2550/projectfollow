@@ -10,10 +10,9 @@ import { ALL_NATIONALITIES } from "@/constants/nationalities";
 interface ImmigrantEditFormProps {
   id: string;
   personType: "illegal" | "repatriated";
-  onCancel?: () => void;
 }
 
-export default function ImmigrantEditForm({ id, personType, onCancel }: ImmigrantEditFormProps) {
+export default function ImmigrantEditForm({ id, personType }: ImmigrantEditFormProps) {
   const router = useRouter();
 
   const [formData, setFormData] = useState<any>({});
@@ -26,7 +25,7 @@ export default function ImmigrantEditForm({ id, personType, onCancel }: Immigran
   const [passportFile, setPassportFile] = useState<File | null>(null);
 
   // กำหนดรูป Default ตามประเภท (คุณสามารถปรับ Path รูปให้ตรงกับในโฟลเดอร์ public ของคุณได้)
-  const defaultImage = personType === "illegal" ? "/images/enter.png" : "/images/return.png";
+  const defaultImage = personType === "illegal" ? "/enter.png" : "/return.png";
 
   // 🟢 ปรับลดขนาดฟอนต์ด้วย text-sm
   const inputClass = "w-full border p-2 text-sm rounded bg-background !text-black dark:!text-white border-(--wrapper)";
@@ -296,7 +295,7 @@ export default function ImmigrantEditForm({ id, personType, onCancel }: Immigran
             </div>
 
             <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">
-              <button type="button" onClick={() => onCancel ? onCancel() : router.back()} className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer"><X size={16} /> ยกเลิก</button>
+              <button type="button" onClick={() => router.back()} className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer"><X size={16} /> ยกเลิก</button>
               <button type="submit" disabled={isSaving} className="flex items-center gap-1.5 px-4 py-2 bg-(--header) text-background font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer disabled:opacity-50"><Save size={16} /> {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}</button>
             </div>
           </form>
