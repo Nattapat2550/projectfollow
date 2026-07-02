@@ -237,15 +237,15 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
           {/* แถว 4: สถานที่ */}
           <div className="flex flex-col" style={{ marginBottom: "2%" }}>
             <ILabel>{isIllegal ? "สถานที่ทำงาน / จุดตรวจพบ" : "ที่อยู่ปัจจุบันตามบันทึก"}</ILabel>
-            <IBox noTruncate>
-              <div className="truncate">{getLocationText()}</div>
+            <IBox noTruncate className="w-full justify-start! text-left">
+              <div className="truncate w-full">{getLocationText()}</div>
             </IBox>
           </div>
 
           {/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
           <div className="flex flex-col flex-1 mb-1">
             <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-            <IBox noTruncate className="h-full justify-start! text-left pt-[2%] overflow-hidden">
+            <IBox noTruncate className="h-full justify-start! text-left overflow-hidden">
               {isIllegal ? (
                 // เปลี่ยนเป็น flex-col จัดเรียงบรรทัดละหัวข้อ และใช้ break-words เพื่อให้ขึ้นบรรทัดใหม่เมื่อข้อความยาว
                 <div className="flex flex-col gap-y-1.5 w-full" style={{ fontSize: "0.95em" }}>
@@ -324,7 +324,7 @@ function ILabel({ children, className = "" }: { children: React.ReactNode; class
 function IBox({ children, mono = false, noTruncate = false, className = "" }: { children: React.ReactNode; mono?: boolean; noTruncate?: boolean; className?: string; }) {
   const isExporting = useContext(ExportContext);
   return (
-    <div className={`bg-[#B8E8D4] rounded-md text-[#064e3b] font-medium ${mono ? "font-mono tracking-tight" : ""} ${noTruncate ? "flex flex-col justify-center" : "truncate"} ${className}`} style={{ fontSize: isExporting ? "11px" : "clamp(6px, 1.3vw, 12px)", padding: isExporting ? "6px 10px" : "2.5% 4%" }}>
+    <div className={`bg-[#B8E8D4] rounded-md text-[#064e3b] font-medium ${mono ? "font-mono tracking-tight" : ""} ${noTruncate ? "flex flex-col justify-center" : "truncate"} ${className}`} style={{ fontSize: isExporting ? "11px" : "clamp(6px, 1.3vw, 12px)", padding: isExporting ? "6px 10px" : "0.5em 0.8em" }}>
       {children}
     </div>
   );
