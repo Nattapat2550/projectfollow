@@ -1,52 +1,150 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Save, X, Image as ImageIcon } from "lucide-react";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
 import AutocompleteInput from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
 
-export default function ImmigrantEditForm({ 
-  personType, formData, isSaving, imagePreview, passportImagePreview,
-  handlers, onCancel 
-}: any) {
-  const { handleInputChange, handleCheckboxChange, handleImageChange, handlePassportImageChange, handleSave } = handlers;
+interface ImmigrantEditFormProps {
+  id: string;
+  personType: "illegal" | "repatriated";
+  initialData?: any; 
+  onCancel?: () => void;
+}
+
+const formatDateForInput = (dateString: string) => {
+  if (!dateString) return "";
+  try {
+    return new Date(dateString).toISOString().split('T')[0];
+  } catch (e) {
+    return "";
+  }
+};
+
+export default function ImmigrantEditForm({ id, personType, initialData, onCancel }: ImmigrantEditFormProps) {
+  const router = useRouter();
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+  const getFullImageUrl = (url: string) => {
+    if (!url) return null;
+    if (url.startsWith("http")) return url;
+    return `${backendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
+  const [formData, setFormData] = useState<any>({});
+  const [isSaving, setIsSaving] = useState(false);
   
-  // 🟢 ปรับลดขนาดและ Padding ให้เรียวและบางเท่ากับหน้าตารางหลัก (text-sm + py-1.5)
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [passportImagePreview, setPassportImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [passportFile, setPassportFile] = useState<File | null>(null);
+
+  // 🟢 พระเอกของเรา: เมื่อมี initialData ส่งเข้ามา ให้เอาข้อมูลเก่ายัดใส่ฟอร์มทันที
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      const startingData = { ...initialData };
+      
+      // แปลงวันที่ให้อยู่ในฟอร์แมตที่ช่องกรอก Input Date รับได้
+      if (startingData.detected_date) startingData.detected_date = formatDateForInput(startingData.detected_date);
+      if (startingData.date_of_birth) startingData.date_of_birth = formatDateForInput(startingData.date_of_birth);
+      if (startingData.return_date) startingData.return_date = formatDateForInput(startingData.return_date);
+
+      setFormData(startingData);
+      
+      // แปลง URL รูปภาพ
+      if (startingData.photo_url) setImagePreview(getFullImageUrl(startingData.photo_url));
+      if (startingData.passport_photo_url) setPassportImagePreview(getFullImageUrl(startingData.passport_photo_url));
+    }
+  }, [initialData]); // ทำงานทุกครั้งที่ initialData เปลี่ยนแปลง
+
+  const defaultImage = personType === "illegal" ? "/enter.png" : "/return.png";
   const inputClass = "w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all";
   const labelClass = "block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
-
-  // รูป Default (ดึงจากโฟลเดอร์ public)
-  const defaultImage = personType === "illegal" ? "/enter.png" : "/return.png";
 
   const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(formData.province || "", formData.district || "");
   const { provinces: detProvinces, districtOptions: detDistrictOptions, subDistrictOptions: detSubDistrictOptions } = useAddressOptions(formData.detected_location_province || "", formData.detected_location_district || "");
 
+  const handleInputChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (e: any) => {
+    const { name, checked } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: checked }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+      setImagePreview(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+
+  const handlePassportImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setPassportFile(e.target.files[0]);
+      setPassportImagePreview(URL.createObjectURL(e.target.files[0]));
+    }
+  };
+
   const handleSelectDistrict = (opt: any) => {
     const { district, province } = opt.extra;
-    handleInputChange({ target: { name: "district", value: district } });
-    handleInputChange({ target: { name: "province", value: province } });
+    setFormData((prev: any) => ({ ...prev, district, province }));
   };
 
   const handleSelectSubDistrict = (opt: any) => {
     const { subDistrict, district, province } = opt.extra;
-    handleInputChange({ target: { name: "sub_district", value: subDistrict } });
-    handleInputChange({ target: { name: "district", value: district } });
-    handleInputChange({ target: { name: "province", value: province } });
+    setFormData((prev: any) => ({ ...prev, sub_district: subDistrict, district, province }));
   };
 
   const handleSelectDetDistrict = (opt: any) => {
     const { district, province } = opt.extra;
-    handleInputChange({ target: { name: "detected_location_district", value: district } });
-    handleInputChange({ target: { name: "detected_location_province", value: province } });
+    setFormData((prev: any) => ({ ...prev, detected_location_district: district, detected_location_province: province }));
   };
 
   const handleSelectDetSubDistrict = (opt: any) => {
     const { subDistrict, district, province } = opt.extra;
-    handleInputChange({ target: { name: "detected_location_sub_district", value: subDistrict } });
-    handleInputChange({ target: { name: "detected_location_district", value: district } });
-    handleInputChange({ target: { name: "detected_location_province", value: province } });
+    setFormData((prev: any) => ({ ...prev, detected_location_sub_district: subDistrict, detected_location_district: district, detected_location_province: province }));
   };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const submitData = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (formData[key] !== null && formData[key] !== undefined) {
+          submitData.append(key, formData[key]);
+        }
+      });
+      if (imageFile) submitData.append("photo", imageFile);
+      if (passportFile) submitData.append("passport_photo", passportFile);
+
+      const res = await fetch(`${backendUrl}/api/v1/immigrants/${personType}/${id}`, {
+        method: "PUT",
+        body: submitData,
+      });
+
+      if (!res.ok) throw new Error("บันทึกข้อมูลไม่สำเร็จ");
+      
+      router.refresh(); 
+      if (onCancel) onCancel();
+      else router.back();
+    } catch (error) {
+      console.error(error);
+      alert("เกิดข้อผิดพลาดในการบันทึก");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // เช็คว่าถ้าฟอร์มยังไม่ได้ข้อมูลเก่ามา ให้ขึ้น Loading ป้องกันหน้าขาว
+  if (!formData || Object.keys(formData).length === 0) {
+    return <div className="p-10 text-center">กำลังดึงข้อมูลเก่า...</div>;
+  }
 
   return (
     <div className="w-full p-4 sm:p-6 text-foreground" style={{ backgroundColor: "var(--wrapper)", minHeight: "calc(100vh - 80px)" }}>
@@ -65,7 +163,6 @@ export default function ImmigrantEditForm({
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปภาพประจำตัว</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {/* 🟢 แก้ไข: ลบขอบและพื้นหลังสีเทาออก */}
                   <img src={imagePreview || defaultImage} alt="Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" />
                   <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
@@ -76,7 +173,6 @@ export default function ImmigrantEditForm({
               <div>
                 <h3 className="text-lg font-bold text-(--header) mb-4">รูปถ่ายพาสปอร์ต</h3>
                 <div className="flex flex-col items-start gap-4">
-                  {/* 🟢 แก้ไข: ลบขอบและพื้นหลังสีเทาออก */}
                   <img src={passportImagePreview || defaultImage} alt="Passport Preview" referrerPolicy="no-referrer" className="h-40 w-40 object-cover rounded-xl shadow-sm bg-transparent" />
                   <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 dark:bg-slate-600 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
                     <ImageIcon size={16} /> {passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
@@ -200,7 +296,7 @@ export default function ImmigrantEditForm({
             </div>
 
             <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">
-              <button type="button" onClick={onCancel} className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer"><X size={16} /> ยกเลิก</button>
+              <button type="button" onClick={() => onCancel ? onCancel() : router.back()} className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer"><X size={16} /> ยกเลิก</button>
               <button type="submit" disabled={isSaving} className="flex items-center gap-1.5 px-4 py-2 bg-(--header) text-background font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer disabled:opacity-50"><Save size={16} /> {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}</button>
             </div>
           </form>
