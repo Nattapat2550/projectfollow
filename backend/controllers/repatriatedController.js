@@ -1,7 +1,7 @@
 const pool = require("../config/db"); 
 const { v4: uuidv4 } = require("uuid"); 
 const { uploadToDrive, deleteFromDrive, extractDriveFileId } = require("../services/googleDriveService");
-const { safeParseDate, normalizeNationality } = require("../utils/immigrantHelpers");
+const { safeParseDate, normalizeNationality, calculateDOBFromAge } = require("../utils/immigrantHelpers");
 const cache = require("../utils/cache");
 
 exports.getRepatriatedById = async (req, res) => {
@@ -49,22 +49,25 @@ exports.createRepatriated = async (req, res) => {
     const created_by = req.user ? req.user.id : null;
     const id = uuidv4();
 
+    // ตาราง repatriated_persons ไม่มีคอลัมน์ age — ถ้าไม่ระบุวันเกิดให้คำนวณจากอายุแทน (เหมือนฝั่ง illegal)
+    let dob = safeParseDate(data.date_of_birth);
+    if (!dob && data.age) dob = calculateDOBFromAge(data.age);
+
     const query = `
-      INSERT INTO repatriated_persons 
-      (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-       passport_id, nationality, national_id, gender, age, date_of_birth, return_date, number_of_case, 
-       number_of_warrant, channel, address_details, sub_district, district, province, building, floor, room, job_type, 
+      INSERT INTO repatriated_persons
+      (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
+       passport_id, nationality, national_id, gender, date_of_birth, return_date, number_of_case,
+       number_of_warrant, channel, address_details, sub_district, district, province, building, floor, room, job_type,
        role, salary, paid_by, payment_method, is_victim, responsible_agency, screening_details, note, photo_url, passport_photo_url, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
       RETURNING *;
     `;
     const values = [
       id, data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       data.passport_id || null, data.nationality ? normalizeNationality(data.nationality) : null,
-      data.national_id, data.gender || null, 
-      data.age ? parseInt(data.age) : null, 
-      safeParseDate(data.date_of_birth), 
+      data.national_id, data.gender || null,
+      dob,
       safeParseDate(data.return_date),
       data.number_of_case ? parseInt(data.number_of_case) : 0,
       data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
@@ -117,23 +120,26 @@ exports.updateRepatriated = async (req, res) => {
       }
     }
 
+    // ตาราง repatriated_persons ไม่มีคอลัมน์ age — ถ้าไม่ระบุวันเกิดให้คำนวณจากอายุแทน (เหมือนฝั่ง illegal)
+    let dob = safeParseDate(data.date_of_birth);
+    if (!dob && data.age) dob = calculateDOBFromAge(data.age);
+
     const query = `
-      UPDATE repatriated_persons SET 
-        first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
-        passport_id=$7, nationality=$8, national_id=$9, gender=$10, age=$11, date_of_birth=$12, return_date=$13, 
-        number_of_case=$14, number_of_warrant=$15, channel=$16, 
-        address_details=$17, sub_district=$18, district=$19, province=$20, building=$21, floor=$22, room=$23, job_type=$24, 
-        role=$25, salary=$26, paid_by=$27, payment_method=$28, is_victim=$29, responsible_agency=$30, 
-        screening_details=$31, note=$32, photo_url=$33, passport_photo_url=$34, updated_at=NOW()
-      WHERE id=$35 RETURNING *;
+      UPDATE repatriated_persons SET
+        first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
+        passport_id=$7, nationality=$8, national_id=$9, gender=$10, date_of_birth=$11, return_date=$12,
+        number_of_case=$13, number_of_warrant=$14, channel=$15,
+        address_details=$16, sub_district=$17, district=$18, province=$19, building=$20, floor=$21, room=$22, job_type=$23,
+        role=$24, salary=$25, paid_by=$26, payment_method=$27, is_victim=$28, responsible_agency=$29,
+        screening_details=$30, note=$31, photo_url=$32, passport_photo_url=$33, updated_at=NOW()
+      WHERE id=$34 RETURNING *;
     `;
     const values = [
       data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       data.passport_id || null, data.nationality ? normalizeNationality(data.nationality) : null,
-      data.national_id, data.gender || null, 
-      data.age ? parseInt(data.age) : null, 
-      safeParseDate(data.date_of_birth), 
+      data.national_id, data.gender || null,
+      dob,
       safeParseDate(data.return_date),
       data.number_of_case ? parseInt(data.number_of_case) : 0,
       data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
