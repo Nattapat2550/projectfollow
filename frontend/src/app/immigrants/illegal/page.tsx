@@ -9,6 +9,45 @@ import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+const illegalTranslationMap: { [key: string]: string } = {
+  id: "รหัสอ้างอิงระบบ",
+  first_name_th: "ชื่อจริง (ภาษาไทย)",
+  middle_name_th: "ชื่อกลาง (ภาษาไทย)",
+  last_name_th: "นามสกุล (ภาษาไทย)",
+  first_name_en: "ชื่อจริง (ภาษาอังกฤษ)",
+  middle_name_en: "ชื่อกลาง (ภาษาอังกฤษ)",
+  last_name_en: "นามสกุล (ภาษาอังกฤษ)",
+  passport_id: "เลขที่หนังสือเดินทาง (Passport ID)",
+  gender: "เพศ",
+  nationality: "สัญชาติ",
+  date_of_birth: "วันเกิด",
+  detected_date: "วันที่ตรวจพบ",
+  detected_location_details: "รายละเอียดสถานที่ตรวจพบ",
+  detected_location_sub_district: "ตำบลที่ตรวจพบ",
+  detected_location_district: "อำเภอที่ตรวจพบ",
+  detected_location_province: "จังหวัดที่ตรวจพบ",
+  workplace: "สถานที่ทำงาน/จุดตรวจพบ",
+  screening_details: "รายละเอียดคัดกรอง",
+  is_victim: "สถานะการคัดแยกผู้เสียหาย",
+  note: "หมายเหตุ",
+  photo_url: "ลิงก์รูปถ่ายโปรไฟล์",
+  passport_photo_url: "ลิงก์รูปถ่ายหนังสือเดินทาง",
+  created_by: "รหัสผู้บันทึกข้อมูล",
+  created_at: "วันเวลาที่สร้างข้อมูล",
+  updated_at: "วันเวลาที่แก้ไขล่าสุด",
+  creator_name: "ชื่อผู้บันทึกข้อมูล",
+  creator_color: "โค้ดสีของผู้บันทึก",
+};
+
+const formatValue = (key: string, val: any) => {
+  if (val === null || val === undefined) return "-";
+  if (key.includes("date") && typeof val === "string" && !isNaN(Date.parse(val))) {
+    return new Date(val).toLocaleDateString("th-TH");
+  }
+  if (val === true || val === "true") return "ใช่";
+  if (val === false || val === "false") return "ไม่ใช่";
+  return val;
+};
 
 function IllegalPageContent() {
   const searchParams = useSearchParams();
@@ -149,17 +188,21 @@ function IllegalPageContent() {
     if (result.isConfirmed) {
       // Excel
       const selectedData = selectedRows.map((person: any) => {
-        const row: any = {
-          "ชื่อ - นามสกุล": `${person.first_name_th || ""} ${person.last_name_th || ""}`.trim(),
-          "สัญชาติ": person.nationality || "ไม่ระบุ",
-          "วันที่ตรวจพบ": person.detected_date ? new Date(person.detected_date).toLocaleDateString("th-TH") : "ไม่ระบุ",
-          "สถานที่ตรวจพบ": [person.detected_location_details, person.detected_location_sub_district ? 'ต.'+person.detected_location_sub_district : '', person.detected_location_district ? 'อ.'+person.detected_location_district : '', person.detected_location_province ? 'จ.'+person.detected_location_province : ''].filter(Boolean).join(' ') || "ไม่ระบุสถานที่",
-          "สถานะผู้เสียหาย": person.is_victim === "YES" || person.is_victim === true || person.is_victim === "true" ? "เป็นผู้เสียหาย" : person.is_victim === "NO" || person.is_victim === false || person.is_victim === "false" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ"
-        };
-        // นำคอลัมน์อื่นๆ ทั้งหมดจาก DB มาต่อท้าย
+        const row: any = {};
+        const formattedKeys = ["first_name_th", "middle_name_th", "last_name_th", "first_name_en", "middle_name_en", "last_name_en", "detected_date", "is_victim", "id"];
+
+        const fullNameTh = `${person.first_name_th || ""} ${person.middle_name_th || ""} ${person.last_name_th || ""}`.replace(/\s+/g, ' ').trim();
+        const fullNameEn = `${person.first_name_en || ""} ${person.middle_name_en || ""} ${person.last_name_en || ""}`.replace(/\s+/g, ' ').trim();
+        const finalName = fullNameTh || fullNameEn || "ไม่ระบุชื่อ";
+
+        row["ชื่อ - นามสกุล"] = finalName;
+        row["วันที่ตรวจพบ"] = person.detected_date ? new Date(person.detected_date).toLocaleDateString("th-TH") : "-";
+        row["สถานะผู้เสียหาย"] = person.is_victim === "YES" || person.is_victim === true || person.is_victim === "true" ? "เป็นผู้เสียหาย" : person.is_victim === "NO" || person.is_victim === false || person.is_victim === "false" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ";
+
         Object.keys(person).forEach(key => {
-          if (!["first_name_th", "last_name_th", "nationality", "detected_date", "detected_location_details", "detected_location_sub_district", "detected_location_district", "detected_location_province", "is_victim", "id"].includes(key)) {
-            row[key] = person[key];
+          if (!formattedKeys.includes(key)) {
+            const thaiKey = illegalTranslationMap[key] || key;
+            row[thaiKey] = formatValue(key, person[key]);
           }
         });
         return row;
