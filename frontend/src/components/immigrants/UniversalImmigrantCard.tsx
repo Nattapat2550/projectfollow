@@ -184,46 +184,46 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
           </p>
         </div>
 
-      <div className="absolute inset-0 top-[11%] flex p-[4%] pt-0 gap-[3%]">
+      <div className="absolute inset-0 top-[11%] flex p-[4%] pt-0">
         
         {/* คอลัมน์ซ้าย (รายละเอียดข้อมูล) */}
-        <div className="flex flex-col flex-1 gap-[2%] min-w-0">
+        <div className="flex flex-col min-w-0" style={{ width: "67%", marginRight: "3%" }}>
           
           {/* แถว 1: ชื่อ-นามสกุล (แยกกล่อง ไทย - อังกฤษ) */}
-          <div className="flex gap-[3%]">
-            <div className="flex flex-col gap-[3%] flex-1">
+          <div className="flex justify-between w-full" style={{ marginBottom: "2%" }}>
+            <div className="flex flex-col" style={{ width: "48.5%" }}>
               <ILabel>ชื่อ - นามสกุล</ILabel>
               <IBox>{fullNameTh || "-"}</IBox>
             </div>
-            <div className="flex flex-col gap-[3%] flex-1">
+            <div className="flex flex-col" style={{ width: "48.5%" }}>
               <ILabel>Name</ILabel>
               <IBox>{fullNameEn || "-"}</IBox>
             </div>
           </div>
 
           {/* แถว 2: เลขที่บัตร */}
-          <div className="flex gap-[3%]">
-            <div className="flex flex-col gap-[3%] flex-1">
+          <div className="flex justify-between w-full" style={{ marginBottom: "2%" }}>
+            <div className="flex flex-col" style={{ width: "48.5%" }}>
               <ILabel>เลขประจำตัวประชาชน</ILabel>
               <IBox mono>{formatNationalId(data.national_id) || "-"}</IBox>
             </div>
-            <div className="flex flex-col gap-[3%] flex-1">
+            <div className="flex flex-col" style={{ width: "48.5%" }}>
               <ILabel>เลขที่หนังสือเดินทาง (Passport ID)</ILabel>
               <IBox mono>{data.passport_id || "-"}</IBox>
             </div>
           </div>
 
           {/* แถว 3: วันเกิด / เพศ-อายุ / สัญชาติ */}
-          <div className="flex gap-[3%]">
-            <div className="flex flex-col gap-[3%] flex-[1.2]">
+          <div className="flex w-full" style={{ marginBottom: "2%" }}>
+            <div className="flex flex-col" style={{ width: "37.6%", marginRight: "3%" }}>
               <ILabel>วันเดือนปีเกิด / DOB</ILabel>
               <IBox>{getDobText()}</IBox>
             </div>
-            <div className="flex flex-col gap-[3%] flex-[0.8]">
+            <div className="flex flex-col" style={{ width: "25.1%", marginRight: "3%" }}>
               <ILabel>เพศ/อายุ</ILabel>
               <IBox>{data.gender || "-"}{data.age ? ` (${data.age})` : ""}</IBox>
             </div>
-            <div className="flex flex-col gap-[3%] flex-1">
+            <div className="flex flex-col" style={{ width: "31.3%" }}>
               <ILabel>สัญชาติ</ILabel>
               <IBox>
                 <div className="flex items-center gap-1.5">
@@ -235,7 +235,7 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
           </div>
 
           {/* แถว 4: สถานที่ */}
-          <div className="flex flex-col gap-[2%]">
+          <div className="flex flex-col" style={{ marginBottom: "2%" }}>
             <ILabel>{isIllegal ? "สถานที่ทำงาน / จุดตรวจพบ" : "ที่อยู่ปัจจุบันตามบันทึก"}</ILabel>
             <IBox noTruncate>
               <div className="truncate">{getLocationText()}</div>
@@ -243,7 +243,7 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
           </div>
 
           {/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
-          <div className="flex flex-col gap-[2%] flex-1 mb-1">
+          <div className="flex flex-col flex-1 mb-1">
             <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
             <IBox noTruncate className="h-full justify-start! text-left pt-[2%] overflow-hidden">
               {isIllegal ? (
@@ -289,9 +289,9 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
                  crossOrigin="anonymous"
                />
             ) : (
-              <div className="flex flex-col items-center justify-end w-full h-full pb-[8%]">
-                <img src={"/enter.png"} className="opacity-40 w-1/2" alt="Placeholder"></img>
-              </div>
+               <div className="flex flex-col items-center justify-end w-full h-full pb-[8%]">
+                 <img src={"/enter.png"} className="opacity-40 w-1/2" alt="Placeholder"></img>
+               </div>
             )}
           </div>
 
@@ -301,8 +301,8 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
           </span>
 
           {/* วันที่พบตัว (โชว์เด่นๆ ฝั่งขวาใต้รูป) */}
-          <div className="w-full flex flex-col items-center gap-[6%]">
-            <ILabel>{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"}</ILabel>
+          <div className="w-full flex flex-col items-center">
+            <div style={{ marginBottom: "4px" }}><ILabel>{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"}</ILabel></div>
             <IBox className="w-full flex justify-center text-center font-bold">{dateValue}</IBox>
           </div>
         </div>
@@ -318,7 +318,7 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
 // ----------------------------------------------------------------------
 function ILabel({ children, className = "" }: { children: React.ReactNode; className?: string; }) {
   const isExporting = useContext(ExportContext);
-  return <span className={`font-bold text-[#022c22] ${className}`} style={{ fontSize: isExporting ? "10px" : "clamp(5px, 1.2vw, 11px)" }}>{children}</span>;
+  return <span className={`font-bold text-[#022c22] block mb-0.5 ${className}`} style={{ fontSize: isExporting ? "10px" : "clamp(5px, 1.2vw, 11px)" }}>{children}</span>;
 }
 
 function IBox({ children, mono = false, noTruncate = false, className = "" }: { children: React.ReactNode; mono?: boolean; noTruncate?: boolean; className?: string; }) {

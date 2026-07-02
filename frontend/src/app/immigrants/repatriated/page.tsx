@@ -9,6 +9,58 @@ import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+const repatriatedTranslationMap: { [key: string]: string } = {
+  id: "รหัสอ้างอิงระบบ",
+  first_name_th: "ชื่อจริง (ภาษาไทย)",
+  middle_name_th: "ชื่อกลาง (ภาษาไทย)",
+  last_name_th: "นามสกุล (ภาษาไทย)",
+  first_name_en: "ชื่อจริง (ภาษาอังกฤษ)",
+  middle_name_en: "ชื่อกลาง (ภาษาอังกฤษ)",
+  last_name_en: "นามสกุล (ภาษาอังกฤษ)",
+  passport_id: "เลขที่หนังสือเดินทาง (Passport ID)",
+  nationality: "สัญชาติ",
+  national_id: "เลขประจำตัวประชาชน",
+  gender: "เพศ",
+  age: "อายุ",
+  date_of_birth: "วันเกิด",
+  return_date: "วันที่ส่งตัวกลับ",
+  number_of_case: "จำนวนคดีที่พบ",
+  number_of_warrant: "จำนวนหมายจับที่พบ",
+  channel: "ช่องทางผ่านแดน",
+  address_details: "รายละเอียดที่อยู่",
+  sub_district: "ตำบลตามที่อยู่",
+  district: "อำเภอตามที่อยู่",
+  province: "จังหวัดตามที่อยู่",
+  building: "อาคาร/หมู่บ้าน",
+  floor: "ชั้น",
+  room: "ห้อง",
+  job_type: "อาชีพ/ประเภทงาน",
+  role: "หน้าที่/ตำแหน่งงาน",
+  salary: "รายได้หรือเงินเดือน",
+  paid_by: "นายจ้าง/ผู้จ่ายเงิน",
+  payment_method: "วิธีการรับเงิน",
+  is_victim: "สถานะการคัดแยกผู้เสียหาย",
+  responsible_agency: "หน่วยงานที่รับผิดชอบ",
+  screening_details: "รายละเอียดคัดกรอง",
+  note: "หมายเหตุ",
+  photo_url: "ลิงก์รูปถ่ายหน้าตรง",
+  passport_photo_url: "ลิงก์รูปถ่ายหนังสือเดินทาง",
+  created_by: "รหัสผู้สร้างข้อมูล",
+  created_at: "วันเวลาที่สร้างข้อมูล",
+  updated_at: "วันเวลาที่แก้ไขข้อมูลล่าสุด",
+  creator_name: "ชื่อผู้บันทึกข้อมูล",
+  creator_color: "สีประจำตัวผู้บันทึก",
+};
+
+const formatValue = (key: string, val: any) => {
+  if (val === null || val === undefined) return "-";
+  if (key.includes("date") && typeof val === "string" && !isNaN(Date.parse(val))) {
+    return new Date(val).toLocaleDateString("th-TH");
+  }
+  if (val === true || val === "true") return "ใช่";
+  if (val === false || val === "false") return "ไม่ใช่";
+  return val;
+};
 
 function RepatriatedPageContent() {
   const searchParams = useSearchParams();
@@ -149,18 +201,22 @@ function RepatriatedPageContent() {
     if (result.isConfirmed) {
       // Excel
       const selectedData = selectedRows.map((person: any) => {
-        const row: any = {
-          "ชื่อ-สกุล": `${person.first_name_th || ""} ${person.last_name_th || ""}`.trim(),
-          "วันเกิด": person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString("th-TH") : "-",
-          "เลขประจำตัว": person.national_id || person.passport_id || "ไม่ระบุ",
-          "ที่อยู่": [person.address_details, person.sub_district ? 'ต.'+person.sub_district : '', person.district ? 'อ.'+person.district : '', person.province ? 'จ.'+person.province : ''].filter(Boolean).join(' ') || "ไม่ระบุสถานที่",
-          "วันที่ส่งกลับ": person.return_date ? new Date(person.return_date).toLocaleDateString("th-TH") : "-",
-          "สถานะผู้เสียหาย": person.is_victim === "YES" || person.is_victim === true || person.is_victim === "true" ? "เป็นผู้เสียหาย" : person.is_victim === "NO" || person.is_victim === false || person.is_victim === "false" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ"
-        };
-        // นำคอลัมน์อื่นๆ ทั้งหมดจาก DB มาต่อท้าย
+        const row: any = {};
+        const formattedKeys = ["first_name_th", "middle_name_th", "last_name_th", "first_name_en", "middle_name_en", "last_name_en", "date_of_birth", "return_date", "is_victim", "id"];
+
+        const fullNameTh = `${person.first_name_th || ""} ${person.middle_name_th || ""} ${person.last_name_th || ""}`.replace(/\s+/g, ' ').trim();
+        const fullNameEn = `${person.first_name_en || ""} ${person.middle_name_en || ""} ${person.last_name_en || ""}`.replace(/\s+/g, ' ').trim();
+        const finalName = fullNameTh || fullNameEn || "ไม่ระบุชื่อ";
+
+        row["ชื่อ-สกุล"] = finalName;
+        row["วันเกิด"] = person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString("th-TH") : "-";
+        row["วันที่ส่งกลับ"] = person.return_date ? new Date(person.return_date).toLocaleDateString("th-TH") : "-";
+        row["สถานะผู้เสียหาย"] = person.is_victim === "YES" || person.is_victim === true || person.is_victim === "true" ? "เป็นผู้เสียหาย" : person.is_victim === "NO" || person.is_victim === false || person.is_victim === "false" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ";
+
         Object.keys(person).forEach(key => {
-          if (!["first_name_th", "last_name_th", "date_of_birth", "national_id", "passport_id", "address_details", "sub_district", "district", "province", "return_date", "is_victim", "id"].includes(key)) {
-            row[key] = person[key];
+          if (!formattedKeys.includes(key)) {
+            const thaiKey = repatriatedTranslationMap[key] || key;
+            row[thaiKey] = formatValue(key, person[key]);
           }
         });
         return row;
