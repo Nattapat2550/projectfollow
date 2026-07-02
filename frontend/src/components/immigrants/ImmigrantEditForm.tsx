@@ -133,7 +133,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
     setFormData((prev: any) => ({ ...prev, detected_location_sub_district: subDistrict, detected_location_district: district, detected_location_province: province }));
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
@@ -163,7 +163,8 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
         throw new Error(errData.message || "บันทึกข้อมูลไม่สำเร็จ");
       }
       
-      Swal.fire({
+      // โชว์ป๊อปอัพสำเร็จจนครบ 1.5 วิ แล้วรีโหลดหน้าเว็บ 1 ครั้ง (เหมือนกด F5) เพื่อดึงข้อมูลใหม่
+      await Swal.fire({
         icon: 'success',
         title: 'สำเร็จ!',
         text: 'บันทึกการแก้ไขข้อมูลเรียบร้อยแล้ว!',
@@ -171,10 +172,8 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
         showConfirmButton: false
       });
 
-      router.refresh(); 
       if (onSaveSuccess) onSaveSuccess();
-      else if (onCancel) onCancel();
-      else router.back();
+      window.location.reload();
     } catch (error: any) {
       console.error(error);
       Swal.fire({
