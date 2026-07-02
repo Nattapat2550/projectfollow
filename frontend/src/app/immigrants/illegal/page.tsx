@@ -392,7 +392,7 @@ function IllegalPageContent() {
         <div style={{ position: "absolute", left: "-9999px", top: 0, fontFamily: "'Sarabun', sans-serif" }}>
           {selectedRows.map((person: any) => (
             <div key={person.id} id={`pdf-card-${person.id}`} style={{ width: "856px", height: "540px", backgroundColor: "white" }}>
-              <UniversalImmigrantCard data={person} type="illegal" />
+              <UniversalImmigrantCard data={person} type="illegal" isExporting={true} />
             </div>
           ))}
         </div>
