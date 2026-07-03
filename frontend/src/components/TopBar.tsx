@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { LogOut, Settings, LogIn } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import DarkModeBtn from './DarkModeBtn';
 
 export default function TopBar() {
@@ -12,6 +12,7 @@ export default function TopBar() {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const pathname = usePathname();
     
     // ใช้ตัวแปรเดียวกับหน้า Login และเปลี่ยนเป็น Port 8000 ตามเซิร์ฟเวอร์หลัก
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
@@ -133,6 +134,32 @@ export default function TopBar() {
 
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                 <DarkModeBtn />
+
+                {pathname?.includes('/repatriated') ? (
+                    <Link
+                        href="/immigrants/illegal"
+                        aria-label="ไปหน้า ข้อมูลผู้ลักลอบเข้าเมือง"
+                        className="flex items-center gap-1 sm:gap-2 hover:bg-white/10 px-2 sm:px-4 py-2 rounded-lg transition-colors"
+                    >
+                        <span className="font-medium hidden md:inline text-white">ผู้ลักลอบเข้าเมือง</span>
+                    </Link>
+                ) : (
+                    <Link
+                        href="/immigrants/repatriated"
+                        aria-label="ไปหน้า ข้อมูลผู้ถูกส่งกลับ"
+                        className="flex items-center gap-1 sm:gap-2 hover:bg-white/10 px-2 sm:px-4 py-2 rounded-lg transition-colors"
+                    >
+                        <span className="font-medium hidden md:inline text-white">ผู้ถูกส่งกลับ</span>
+                    </Link>
+                )}
+
+                <Link
+                    href="/dashboard"
+                    aria-label="ไปหน้า Dashboard"
+                    className="flex items-center gap-1 sm:gap-2 hover:bg-white/10 px-2 sm:px-4 py-2 rounded-lg transition-colors"
+                >
+                    <span className="font-medium hidden md:inline text-white">Dashboard</span>
+                </Link>
 
                 <Link href="/help" aria-label="ไปหน้าช่วยเหลือการใช้งาน">
                     <button className="flex items-center gap-1 sm:gap-2 hover:bg-white/10 px-2 sm:px-4 py-2 rounded-lg transition-colors">
