@@ -1,6 +1,6 @@
 import express from "express";
 
-import { getDashboardStats } from "../controllers/dashboard";
+import { getDashboardStats } from "@/handler/dashboard";
 
 const router = express.Router();
 

@@ -1,9 +1,17 @@
-import type { RequestHandler } from "express";
+import type {
+	DashboardStatsChartInfo,
+	DashboardStatsInfo,
+	GetDashboardStatsRequestQuery,
+	GetDashboardStatsResponse,
+} from "@/handler/dashboard";
 
 import pool from "@/db";
+import { error } from "@/errors";
 import { convertBEtoAD } from "@/utils/helper";
 
-export const getDashboardStats: RequestHandler = async (req, res) => {
+export async function getDashboardStatsController(
+	req: Partial<GetDashboardStatsRequestQuery>
+): Promise<GetDashboardStatsResponse> {
 	try {
 		const {
 			type = "illegal",
@@ -18,19 +26,19 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
 			hasPassport = "ทั้งหมด",
 			creator = "ทั้งหมด",
 			ageGroup = "ทั้งหมด",
-			page = 1,
-			limit = 50,
+			page = "1",
+			limit = "50",
 			sortBy,
 			sortOrder = "asc",
-		} = req.query;
+		} = req;
 
 		const startDate = convertBEtoAD(rawStartDate);
 		const endDate = convertBEtoAD(rawEndDate);
 		const dobStart = convertBEtoAD(rawDobStart);
 		const dobEnd = convertBEtoAD(rawDobEnd);
 
-		const pageNum = parseInt(page) || 1;
-		const limitNum = parseInt(limit) || 50;
+		const pageNum = parseInt(page);
+		const limitNum = parseInt(limit);
 		const offset = (pageNum - 1) * limitNum;
 
 		const vStart = !!startDate;
@@ -227,8 +235,8 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
 		const baseWhere = whereClause;
 		const baseParams = queryParams;
 
-		const stats = { total: totalItems };
-		const charts = {};
+		const stats: DashboardStatsInfo = { total: totalItems };
+		const charts: DashboardStatsChartInfo = {};
 
 		// 🌟 ดึงข้อมูลกราฟเพศ (ทำได้ทั้ง 2 ประเภทข้อมูล)
 		const genderChartQuery = `
@@ -369,8 +377,6 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
 			value: parseInt(r.value),
 		}));
 
-		let allNatsRes = { rows: [] };
-
 		// กราฟช่วงอายุ
 		const ageChartQuery = `
       SELECT 
@@ -407,7 +413,7 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
 			value: parseInt(r.value),
 		}));
 
-		allNatsRes = await pool.query(
+		const allNatsRes = await pool.query(
 			`SELECT DISTINCT COALESCE(t.nationality, 'ไม่ระบุ') as nat FROM ${tableName} t WHERE t.nationality IS NOT NULL AND t.nationality != '' ORDER BY nat`
 		);
 
@@ -431,7 +437,7 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
 			`SELECT DISTINCT COALESCE(NULLIF(TRIM(t.${provField}), ''), 'ไม่ระบุ') as prov FROM ${tableName} t ORDER BY prov`
 		);
 
-		res.status(200).json({
+		return {
 			success: true,
 			meta: {
 				totalItems,
@@ -445,9 +451,9 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
 			stats,
 			charts,
 			tableData: tableData.rows,
-		});
+		};
 	} catch (err) {
-		console.error("Dashboard Stats Error:", err.message);
-		res.status(500).json({ success: false, message: "Server Error" });
+		console.error("Dashboard Stats Error:", err);
+		error(500, "Server Error");
 	}
-};
+}
