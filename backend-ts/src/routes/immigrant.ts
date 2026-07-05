@@ -2,7 +2,8 @@ import express from "express";
 const router = express.Router();
 import multer from "multer";
 
-import * as immigrantController from "../controllers/all";
+import { getAllData, getDashboardData } from "@/handler/all";
+
 import * as illegalController from "../controllers/illegal";
 import * as repatriatedController from "../controllers/repatriated";
 // 🟢 เพิ่มนำเข้า Middleware protect เพื่อเช็ค User จาก Token
@@ -15,8 +16,8 @@ const uploadExcel = multer({ storage: memoryStorage });
 // ----------------------------------------------------
 // ข้อมูลรวม & Dashboard
 // ----------------------------------------------------
-router.get("/", immigrantController.getAllData);
-router.get("/dashboard", immigrantController.getDashboardData);
+router.get("/", getAllData);
+router.get("/dashboard", getDashboardData);
 
 // ----------------------------------------------------
 // Illegal (แอบเข้าเมือง)

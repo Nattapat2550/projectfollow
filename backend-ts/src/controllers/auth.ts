@@ -2,13 +2,11 @@ import type { Response } from "express";
 
 import bcrypt from "bcryptjs";
 
-import type {
-	LoginRequest,
-	LoginResponse,
-	LogoutResponse,
-	RegisterRequest,
-	RegisterResponse,
-} from "@/handler/auth";
+import type { LogoutResponse } from "@/schema/auth";
+import type { LoginResponse } from "@/schema/auth";
+import type { LoginRequest } from "@/schema/auth";
+import type { RegisterResponse } from "@/schema/auth";
+import type { RegisterRequest } from "@/schema/auth";
 
 import { error } from "@/errors";
 import { setTokenCookie } from "@/utils/jwt";

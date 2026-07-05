@@ -1,21 +1,25 @@
-import type { RequestHandler } from "express";
+import type { GetDashboardDataResponse } from "@/schema/all";
+import type { GetDashboardDataRequestQuery } from "@/schema/all";
+import type { GetAllDataResponse } from "@/schema/all";
+import type { GetAllDataRequestQuery } from "@/schema/all";
 
 import pool from "@/db";
+import { error } from "@/errors";
 
 import * as dashboardService from "../services/dashboard";
 import * as cache from "../utils/cache";
 
-export const getAllData: RequestHandler = async (req, res) => {
+export async function getAllDataController(
+	req: Partial<GetAllDataRequestQuery>
+): Promise<GetAllDataResponse> {
 	try {
-		const page = parseInt(req.query.page) || 1;
-		const limit = parseInt(req.query.limit) || 100;
+		const page = parseInt(req.page || "1");
+		const limit = parseInt(req.limit || "100");
 		const offset = (page - 1) * limit;
 
 		const cacheKey = `getAllData_page_${page}_limit_${limit}`;
 		const cachedData = cache.get(cacheKey);
-		if (cachedData) {
-			return res.status(200).json(cachedData);
-		}
+		if (cachedData) return cachedData;
 
 		// ทำการ LEFT JOIN กับตาราง users เพื่อเอาชื่อคนอัพโหลด (creator_name) และสี (creator_color) ออกมาแสดงในตารางข้อมูลทั้งหมดด้วย
 		const [
@@ -48,7 +52,7 @@ export const getAllData: RequestHandler = async (req, res) => {
 			pool.query("SELECT COUNT(*) FROM repatriated_persons"),
 		]);
 
-		const responsePayload = {
+		const responsePayload: GetAllDataResponse = {
 			success: true,
 			data: {
 				// ใช้คีย์ immigrants ตามที่กำหนด (และใส่คีย์เดิมสำรองไว้เพื่อความปลอดภัยของระบบ)
@@ -66,34 +70,34 @@ export const getAllData: RequestHandler = async (req, res) => {
 		};
 
 		cache.set(cacheKey, responsePayload);
-		res.status(200).json(responsePayload);
+		return responsePayload;
 	} catch (err) {
 		console.error(err);
-		res.status(500).json({ success: false, message: "Server Error" });
+		error(500, "Server Error");
 	}
-};
+}
 
-export const getDashboardData: RequestHandler = async (req, res) => {
+export async function getDashboardDataController(
+	req: Partial<GetDashboardDataRequestQuery>
+) {
 	try {
 		// รองรับการส่งไทป์มาเป็น 'immigrants' หรือ 'illegal'
-		let type = req.query.type || "repatriated";
+		let type = req.type || "repatriated";
 		if (type === "immigrants" || type === "immigrant" || type === "illegal") {
 			type = "illegal"; // แมปภายในเข้ากับเงื่อนไขของ service และฐานข้อมูลตัวเดิม
 		}
 
-		const page = parseInt(req.query.page) || 1;
-		const limit = parseInt(req.query.limit) || 50;
+		const page = parseInt(req.page || "1");
+		const limit = parseInt(req.limit || "50");
 		const offset = (page - 1) * limit;
 
-		const cacheKey = `getDashboardData_type_${type}_page_${page}_limit_${limit}_${JSON.stringify(req.query)}`;
+		const cacheKey = `getDashboardData_type_${type}_page_${page}_limit_${limit}_${JSON.stringify(req)}`;
 		const cachedData = cache.get(cacheKey);
-		if (cachedData) {
-			return res.status(200).json(cachedData);
-		}
+		if (cachedData) return cachedData;
 
 		// 🟢 สร้าง SQL Query จาก Service
 		const { whereClause, params, orderClause } =
-			dashboardService.buildDashboardQuerySQL(req.query, type);
+			dashboardService.buildDashboardQuerySQL(req, type);
 		const tableName =
 			type === "repatriated" ? "repatriated_persons" : "illegal_immigrants";
 		const paramCount = params.length;
@@ -121,7 +125,7 @@ export const getDashboardData: RequestHandler = async (req, res) => {
 
 		const totalItems = parseInt(countRes.rows[0].count);
 
-		const responsePayload = {
+		const responsePayload: GetDashboardDataResponse = {
 			success: true,
 			tableData: dataRes.rows,
 			meta: {
@@ -133,11 +137,9 @@ export const getDashboardData: RequestHandler = async (req, res) => {
 		};
 
 		cache.set(cacheKey, responsePayload);
-		res.status(200).json(responsePayload);
+		return responsePayload;
 	} catch (err) {
 		console.error(err);
-		res
-			.status(500)
-			.json({ success: false, message: "Error", error: err.message });
+		error(500, "Server Error");
 	}
-};
+}

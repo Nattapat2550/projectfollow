@@ -1,25 +1,26 @@
 import type { ErrorResponse } from "@/errors";
 import type { RequestHandlerWithUser } from "@/middleware/auth";
+import type {
+	GetMeResponse,
+	UpdatePasswordResponse,
+	UpdateProfileResponse,
+} from "@/schema/auth";
 
 import {
+	getMeController,
 	updatePasswordController,
 	updateProfileController,
 } from "@/controllers/user";
 import { handlerWrapper } from "@/utils/api";
 
-export type GetMeResponse = { success: true; data: User };
-
-export const getMe: RequestHandlerWithUser = async (req, res) => {
-	const response: GetMeResponse = {
-		success: true,
-		data: res.locals.user!,
-	};
-	res.status(200).json(response);
+export const getMe: RequestHandlerWithUser<
+	GetMeResponse | ErrorResponse
+> = async (req, res) => {
+	const { response, status } = await handlerWrapper<GetMeResponse>(
+		getMeController.bind(undefined, res.locals.user)
+	);
+	res.status(status).json(response);
 };
-
-export type UpdateProfileRequest = { name: string; color: string };
-
-export type UpdateProfileResponse = { success: true; data: User };
 
 export const updateProfile: RequestHandlerWithUser<
 	UpdateProfileResponse | ErrorResponse
@@ -29,10 +30,6 @@ export const updateProfile: RequestHandlerWithUser<
 	);
 	res.status(status).json(response);
 };
-
-export type UpdatePassswordRequest = { password: string };
-
-export type UpdatePasswordResponse = { success: true; msg: string };
 
 export const updatePassword: RequestHandlerWithUser<
 	UpdatePasswordResponse | ErrorResponse

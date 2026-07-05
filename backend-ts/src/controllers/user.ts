@@ -1,14 +1,18 @@
 import bcrypt from "bcryptjs";
 
-import type {
-	UpdatePassswordRequest,
-	UpdatePasswordResponse,
-	UpdateProfileRequest,
-	UpdateProfileResponse,
-} from "@/handler/user";
+import type { UpdatePasswordResponse } from "@/schema/auth";
+import type { UpdatePassswordRequest } from "@/schema/auth";
+import type { UpdateProfileResponse } from "@/schema/auth";
+import type { UpdateProfileRequest } from "@/schema/auth";
+import type { GetMeResponse } from "@/schema/auth";
 
 import pool from "@/db";
 import { error } from "@/errors";
+
+export async function getMeController(user?: User): Promise<GetMeResponse> {
+	if (!user) error(401, "unauthorized");
+	return { success: true, data: user };
+}
 
 export async function updateProfileController(
 	req: Partial<UpdateProfileRequest>,
