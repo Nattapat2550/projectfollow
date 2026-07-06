@@ -3,8 +3,15 @@ const router = express.Router();
 import multer from "multer";
 
 import { getAllData, getDashboardData } from "@/handler/all";
+import {
+	createIllegal,
+	deleteIllegal,
+	getIllegalById,
+	getUploadProgress,
+	updateIllegal,
+	uploadExcelIllegal,
+} from "@/handler/illegal";
 
-import * as illegalController from "../controllers/illegal";
 import * as repatriatedController from "../controllers/repatriated";
 // 🟢 เพิ่มนำเข้า Middleware protect เพื่อเช็ค User จาก Token
 import { protect } from "../middleware/auth";
@@ -22,7 +29,7 @@ router.get("/dashboard", getDashboardData);
 // ----------------------------------------------------
 // Illegal (แอบเข้าเมือง)
 // ----------------------------------------------------
-router.get("/illegal/:id", illegalController.getIllegalById);
+router.get("/illegal/:id", getIllegalById);
 // 🟢 ใส่ protect เข้าไปก่อนหน้าฟังก์ชัน controller
 router.post(
 	"/illegal",
@@ -31,7 +38,7 @@ router.post(
 		{ name: "photo", maxCount: 1 },
 		{ name: "passport_photo", maxCount: 1 },
 	]),
-	illegalController.createIllegal
+	createIllegal
 );
 router.put(
 	"/illegal/:id",
@@ -40,9 +47,9 @@ router.put(
 		{ name: "photo", maxCount: 1 },
 		{ name: "passport_photo", maxCount: 1 },
 	]),
-	illegalController.updateIllegal
+	updateIllegal
 );
-router.delete("/illegal/:id", protect, illegalController.deleteIllegal);
+router.delete("/illegal/:id", protect, deleteIllegal);
 
 // ระบบ Excel อัปโหลดและตรวจสอบ Progress
 // 🟢 ใส่ protect เข้าไปที่ระบบอัปโหลด Excel
@@ -50,9 +57,9 @@ router.post(
 	"/upload-excel-illegal",
 	protect,
 	uploadExcel.single("file"),
-	illegalController.uploadExcelIllegal
+	uploadExcelIllegal
 );
-router.get("/upload-progress/:jobId", illegalController.getUploadProgress);
+router.get("/upload-progress/:jobId", getUploadProgress);
 
 // ----------------------------------------------------
 // Repatriated (ส่งกลับ)

@@ -1,11 +1,23 @@
-import type { RequestHandler } from "express";
+import type { Request } from "express";
 
-import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import xlsx from "xlsx";
 
-import pool from "@/db";
+import type {
+	CreateIllegalRequest,
+	CreateIllegalResponse,
+	GetIllegalByIdResponse,
+	GetUploadProgressResponse,
+	UpdateIllegalRequest,
+	UpdateIllegalResponse,
+	UploadExcelIllegalRequestQuery,
+	UploadExcellIllegalResponse,
+} from "@/handler/illegal";
 
+import pool from "@/db";
+import { error } from "@/errors";
+
+import thaiAddresses from "../data/thai_addresses.json";
 import {
 	deleteFromDrive,
 	extractDriveFileId,
@@ -23,20 +35,12 @@ import {
 	safeParseDate,
 } from "../utils/helper";
 
-let thaiAddresses = [];
-try {
-	let addressPath = "./data/thai_addresses.json";
-	if (!fs.existsSync(addressPath)) {
-		if (fs.existsSync("./backend/data/thai_addresses.json")) {
-			addressPath = "./backend/data/thai_addresses.json";
-		}
-	}
-	thaiAddresses = JSON.parse(fs.readFileSync(addressPath, "utf-8"));
-} catch (err) {
-	console.error("Could not load thai_addresses.json for address parsing", err);
-}
-
-const splitThaiAddress = (fullAddress) => {
+function splitThaiAddress(fullAddress?: string): {
+	details: string;
+	sub_district: string | null | undefined;
+	district: string | null | undefined;
+	province: string | null | undefined;
+} {
 	if (!fullAddress || typeof fullAddress !== "string") {
 		return {
 			details: "ไม่ระบุ",
@@ -47,9 +51,9 @@ const splitThaiAddress = (fullAddress) => {
 	}
 
 	let str = fullAddress.trim();
-	let province = null,
-		district = null,
-		sub_district = null;
+	let province: string | null | undefined = null,
+		district: string | null | undefined = null,
+		sub_district: string | null | undefined = null;
 
 	// หา จังหวัด
 	const provMatch =
@@ -150,8 +154,8 @@ const splitThaiAddress = (fullAddress) => {
 			const uniqueDistricts = new Set(matches.map((m) => m.amphoe));
 			const uniqueProvinces = new Set(matches.map((m) => m.province));
 			if (uniqueDistricts.size === 1 && uniqueProvinces.size === 1) {
-				if (!district) district = matches[0].amphoe;
-				if (!province) province = matches[0].province;
+				if (!district) district = matches[0]?.amphoe;
+				if (!province) province = matches[0]?.province;
 			}
 		}
 	} else if (district && !province && thaiAddresses.length > 0) {
@@ -159,7 +163,7 @@ const splitThaiAddress = (fullAddress) => {
 		if (matches.length > 0) {
 			const uniqueProvinces = new Set(matches.map((m) => m.province));
 			if (uniqueProvinces.size === 1) {
-				province = matches[0].province;
+				province = matches[0]?.province;
 			}
 		}
 	}
@@ -170,57 +174,59 @@ const splitThaiAddress = (fullAddress) => {
 		district,
 		province,
 	};
-};
+}
 
 if (!global.uploadProgress) {
 	global.uploadProgress = {};
 }
 
-export const getIllegalById: RequestHandler = async (req, res) => {
+export async function getIllegalByIdController(
+	id: string
+): Promise<GetIllegalByIdResponse> {
 	try {
 		const { rows } = await pool.query(
 			"SELECT t.*, u.name AS creator_name, u.color AS creator_color FROM illegal_immigrants t LEFT JOIN users u ON t.created_by = u.id WHERE t.id = $1",
-			[req.params.id]
+			[id]
 		);
-		if (rows.length === 0)
-			return res.status(200).json({ success: false, message: "Not found" });
+		if (rows.length === 0) return { success: false, message: "Not found" };
 
-		res.status(200).json({ success: true, data: rows[0] });
+		return { success: true, data: rows[0] };
 	} catch (err) {
-		res.status(500).json({ success: false, error: err.message });
+		console.error(err);
+		error(500, "Server Error");
 	}
-};
+}
 
-export const createIllegal: RequestHandler = async (req, res) => {
+export async function createIllegalController(
+	data: Partial<CreateIllegalRequest>,
+	files: Request["files"],
+	user?: User
+): Promise<CreateIllegalResponse> {
 	try {
-		const data = req.body;
 		if (!data.first_name_th || !data.last_name_th) {
-			return res.status(400).json({
-				success: false,
-				message: "กรุณาระบุชื่อและนามสกุลภาษาไทย",
-			});
+			return error(400, "กรุณาระบุชื่อและนามสกุลภาษาไทย");
 		}
 
 		let photo_url = null;
 		let passport_photo_url = null;
-		if (req.files) {
-			if (req.files.photo) {
+		if (files && !(files instanceof Array)) {
+			if (files.photo) {
 				const driveRes = await uploadToDrive(
-					req.files.photo[0],
+					files.photo[0],
 					process.env.GOOGLE_DRIVE_FOLDER_ID
 				);
 				photo_url = driveRes.webViewLink;
 			}
-			if (req.files.passport_photo) {
+			if (files.passport_photo) {
 				const driveRes = await uploadToDrive(
-					req.files.passport_photo[0],
+					files.passport_photo[0],
 					process.env.GOOGLE_DRIVE_FOLDER_PASSPORT
 				);
 				passport_photo_url = driveRes.webViewLink;
 			}
 		}
 
-		const created_by = req.user ? req.user.id : null;
+		const created_by = user ? user.id : null;
 		const id = uuidv4();
 
 		let passport_id = data.passport_id ? String(data.passport_id).trim() : null;
@@ -266,71 +272,69 @@ export const createIllegal: RequestHandler = async (req, res) => {
 
 		const result = await pool.query(query, values);
 		cache.clear();
-		res.status(201).json({
+		return {
 			success: true,
 			data: result.rows[0],
 			message: "บันทึกข้อมูลสำเร็จ",
-		});
+		};
 	} catch (err) {
-		res.status(500).json({
+		console.error(err);
+		return {
 			success: false,
 			message: "Server Error",
-			error: err.message,
-		});
+		};
 	}
-};
+}
 
-export const updateIllegal: RequestHandler = async (req, res) => {
+export async function updateIllegalController(
+	id: string,
+	data: UpdateIllegalRequest,
+	files: Request["files"]
+): Promise<UpdateIllegalResponse> {
 	try {
-		const { id } = req.params;
-		const data = req.body;
-
 		const existingDataRes = await pool.query(
 			"SELECT * FROM illegal_immigrants WHERE id = $1",
 			[id]
 		);
 		if (existingDataRes.rows.length === 0)
-			return res.status(404).json({
-				success: false,
-				message: "ไม่พบข้อมูลที่ต้องการแก้ไข",
-			});
+			error(404, "ไม่พบข้อมูลที่ต้องการแก้ไข");
 		const existingData = existingDataRes.rows[0];
 
 		let photo_url = existingData.photo_url;
 		let passport_photo_url = existingData.passport_photo_url;
 
-		if (req.files) {
-			if (req.files.photo) {
+		if (files && !(files instanceof Array)) {
+			if (files.photo) {
 				if (existingData.photo_url) {
 					const oldFileId = extractDriveFileId(existingData.photo_url);
 					if (oldFileId) {
 						try {
 							await deleteFromDrive(oldFileId);
 						} catch (delErr) {
-							console.error(delErr.message);
+							console.error(delErr);
 						}
 					}
 				}
 				const driveRes = await uploadToDrive(
-					req.files.photo[0],
+					files.photo[0],
 					process.env.GOOGLE_DRIVE_FOLDER_ID
 				);
 				photo_url = driveRes.webViewLink;
 			}
 
-			if (req.files.passport_photo) {
+			if (files.passport_photo) {
 				if (existingData.passport_photo_url) {
 					const oldFileId = extractDriveFileId(existingData.passport_photo_url);
 					if (oldFileId) {
 						try {
 							await deleteFromDrive(oldFileId);
 						} catch (delErr) {
-							console.error(delErr.message);
+							console.error(delErr);
 						}
 					}
 				}
 				const driveRes = await uploadToDrive(
-					req.files.passport_photo[0],
+					files.passport_photo[0],
 					process.env.GOOGLE_DRIVE_FOLDER_PASSPORT
 				);
 				passport_photo_url = driveRes.webViewLink;
@@ -379,23 +383,19 @@ export const updateIllegal: RequestHandler = async (req, res) => {
 
 		const result = await pool.query(query, values);
 		cache.clear();
-		res.status(200).json({
+		return {
 			success: true,
 			data: result.rows[0],
 			message: "แก้ไขข้อมูลสำเร็จ",
-		});
+		};
 	} catch (err) {
-		res.status(500).json({
-			success: false,
-			message: "Server Error",
-			error: err.message,
-		});
+		console.error(err);
+		error(500, "Server Error");
 	}
-};
+}
 
-export const deleteIllegal: RequestHandler = async (req, res) => {
+export async function deleteIllegalController(id: string) {
 	try {
-		const { id } = req.params;
 		const existingDataRes = await pool.query(
 			"SELECT photo_url, passport_photo_url FROM illegal_immigrants WHERE id = $1",
 			[id]
@@ -427,18 +427,16 @@ export const deleteIllegal: RequestHandler = async (req, res) => {
 
 		await pool.query("DELETE FROM illegal_immigrants WHERE id = $1", [id]);
 		cache.clear();
-		res.status(200).json({ success: true, message: "ลบข้อมูลสำเร็จ" });
+		return { success: true, message: "ลบข้อมูลสำเร็จ" };
 	} catch (err) {
-		res.status(500).json({
-			success: false,
-			message: "Server Error",
-			error: err.message,
-		});
+		console.error(err);
+		return { success: false, message: "Server Error" };
 	}
-};
+}
 
-export const getUploadProgress: RequestHandler = (req, res) => {
-	const jobId = req.params.jobId;
+export async function getUploadProgressController(
+	jobId: string
+): Promise<GetUploadProgressResponse> {
 	const progress = global.uploadProgress[jobId] || {
 		current: 0,
 		total: 0,
@@ -446,26 +444,28 @@ export const getUploadProgress: RequestHandler = (req, res) => {
 		failedCount: 0,
 		status: "pending",
 	};
-	res.json(progress);
-};
+	return progress;
+}
 
-export const uploadExcelIllegal: RequestHandler = async (req, res) => {
+export async function uploadExcelIllegalController(
+	query: UploadExcelIllegalRequestQuery,
+	file: Request["file"],
+	user?: User
+): Promise<UploadExcellIllegalResponse> {
 	try {
-		if (!req.file) {
-			return res
-				.status(400)
-				.json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
+		if (!file) {
+			return error(400, "กรุณาอัปโหลดไฟล์ Excel");
 		}
 
-		const action = req.query.action || "upload";
-		const jobId = req.query.jobId;
-		const created_by = req.user ? req.user.id : null;
+		const action = query.action || "upload";
+		const jobId = query.jobId;
+		const created_by = user ? user.id : null;
 
-		const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+		const workbook = xlsx.read(file.buffer, { type: "buffer" });
 		let allJsonData = [];
 
 		workbook.SheetNames.forEach((sheetName) => {
-			const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], {
+			const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]!, {
 				defval: null,
 			});
 			if (sheetData.length > 0) {
@@ -488,11 +488,10 @@ export const uploadExcelIllegal: RequestHandler = async (req, res) => {
 		});
 
 		if (allJsonData.length === 0) {
-			return res.status(400).json({
-				success: false,
-				message:
-					"ไม่พบข้อมูลในไฟล์ Excel หรือไม่มีรายชื่อให้บันทึก (ระวังบรรทัดว่าง)",
-			});
+			return error(
+				400,
+				"ไม่พบข้อมูลในไฟล์ Excel หรือไม่มีรายชื่อให้บันทึก (ระวังบรรทัดว่าง)"
+			);
 		}
 
 		if (action === "preview") {
@@ -580,12 +579,12 @@ export const uploadExcelIllegal: RequestHandler = async (req, res) => {
 					raw_data_from_excel: row,
 				});
 			}
-			return res.status(200).json({
+			return {
 				success: true,
 				message: "ดึงข้อมูลพรีวิวสำเร็จ",
 				total_rows: preview_data.length,
 				preview_data,
-			});
+			};
 		}
 
 		if (jobId) {
@@ -773,25 +772,22 @@ export const uploadExcelIllegal: RequestHandler = async (req, res) => {
 			global.uploadProgress[jobId].status = "completed";
 
 		if (processedCount === 0 && allJsonData.length > 0) {
-			return res.status(400).json({
-				success: false,
-				message: `ไม่สามารถบันทึกข้อมูลลงฐานข้อมูลได้: ${errors[0] || "เกิดข้อผิดพลาดในการตรวจสอบข้อมูล"}`,
-			});
+			error(
+				400,
+				`ไม่สามารถบันทึกข้อมูลลงฐานข้อมูลได้: ${errors[0] || "เกิดข้อผิดพลาดในการตรวจสอบข้อมูล"}`
+			);
 		}
 
 		if (processedCount > 0) {
 			cache.clear();
 		}
-		res.status(200).json({
+		return {
 			success: true,
 			message: `นำเข้าข้อมูลลงฐานข้อมูลสมบูรณ์ จำนวน ${processedCount} รายการ`,
 			errors: errors.length > 0 ? errors : undefined,
-		});
+		};
 	} catch (err) {
 		console.error("Upload Error:", err);
-		res.status(500).json({
-			success: false,
-			message: "เกิดข้อผิดพลาดในการอ่านไฟล์และบันทึกข้อมูล",
-		});
+		error(500, "เกิดข้อผิดพลาดในการอ่านไฟล์และบันทึกข้อมูล");
 	}
-};
+}
