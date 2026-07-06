@@ -3,7 +3,8 @@ const router = express.Router();
 import rateLimit from "express-rate-limit";
 import multer from "multer";
 
-import * as testUpload2Controller from "../controllers/upload";
+import { getUploadProgress, uploadExcel } from "@/handler/upload";
+
 import { protect } from "../middleware/auth";
 
 // 🟢 แก้ไขตรงนี้: ใช้ memoryStorage() เพื่อให้ Controller สามารถอ่าน req.file.buffer ได้
@@ -25,9 +26,9 @@ router.post(
 	uploadLimiter,
 	protect,
 	upload.single("file"),
-	testUpload2Controller.uploadExcel
+	uploadExcel
 );
 
-router.get("/upload-progress/:jobId", testUpload2Controller.getUploadProgress);
+router.get("/upload-progress/:jobId", getUploadProgress);
 
 export default router;

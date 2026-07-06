@@ -6,7 +6,7 @@ import {
 	getAllDataController,
 	getDashboardDataController,
 } from "@/controllers/all";
-import { handlerWrapper } from "@/utils/api";
+import { handlerWrapper } from "@/utils/errors";
 
 export const getAllData: RequestHandler = async (req, res) => {
 	const { response, status } = await handlerWrapper<GetAllDataResponse>(

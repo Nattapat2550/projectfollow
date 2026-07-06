@@ -1,6 +1,18 @@
 import { convertBEtoAD } from "../utils/helper";
 
-export const buildDashboardQuerySQL = (query, type) => {
+export function buildDashboardQuerySQL(
+	query: {
+		search?: string;
+		sortBy?: string;
+		sortOrder?: string;
+		startDate?: string;
+		endDate?: string;
+		dobStart?: string;
+		dobEnd?: string;
+		creator?: string;
+	},
+	type: string
+) {
 	const {
 		search,
 		sortBy,
@@ -89,7 +101,7 @@ export const buildDashboardQuerySQL = (query, type) => {
 	const whereClause =
 		conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
-	let orderClause = "";
+	let orderClause;
 	const dir = sortOrder === "desc" ? "DESC" : "ASC";
 	if (sortBy && sortBy.trim() !== "") {
 		if (sortBy === "name") {
@@ -110,4 +122,4 @@ export const buildDashboardQuerySQL = (query, type) => {
 	}
 
 	return { whereClause, params, orderClause };
-};
+}

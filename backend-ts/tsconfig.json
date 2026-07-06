@@ -1,25 +1,26 @@
 {
-    "compilerOptions": {
-        "target": "es2025",
-        /* If your code doesn't run in the DOM: */
-        "lib": ["ES2025"],
-        "moduleDetection": "force",
-        "module": "esnext",
-        /* If NOT transpiling with TypeScript: */
-        "moduleResolution": "bundler",
-        /* Aliases */
-        "paths": {
-            "@/*": ["./src/*"]
-        },
-        "resolveJsonModule": true,
-        "allowJs": true,
-        /* Strictness */
-        "strict": true,
-        "noUncheckedIndexedAccess": true,
-        "noEmit": true,
-        /* Base Options: */
-        "esModuleInterop": true,
-        "verbatimModuleSyntax": true,
-        "skipLibCheck": true
-    }
+	"compilerOptions": {
+		"target": "es2025",
+		"lib": ["ES2025"],
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		/* Aliases */
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"noEmit": true,
+		"rootDir": "./src",
+		"outDir": "./build",
+		"resolveJsonModule": true,
+		"allowJs": true,
+		/* Strictness */
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		/* Base Options: */
+		"esModuleInterop": true,
+		"verbatimModuleSyntax": true,
+		"skipLibCheck": true
+	},
+	"include": ["./src/**/*.ts"],
+	"exclude": ["node_modules", "build"]
 }

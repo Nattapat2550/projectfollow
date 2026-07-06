@@ -1,7 +1,9 @@
 import express from "express";
 
 import { login, logout } from "@/handler/auth";
-import { getMe, updatePassword, updateProfile } from "@/handler/user";
+import { updatePassword } from "@/handler/auth";
+import { updateProfile } from "@/handler/auth";
+import { getMe } from "@/handler/auth";
 import { protect } from "@/middleware/auth";
 
 const router = express.Router();

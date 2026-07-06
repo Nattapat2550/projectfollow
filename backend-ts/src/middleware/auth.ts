@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 
 import jwt from "jsonwebtoken";
 
-import { error, getErrorResponse } from "@/errors";
+import { error, getErrorResponse } from "@/utils/errors";
 
 import pool from "../db";
 

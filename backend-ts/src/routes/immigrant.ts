@@ -7,12 +7,17 @@ import {
 	createIllegal,
 	deleteIllegal,
 	getIllegalById,
-	getUploadProgress,
+	getUploadProgressIllegal,
 	updateIllegal,
 	uploadExcelIllegal,
 } from "@/handler/illegal";
+import {
+	createRepatriated,
+	deleteRepatriated,
+	getRepatriatedById,
+	updateRepatriated,
+} from "@/handler/repatriated";
 
-import * as repatriatedController from "../controllers/repatriated";
 // 🟢 เพิ่มนำเข้า Middleware protect เพื่อเช็ค User จาก Token
 import { protect } from "../middleware/auth";
 import uploadMiddleware from "../middleware/upload";
@@ -59,12 +64,12 @@ router.post(
 	uploadExcel.single("file"),
 	uploadExcelIllegal
 );
-router.get("/upload-progress/:jobId", getUploadProgress);
+router.get("/upload-progress/:jobId", getUploadProgressIllegal);
 
 // ----------------------------------------------------
 // Repatriated (ส่งกลับ)
 // ----------------------------------------------------
-router.get("/repatriated/:id", repatriatedController.getRepatriatedById);
+router.get("/repatriated/:id", getRepatriatedById);
 router.post(
 	"/repatriated",
 	protect,
@@ -72,7 +77,7 @@ router.post(
 		{ name: "photo", maxCount: 1 },
 		{ name: "passport_photo", maxCount: 1 },
 	]),
-	repatriatedController.createRepatriated
+	createRepatriated
 );
 router.put(
 	"/repatriated/:id",
@@ -81,12 +86,8 @@ router.put(
 		{ name: "photo", maxCount: 1 },
 		{ name: "passport_photo", maxCount: 1 },
 	]),
-	repatriatedController.updateRepatriated
+	updateRepatriated
 );
-router.delete(
-	"/repatriated/:id",
-	protect,
-	repatriatedController.deleteRepatriated
-);
+router.delete("/repatriated/:id", protect, deleteRepatriated);
 
 export default router;

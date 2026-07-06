@@ -22,6 +22,14 @@ export type GetDashboardDataRequestQuery = {
 	type: string;
 	page: string;
 	limit: string;
+	search?: string;
+	sortBy?: string;
+	sortOrder?: string;
+	startDate?: string;
+	endDate?: string;
+	dobStart?: string;
+	dobEnd?: string;
+	creator?: string;
 };
 export type GetDashboardDataResponse = {
 	success: true;

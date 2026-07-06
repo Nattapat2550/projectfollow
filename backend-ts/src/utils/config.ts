@@ -18,6 +18,7 @@ const configSchema = z.object({
 	JWT_COOKIE_EXPIRE: z.coerce.number(),
 
 	GOOGLE_DRIVE_FOLDER_ID: z.string(),
+	GOOGLE_DRIVE_FOLDER_PASSPORT: z.string(),
 	GOOGLE_CLIENT_SECRET: z.string(),
 	GOOGLE_CLIENT_ID: z.string(),
 	GOOGLE_REFRESH_TOKEN: z.string(),
