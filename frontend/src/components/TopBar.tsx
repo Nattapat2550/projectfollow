@@ -135,23 +135,7 @@ export default function TopBar() {
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
                 <DarkModeBtn />
 
-                {pathname?.includes('/repatriated') ? (
-                    <Link
-                        href="/immigrants/illegal"
-                        aria-label="ไปหน้า ข้อมูลผู้ลักลอบเข้าเมือง"
-                        className="flex items-center gap-1 sm:gap-2 hover:bg-white/10 px-2 sm:px-4 py-2 rounded-lg transition-colors"
-                    >
-                        <span className="font-medium hidden md:inline text-white">ผู้ลักลอบเข้าเมือง</span>
-                    </Link>
-                ) : (
-                    <Link
-                        href="/immigrants/repatriated"
-                        aria-label="ไปหน้า ข้อมูลผู้ถูกส่งกลับ"
-                        className="flex items-center gap-1 sm:gap-2 hover:bg-white/10 px-2 sm:px-4 py-2 rounded-lg transition-colors"
-                    >
-                        <span className="font-medium hidden md:inline text-white">ผู้ถูกส่งกลับ</span>
-                    </Link>
-                )}
+
 
                 <Link
                     href="/dashboard"

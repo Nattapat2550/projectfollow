@@ -259,7 +259,16 @@ export const uploadExcel = async (req, res) => {
 
                 const raw_id = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"];
                 const id_card = raw_id ? String(raw_id).replace(/[^0-9a-zA-Z]/g, '') : `NO_ID_${i}`;
-                const dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
+                let dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
+                
+                // หากไม่มี วันเกิด แต่มี อายุ
+                if (!dobDate && row["อายุ"]) {
+                    const age = parseInt(String(row["อายุ"]).replace(/\D/g, ''));
+                    if (!isNaN(age) && age > 0) {
+                        const currentYear = new Date().getFullYear();
+                        dobDate = new Date(currentYear - age, 0, 1);
+                    }
+                }
                 
                 let photo_url_preview = null;
                 if (imagesMap[i + 1]) {

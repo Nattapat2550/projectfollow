@@ -136,8 +136,8 @@ function IllegalPageContent() {
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
-    setIsExportMode(false);
-    setSelectedRows([]);
+    // setIsExportMode(false);
+    // setSelectedRows([]);
   };
 
   const handleCancelExport = () => {

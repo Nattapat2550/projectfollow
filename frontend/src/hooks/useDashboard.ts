@@ -33,7 +33,7 @@ const dashboardFetchCache = new Map<string, DashboardData>();
 export function useDashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const typeParam = (searchParams.get("type") as "illegal" | "repatriated") || "illegal";
+  const typeParam = (searchParams.get("type") as "illegal" | "repatriated") || "repatriated";
 
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true); 
