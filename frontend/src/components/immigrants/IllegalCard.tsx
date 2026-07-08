@@ -1,17 +1,30 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
 interface IllegalCardProps {
   data: any; 
+  isExporting?: boolean;
 }
 
 // ฟังก์ชันดึง Thumbnail จาก Google Drive
-const getDirectImageUrl = (url: string) => {
+const getDirectImageUrl = (url: string, uniqueId?: string) => {
   if (!url) return "";
-  if (url.includes("drive.google.com/file/d/")) {
-    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+  let driveId = "";
+  
+  const matchFileD = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (matchFileD && matchFileD[1]) {
+    driveId = matchFileD[1];
+  } else {
+    const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (matchId && matchId[1]) {
+      driveId = matchId[1];
     }
+  }
+
+  if (driveId) {
+    const thumbnailUrl = `https://drive.google.com/thumbnail?id=${driveId}&sz=w800`;
+    let proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(thumbnailUrl)}`;
+    if (uniqueId) proxyUrl += `&_id=${uniqueId}`;
+    return proxyUrl;
   }
   return url;
 };
@@ -128,7 +141,37 @@ const getFlagUrl = (nationality: string) => {
 };
 // ----------------------------------------------------------------------
 
-export default function IllegalCard({ data }: IllegalCardProps) {
+const Base64Image = ({ src, alt, className, crossOrigin, referrerPolicy }: any) => {
+  const [base64, setBase64] = useState<string>(src);
+  
+  useEffect(() => {
+    if (!src || src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('/')) {
+      setBase64(src);
+      return;
+    }
+    let isMounted = true;
+    fetch(src)
+      .then(res => res.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (isMounted && reader.result) {
+            setBase64(reader.result as string);
+          }
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(err => {
+        console.error("Failed to load image as base64", err);
+      });
+      
+    return () => { isMounted = false; };
+  }, [src]);
+
+  return <img src={base64} alt={alt} className={className} crossOrigin={crossOrigin} referrerPolicy={referrerPolicy} />;
+};
+
+export default function IllegalCard({ data, isExporting = false }: IllegalCardProps) {
   const fullNameTh = `${data.first_name_th || ""}${data.middle_name_th ? " " + data.middle_name_th : ""} ${data.last_name_th || ""}`.trim();
   const fullNameEn = data.first_name_en
     ? `${data.first_name_en}${data.middle_name_en ? " " + data.middle_name_en : ""} ${data.last_name_en ?? ""}`.trim()
@@ -156,8 +199,8 @@ export default function IllegalCard({ data }: IllegalCardProps) {
 
           <div className="bg-white border border-emerald-200 rounded-xl flex items-end justify-center overflow-hidden shadow-inner relative w-full" style={{ aspectRatio: "3/4" }}>
             {data.photo_url ? (
-               <img 
-                 src={getDirectImageUrl(data.photo_url)} 
+               <Base64Image 
+                 src={getDirectImageUrl(data.photo_url, data.id || Math.random().toString())} 
                  alt="Profile" 
                  className="w-full h-full object-cover" 
                  referrerPolicy="no-referrer"

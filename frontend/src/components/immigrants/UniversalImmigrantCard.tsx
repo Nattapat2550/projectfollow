@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface UniversalImmigrantCardProps {
   data: any;
@@ -11,7 +11,7 @@ const ExportContext = createContext<boolean>(false);
 // ----------------------------------------------------------------------
 // ฟังก์ชันจัดการข้อมูลและรูปภาพ
 // ----------------------------------------------------------------------
-const getDirectImageUrl = (url: string) => {
+const getDirectImageUrl = (url: string, uniqueId?: string) => {
   if (!url) return "";
   let driveId = "";
   
@@ -27,13 +27,16 @@ const getDirectImageUrl = (url: string) => {
 
   if (driveId) {
     const thumbnailUrl = `https://drive.google.com/thumbnail?id=${driveId}&sz=w800`;
-    // Proxy through wsrv.nl to add CORS headers for html2canvas
-    return `https://wsrv.nl/?url=${encodeURIComponent(thumbnailUrl)}`;
+    let proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(thumbnailUrl)}`;
+    if (uniqueId) proxyUrl += `&_id=${uniqueId}`;
+    return proxyUrl;
   }
   
   // For other external URLs, proxy them as well if they might have CORS issues
   if (url.startsWith("http")) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+    let proxyUrl = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+    if (uniqueId) proxyUrl += `&_id=${uniqueId}`;
+    return proxyUrl;
   }
 
   return url;
@@ -100,6 +103,36 @@ const getFlagUrl = (nationality: string) => {
 // ----------------------------------------------------------------------
 // Component หลัก
 // ----------------------------------------------------------------------
+const Base64Image = ({ src, alt, className, crossOrigin, referrerPolicy }: any) => {
+  const [base64, setBase64] = useState<string>(src);
+  
+  useEffect(() => {
+    if (!src || src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('/')) {
+      setBase64(src);
+      return;
+    }
+    let isMounted = true;
+    fetch(src)
+      .then(res => res.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (isMounted && reader.result) {
+            setBase64(reader.result as string);
+          }
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(err => {
+        console.error("Failed to load image as base64", err);
+      });
+      
+    return () => { isMounted = false; };
+  }, [src]);
+
+  return <img src={base64} alt={alt} className={className} crossOrigin={crossOrigin} referrerPolicy={referrerPolicy} />;
+};
+
 export default function UniversalImmigrantCard({ data, type, isExporting = false }: UniversalImmigrantCardProps) {
   if (!data) return null;
 
@@ -281,8 +314,8 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
         <div className="flex flex-col items-center shrink-0" style={{ width: "30%" }}>
           <div className="bg-white border border-[#a7f3d0] rounded-xl flex items-end justify-center overflow-hidden shadow-inner relative w-full mb-[5%]" style={{ aspectRatio: "3/4" }}>
             {data.photo_url || data.image_url ? (
-               <img 
-                 src={getDirectImageUrl(data.photo_url || data.image_url)} 
+               <Base64Image 
+                 src={getDirectImageUrl(data.photo_url || data.image_url, data.id || Math.random().toString())} 
                  alt="Profile" 
                  className="w-full h-full object-cover" 
                  referrerPolicy="no-referrer"
