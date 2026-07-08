@@ -262,8 +262,9 @@ export const uploadExcel = async (req, res) => {
                 let dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
                 
                 // หากไม่มี วันเกิด แต่มี อายุ
-                if (!dobDate && row["อายุ"]) {
-                    const age = parseInt(String(row["อายุ"]).replace(/\D/g, ''));
+                const ageRaw = row["อายุ"] || row["อายุ "] || row[" อายุ"] || row["อายุ(ปี)"] || row["Age"];
+                if (!dobDate && ageRaw) {
+                    const age = parseInt(String(ageRaw).replace(/\D/g, ''));
                     if (!isNaN(age) && age > 0) {
                         const currentYear = new Date().getFullYear();
                         dobDate = new Date(currentYear - age, 0, 1);
@@ -405,7 +406,16 @@ export const uploadExcel = async (req, res) => {
                     let passport = row["เลขพาสปอร์ต"] ? String(row["เลขพาสปอร์ต"]).replace(/\s/g, '').trim() : null;
                     if (passport && ["-", "ไม่มี", "ไม่ระบุ", "none", "n/a", "null", "ไม่มีหนังสือเดินทาง"].includes(passport.toLowerCase())) passport = null;
 
-                    const dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
+                    let dobDate = parseThaiDOBToDate(row["วัน/เดือน/ปี เกิด"]);
+                    // หากไม่มี วันเกิด แต่มี อายุ
+                    const ageRaw = row["อายุ"] || row["อายุ "] || row[" อายุ"] || row["อายุ(ปี)"] || row["Age"];
+                    if (!dobDate && ageRaw) {
+                        const age = parseInt(String(ageRaw).replace(/\D/g, ''));
+                        if (!isNaN(age) && age > 0) {
+                            const currentYear = new Date().getFullYear();
+                            dobDate = new Date(currentYear - age, 0, 1);
+                        }
+                    }
                     const caseCount = parseInt(row["จำนวน Case ID"]);
                     const warrantCount = parseInt(row["หมายจับ"]);
 
