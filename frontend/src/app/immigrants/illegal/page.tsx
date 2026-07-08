@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import IllegalTable, { SortField } from "@/components/immigrants/IllegalTable";
 import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCard";
@@ -50,6 +50,7 @@ const formatValue = (key: string, val: any) => {
 };
 
 function IllegalPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<any>(null);
   
@@ -68,8 +69,14 @@ function IllegalPageContent() {
   const [isExportMode, setIsExportMode] = useState(false);
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const selectedIds = selectedRows.map(r => r.id);
+
+  useEffect(() => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    setIsLoggedIn(!!token && token !== "null");
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -294,7 +301,16 @@ function IllegalPageContent() {
                 </>
               ) : (
                 <>
-                  <button onClick={() => setIsExportMode(true)} className="px-4 py-2 bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 font-bold rounded-sm hover:opacity-90 transition text-sm cursor-pointer">
+                  <button 
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        router.push('/login');
+                        return;
+                      }
+                      setIsExportMode(true);
+                    }} 
+                    className="px-4 py-2 bg-zinc-800 text-white dark:bg-zinc-200 dark:text-zinc-900 font-bold rounded-sm hover:opacity-90 transition text-sm cursor-pointer"
+                  >
                     Export
                   </button>
                   <Link href="/immigrants/illegal/create" className="px-4 py-2 bg-(--header) text-background font-bold rounded-sm hover:opacity-90 transition text-sm">
@@ -437,7 +453,7 @@ function IllegalPageContent() {
       {isExportMode && selectedRows.length > 0 && (
         <div style={{ position: "absolute", left: "-9999px", top: 0, fontFamily: "'Sarabun', sans-serif" }}>
           {selectedRows.map((person: any) => (
-            <div key={person.id} id={`pdf-card-${person.id}`} style={{ width: "856px", height: "540px", backgroundColor: "white" }}>
+            <div key={person.id} id={`pdf-card-${person.id}`} style={{ width: "856px", minHeight: "540px", height: "max-content", backgroundColor: "white" }}>
               <UniversalImmigrantCard data={person} type="illegal" isExporting={true} />
             </div>
           ))}

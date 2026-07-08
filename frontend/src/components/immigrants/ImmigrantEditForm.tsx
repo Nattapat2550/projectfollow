@@ -224,10 +224,10 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
                 <div className="flex flex-col items-start gap-4">
                   {/* ล็อกตัวรูปภาพให้มีพื้นหลัง bg-white และกรอบสีเทาอ่อน border-gray-200 ตลอดเวลา */}
                   <img 
-                    src={passportImagePreview || defaultImage} 
+                    src={passportImagePreview || "/passport.png"} 
                     alt="Passport Preview" 
                     referrerPolicy="no-referrer" 
-                    onError={(e) => { e.currentTarget.src = defaultImage; }}
+                    onError={(e) => { e.currentTarget.src = "/passport.png"; }}
                     className="h-40 w-40 object-cover rounded-xl shadow-sm bg-white border border-gray-200 p-1" 
                   />
                   {/* ล็อกสีปุ่มให้อยู่ในโทนเข้มเสมอกับพื้นหลังขาว */}
@@ -284,7 +284,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
                 <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
                   {/* คอลัมน์ is_victim ใน DB เป็น enum YES/NO/PENDING ไม่ใช่ boolean */}
                   <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim === "YES"} onChange={(e) => setFormData((prev: any) => ({ ...prev, is_victim: e.target.checked ? "YES" : "NO" }))} className="w-4 h-4 cursor-pointer" />
-                  <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer !text-black dark:!text-white">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
+                  <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
                 </div>
 
                 <div className="mb-5">

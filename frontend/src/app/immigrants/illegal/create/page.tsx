@@ -158,7 +158,7 @@ export default function CreateIllegalImmigrant() {
           <div>
             <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปถ่ายพาสปอร์ต</h3>
             <div className="flex flex-col items-start gap-4">
-                <SingleImageField file={selectedPassportImage} previewUrl="/return.png" onChange={handlePassportImageChange} onRemove={handlePassportImageRemove}/>
+                <SingleImageField file={selectedPassportImage} previewUrl="/passport.png" onChange={handlePassportImageChange} onRemove={handlePassportImageRemove}/>
             </div>
           </div>
         </div>
