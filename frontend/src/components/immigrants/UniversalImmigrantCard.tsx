@@ -209,7 +209,7 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
   if (isExporting) {
     return (
       <ExportContext.Provider value={isExporting}>
-        <div className="relative w-full rounded-[12px] shadow-sm overflow-hidden font-sans flex flex-col text-[#002f6c] mb-6" style={{ minHeight: '520px', backgroundColor: '#eef2f5', border: '1px solid #d1d5db', maxWidth: '800px', margin: '0 auto' }}>
+        <div className="relative w-full rounded-xl shadow-sm overflow-hidden font-sans flex flex-col text-[#002f6c] mb-6" style={{ minHeight: '520px', backgroundColor: '#eef2f5', border: '1px solid #d1d5db', maxWidth: '800px', margin: '0 auto' }}>
           
           <div className="w-full bg-[#0047a5] text-white py-[2%] px-[4%] flex items-center shrink-0">
             <div className="flex flex-col">
@@ -253,7 +253,7 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
                    <div className="flex flex-col items-start min-w-0">
                      <span className="text-[#0047a5] font-bold" style={{ fontSize: "14px" }}>สัญชาติ / Nationality</span>
                      <div className="flex items-center gap-1.5 mt-0.5">
-                       {flagUrl && <img src={flagUrl} alt="flag" crossOrigin="anonymous" className="w-5 h-3.5 object-cover rounded-[2px] shadow-sm" />}
+                       {flagUrl && <img src={flagUrl} alt="flag" crossOrigin="anonymous" className="w-5 h-3.5 object-cover rounded-xs shadow-sm" />}
                        <span className="font-bold text-[#002f6c] truncate" style={{ fontSize: "16px" }}>{data.nationality || "-"}</span>
                      </div>
                    </div>
@@ -307,7 +307,7 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
             </div>
 
             <div className="flex flex-col items-center justify-start shrink-0 w-[22%] h-full">
-               <div className="w-full bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-[6px] overflow-hidden flex items-center justify-center relative shadow-sm" style={{ aspectRatio: "3/4" }}>
+               <div className="w-full bg-[#f8fafc] border-2 border-[#e2e8f0] rounded-md overflow-hidden flex items-center justify-center relative shadow-sm" style={{ aspectRatio: "3/4" }}>
                   {data.photo_url || data.image_url ? (
                      <Base64Image 
                        src={getDirectImageUrl(data.photo_url || data.image_url, data.id || Math.random().toString())} 
