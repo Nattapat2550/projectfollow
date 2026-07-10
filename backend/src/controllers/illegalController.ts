@@ -5,6 +5,7 @@ import path from 'path';
 import xlsx from "xlsx";
 import {  uploadToDrive, deleteFromDrive, extractDriveFileId  } from "../services/googleDriveService";
 import {  safeParseDate, normalizeNationality, processName, processVictimStatus, findValue, determineGender, parseThaiDateToDate, calculateDOBFromAge  } from "../utils/immigrantHelpers";
+import { getRegionFromProvince } from "../utils/regionMapper";
 import * as cache from "../utils/cache";
 
 let thaiAddresses: any[] = [];
@@ -170,16 +171,17 @@ export const createIllegal = async (req, res) => {
     const query = `
       INSERT INTO illegal_immigrants 
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en, 
-        passport_id, gender, nationality, date_of_birth, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, workplace, screening_details, is_victim, detected_date, note, photo_url, passport_photo_url, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+        passport_id, gender, nationality, date_of_birth, detected_location_details, detected_location_sub_district, detected_location_district, detected_location_province, detected_location_region, workplace, screening_details, is_victim, detected_date, note, photo_url, passport_photo_url, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
       RETURNING *;
     `;
+    const detected_location_region = getRegionFromProvince(data.detected_location_province);
     const values = [
       id, data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
       dob,
-      data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, data.workplace || null, data.screening_details || null,
+      data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, detected_location_region, data.workplace || null, data.screening_details || null,
       data.is_victim || 'PENDING',  // <-- ใช้เป็น PENDING เมื่อไม่มีการส่งค่ามาให้
       safeParseDate(data.detected_date), data.note || null, photo_url, passport_photo_url, created_by
     ];
@@ -239,16 +241,17 @@ export const updateIllegal = async (req, res) => {
     const query = `
       UPDATE illegal_immigrants SET 
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6, 
-        passport_id=$7, gender=$8, nationality=$9, date_of_birth=$10, detected_location_details=$11, detected_location_sub_district=$12, detected_location_district=$13, detected_location_province=$14, workplace=$15, screening_details=$16, 
-        is_victim=$17, detected_date=$18, note=$19, photo_url=$20, passport_photo_url=$21, updated_at=NOW()
-      WHERE id=$22 RETURNING *;
+        passport_id=$7, gender=$8, nationality=$9, date_of_birth=$10, detected_location_details=$11, detected_location_sub_district=$12, detected_location_district=$13, detected_location_province=$14, detected_location_region=$15, workplace=$16, screening_details=$17, 
+        is_victim=$18, detected_date=$19, note=$20, photo_url=$21, passport_photo_url=$22, updated_at=NOW()
+      WHERE id=$23 RETURNING *;
     `;
+    const detected_location_region = getRegionFromProvince(data.detected_location_province);
     const values = [
       data.first_name_th, data.middle_name_th || null, data.last_name_th,
       data.first_name_en || null, data.middle_name_en || null, data.last_name_en || null,
       passport_id, data.gender || null, data.nationality ? normalizeNationality(data.nationality) : null,
       dob,
-      data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, data.workplace || null, data.screening_details || null,
+      data.detected_location_details || "ไม่ระบุ", data.detected_location_sub_district || null, data.detected_location_district || null, data.detected_location_province || null, detected_location_region, data.workplace || null, data.screening_details || null,
       data.is_victim || 'PENDING',  // <-- ใช้เป็น PENDING เมื่อไม่มีการส่งค่ามาให้
       safeParseDate(data.detected_date), data.note || null, photo_url, passport_photo_url, id
     ];
@@ -367,6 +370,7 @@ export const uploadExcelIllegal = async (req, res) => {
           detected_location_sub_district: parsedLocation.sub_district,
           detected_location_district: parsedLocation.district,
           detected_location_province: parsedLocation.province,
+          detected_location_region: getRegionFromProvince(parsedLocation.province),
           workplace: findValue(row, "สถานที่ทำงาน") ? String(findValue(row, "สถานที่ทำงาน")).trim() : null,
           gender: determineGender(row, prefix),
           detected_date: dateObj ? dateObj.toISOString().split('T')[0] : null,
@@ -427,9 +431,11 @@ export const uploadExcelIllegal = async (req, res) => {
           if (rawAge) dob = calculateDOBFromAge(rawAge);
       }
 
+      const detected_location_region = getRegionFromProvince(parsedLocation.province);
+
       const insertValues = [
           uuidv4(), first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
-          nationality, passport_id, dob, parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province, workplace, gender, detected_date, is_victim_status, details || null, null, created_by
+          nationality, passport_id, dob, parsedLocation.details, parsedLocation.sub_district, parsedLocation.district, parsedLocation.province, detected_location_region, workplace, gender, detected_date, is_victim_status, details || null, null, created_by
       ];
 
       insertRows.push({
@@ -440,7 +446,7 @@ export const uploadExcelIllegal = async (req, res) => {
 
     const fields = [
       'id', 'first_name_th', 'middle_name_th', 'last_name_th', 'first_name_en', 'middle_name_en', 'last_name_en', 
-      'nationality', 'passport_id', 'date_of_birth', 'detected_location_details', 'detected_location_sub_district', 'detected_location_district', 'detected_location_province', 'workplace', 'gender', 'detected_date', 'is_victim', 'screening_details', 'note', 'created_by'
+      'nationality', 'passport_id', 'date_of_birth', 'detected_location_details', 'detected_location_sub_district', 'detected_location_district', 'detected_location_province', 'detected_location_region', 'workplace', 'gender', 'detected_date', 'is_victim', 'screening_details', 'note', 'created_by'
     ];
 
     const chunkSize = Math.floor(60000 / fields.length);

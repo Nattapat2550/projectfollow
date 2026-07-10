@@ -34,6 +34,7 @@ CREATE TABLE illegal_immigrants (
     detected_location_sub_district VARCHAR(255),
     detected_location_district VARCHAR(255),
     detected_location_province VARCHAR(255),
+    detected_location_region VARCHAR(255),
     is_victim victim_status_enum NOT NULL DEFAULT 'PENDING',  -- เปลี่ยนเป็น ENUM แล้ว
     detected_date DATE,
     workplace VARCHAR(255),
@@ -70,6 +71,7 @@ CREATE TABLE repatriated_persons (
     sub_district VARCHAR(255),
     district VARCHAR(255),
     province VARCHAR(255),
+    region VARCHAR(255),
     building VARCHAR(255),
     floor VARCHAR(100),
     room VARCHAR(100),

@@ -21,6 +21,7 @@ export const getDashboardStats = async (req, res) => {
       type = "illegal", 
       nationality = "ทั้งหมด", 
       province = "ทั้งหมด",
+      region = "ทั้งหมด",
       gender = "ทั้งหมด", 
       startDate: rawStartDate, 
       endDate: rawEndDate,
@@ -100,6 +101,17 @@ export const getDashboardStats = async (req, res) => {
       } else {
         conditions.push(`${provField} = $${paramIndex}`);
         queryParams.push(province);
+        paramIndex++;
+      }
+    }
+
+    if (region && region !== "ทั้งหมด") {
+      const regField = type === "repatriated" ? "t.region" : "t.detected_location_region";
+      if (region === "ไม่ระบุ") {
+        conditions.push(`(${regField} IS NULL OR TRIM(${regField}) = '' OR ${regField} = 'ไม่ระบุ')`);
+      } else {
+        conditions.push(`${regField} = $${paramIndex}`);
+        queryParams.push(region);
         paramIndex++;
       }
     }
@@ -323,6 +335,21 @@ export const getDashboardStats = async (req, res) => {
     const provinceChartRes = await pool.query(provinceChartQuery, baseParams);
     charts.province = provinceChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
 
+    const regFieldForChart = type === "repatriated" ? "region" : "detected_location_region";
+    const regionChartQuery = `
+      SELECT 
+        COALESCE(NULLIF(TRIM(t.${regFieldForChart}), ''), 'ไม่ระบุ') as name, 
+        COUNT(*) as value 
+      FROM ${tableName} t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${baseWhere} 
+      GROUP BY 1 
+      ORDER BY value DESC 
+      LIMIT 6
+    `;
+    const regionChartRes = await pool.query(regionChartQuery, baseParams);
+    charts.region = regionChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
+
     let allNatsRes = { rows: [] };
 
     // กราฟช่วงอายุ
@@ -372,6 +399,9 @@ export const getDashboardStats = async (req, res) => {
     const provField = type === "repatriated" ? "province" : "detected_location_province";
     const allProvincesRes = await pool.query(`SELECT DISTINCT COALESCE(NULLIF(TRIM(t.${provField}), ''), 'ไม่ระบุ') as prov FROM ${tableName} t ORDER BY prov`);
 
+    const regFieldData = type === "repatriated" ? "region" : "detected_location_region";
+    const allRegionsRes = await pool.query(`SELECT DISTINCT COALESCE(NULLIF(TRIM(t.${regFieldData}), ''), 'ไม่ระบุ') as reg FROM ${tableName} t ORDER BY reg`);
+
     res.status(200).json({
       success: true,
       meta: {
@@ -380,6 +410,7 @@ export const getDashboardStats = async (req, res) => {
         currentPage: pageNum,
         allNationalities: ["ทั้งหมด", ...allNatsRes.rows.map(r => r.nat)],
         allProvinces: ["ทั้งหมด", ...allProvincesRes.rows.map(r => r.prov)],
+        allRegions: ["ทั้งหมด", ...allRegionsRes.rows.map(r => r.reg)],
         allGenders: ["ทั้งหมด", ...allGendersRes.rows.map(r => r.gen)],
         allCreators: ["ทั้งหมด", ...allCreatorsRes.rows.map(r => r.creator)]
       },

@@ -28,7 +28,7 @@ function DashboardContent() {
     if (cookieVal) {
       setVisibleCharts(cookieVal.split(",").filter(Boolean));
     } else {
-      setVisibleCharts(["nationality", "province", "gender", "victim", "passport", "channel", "creator", "ageGroup", "dateTrend"]);
+      setVisibleCharts(["nationality", "region", "province", "gender", "victim", "passport", "channel", "creator", "ageGroup", "dateTrend"]);
     }
   }, []);
 
@@ -76,6 +76,13 @@ function DashboardContent() {
             <label className="text-sm font-bold text- (--header)] opacity-70">เพศ</label>
             <select value={states.filterGender} onChange={(e) => actions.handleFilterChange(actions.setFilterGender, e.target.value)} className={inputClass}>
               {derived.gendersOptions.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text- (--header)] opacity-70">ภาคที่พบ/ส่งกลับ</label>
+            <select value={states.filterRegion} onChange={(e) => actions.handleFilterChange(actions.setFilterRegion, e.target.value)} className={inputClass}>
+              {derived.regionsOptions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
@@ -193,6 +200,7 @@ function DashboardContent() {
                       <>
                         {(!visibleCharts.length || visibleCharts.includes("dateTrend")) && derived.dateTrendChart.length > 0 && <LineChart data={derived.dateTrendChart} title="แนวโน้มวันที่พบ (รายเดือน)" />}
                         {(!visibleCharts.length || visibleCharts.includes("nationality")) && derived.natChart.length > 0 && <BarChart data={derived.natChart} title="สัญชาติ (Top 6)" />}
+                        {(!visibleCharts.length || visibleCharts.includes("region")) && derived.regionChart.length > 0 && <BarChart data={derived.regionChart} title="ภาค" />}
                         {(!visibleCharts.length || visibleCharts.includes("province")) && derived.provinceChart.length > 0 && <BarChart data={derived.provinceChart} title="จังหวัด (Top 6)" />}
                         {(!visibleCharts.length || visibleCharts.includes("ageGroup")) && derived.ageChart.length > 0 && <BarChart data={derived.ageChart} title="ช่วงอายุ" />}
                         {(!visibleCharts.length || visibleCharts.includes("gender")) && derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
@@ -204,6 +212,7 @@ function DashboardContent() {
                       <>
                         {(!visibleCharts.length || visibleCharts.includes("dateTrend")) && derived.dateTrendChart.length > 0 && <LineChart data={derived.dateTrendChart} title="แนวโน้มวันที่ส่งกลับ (รายเดือน)" />}
                         {(!visibleCharts.length || visibleCharts.includes("nationality")) && derived.natChart.length > 0 && <BarChart data={derived.natChart} title="สัญชาติ (Top 6)" />}
+                        {(!visibleCharts.length || visibleCharts.includes("region")) && derived.regionChart.length > 0 && <BarChart data={derived.regionChart} title="ภาค" />}
                         {(!visibleCharts.length || visibleCharts.includes("province")) && derived.provinceChart.length > 0 && <BarChart data={derived.provinceChart} title="จังหวัด (Top 6)" />}
                         {(!visibleCharts.length || visibleCharts.includes("ageGroup")) && derived.ageChart.length > 0 && <BarChart data={derived.ageChart} title="ช่วงอายุ" />}
                         {(!visibleCharts.length || visibleCharts.includes("gender")) && derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
@@ -245,6 +254,15 @@ function DashboardContent() {
                               className="w-4 h-4 accent-(--blueText)" 
                             />
                             สัญชาติ (Top 6)
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
+                              checked={visibleCharts.includes("region")} 
+                              onChange={() => toggleChart("region")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            ภาค
                           </label>
                           <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
                             <input 
@@ -324,6 +342,15 @@ function DashboardContent() {
                           <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
                             <input 
                               type="checkbox" 
+                              checked={visibleCharts.includes("region")} 
+                              onChange={() => toggleChart("region")} 
+                              className="w-4 h-4 accent-(--blueText)" 
+                            />
+                            ภาค
+                          </label>
+                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
+                            <input 
+                              type="checkbox" 
                               checked={visibleCharts.includes("province")} 
                               onChange={() => toggleChart("province")} 
                               className="w-4 h-4 accent-(--blueText)" 
@@ -372,7 +399,7 @@ function DashboardContent() {
                     
                     <div className="flex justify-end gap-2">
                       <button 
-                        onClick={() => saveVisibleCharts(["nationality", "province", "gender", "victim", "passport", "channel", "creator", "ageGroup", "dateTrend"])} 
+                        onClick={() => saveVisibleCharts(["nationality", "region", "province", "gender", "victim", "passport", "channel", "creator", "ageGroup", "dateTrend"])} 
                         className="px-3.5 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-sm font-bold text-(--header) hover:opacity-80 transition rounded cursor-pointer select-none"
                       >
                         แสดงผลทั้งหมด

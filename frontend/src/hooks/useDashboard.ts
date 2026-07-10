@@ -15,8 +15,9 @@ export interface DashboardData {
     creator?: { name: string; value: number; color?: string; profile_color?: string; creator_color?: string; }[]; 
     ageGroup?: { name: string; value: number; color?: string }[];
     dateTrend?: { name: string; value: number; color?: string }[];
+    region?: { name: string; value: number; color?: string }[];
   };
-  meta: { totalItems: number; totalPages: number; currentPage: number; allNationalities: string[]; allGenders: string[]; allCreators?: string[]; allProvinces?: string[]; };
+  meta: { totalItems: number; totalPages: number; currentPage: number; allNationalities: string[]; allGenders: string[]; allCreators?: string[]; allProvinces?: string[]; allRegions?: string[]; };
   tableData: any[];
 }
 
@@ -46,6 +47,7 @@ export function useDashboard() {
   const [filterPassport, setFilterPassport] = useState<string>("ทั้งหมด");
   const [filterCreator, setFilterCreator] = useState<string>("ทั้งหมด");
   const [filterProvince, setFilterProvince] = useState<string>("ทั้งหมด");
+  const [filterRegion, setFilterRegion] = useState<string>("ทั้งหมด");
   const [filterAge, setFilterAge] = useState<string>("ทั้งหมด");
   
   const [startDate, setStartDate] = useState<string>("");
@@ -66,6 +68,7 @@ export function useDashboard() {
       isVictim: filterType === "illegal" ? filterVictim : "ทั้งหมด",
       hasPassport: filterType === "illegal" ? filterPassport : "ทั้งหมด",
       province: filterProvince,
+      region: filterRegion,
       ageGroup: filterAge,
       page: currentPage.toString(),
       limit: "50"
@@ -111,7 +114,7 @@ export function useDashboard() {
       });
     return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, filterProvince, filterAge, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection]);
+  }, [filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, filterProvince, filterRegion, filterAge, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection]);
 
   useEffect(() => {
     if (typeParam !== filterType) {
@@ -128,7 +131,7 @@ export function useDashboard() {
   };
   const resetFilters = () => {
     setFilterNat("ทั้งหมด"); setFilterGender("ทั้งหมด"); setFilterVictim("ทั้งหมด");
-    setFilterPassport("ทั้งหมด"); setFilterCreator("ทั้งหมด"); setFilterProvince("ทั้งหมด"); setFilterAge("ทั้งหมด");
+    setFilterPassport("ทั้งหมด"); setFilterCreator("ทั้งหมด"); setFilterProvince("ทั้งหมด"); setFilterRegion("ทั้งหมด"); setFilterAge("ทั้งหมด");
     setStartDate(""); setEndDate(""); setDobStart("");
     setDobEnd(""); setSortField(""); setCurrentPage(1);
   };
@@ -142,6 +145,7 @@ export function useDashboard() {
   const gendersOptions = Array.from(new Set(["ทั้งหมด", "ชาย", "หญิง", "ไม่ระบุ", ...(dashboardData?.meta?.allGenders || [])]));
   const creatorsOptions = dashboardData?.meta?.allCreators || ["ทั้งหมด"];
   const provincesOptions = Array.from(new Set(["ทั้งหมด", "ไม่ระบุ", ...(dashboardData?.meta?.allProvinces || [])]));
+  const regionsOptions = Array.from(new Set(["ทั้งหมด", "ไม่ระบุ", ...(dashboardData?.meta?.allRegions || [])]));
   const ageOptions = ["ทั้งหมด", "0-18 ปี", "19-30 ปี", "31-50 ปี", "51 ปีขึ้นไป", "ไม่ระบุ"];
 
   const tableRows = (dashboardData?.tableData || []).map((item: any) => {
@@ -179,6 +183,7 @@ export function useDashboard() {
 
   const natChart = formatStandardChartData(dashboardData?.charts?.nationality, dashboardData?.stats?.total, 0);
   const provinceChart = formatStandardChartData(dashboardData?.charts?.province, dashboardData?.stats?.total, 4);
+  const regionChart = formatStandardChartData(dashboardData?.charts?.region, dashboardData?.stats?.total, 5);
   const channelChart = formatStandardChartData(dashboardData?.charts?.channel, dashboardData?.stats?.total, 0);
   
   // กราฟเพศใหม่
@@ -195,8 +200,8 @@ export function useDashboard() {
   const dateTrendChart = dashboardData?.charts?.dateTrend?.map((d: any) => ({ ...d, color: "var(--blueText)" })) || [];
 
   return {
-    states: { filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, filterProvince, filterAge, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection, loading, isUpdating, dashboardData },
-    actions: { handleFilterChange, handleSort, resetFilters, handleTypeChange, setCurrentPage, setFilterNat, setFilterGender, setFilterVictim, setFilterPassport, setFilterCreator, setFilterProvince, setFilterAge, setStartDate, setEndDate, setDobStart, setDobEnd },
-    derived: { nationalitiesOptions, gendersOptions, creatorsOptions, provincesOptions, ageOptions, tableRows, stats, natChart, provinceChart, genderChart, channelChart, victimChart, passportChart, creatorChart, ageChart, dateTrendChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
+    states: { filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, filterProvince, filterRegion, filterAge, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection, loading, isUpdating, dashboardData },
+    actions: { handleFilterChange, handleSort, resetFilters, handleTypeChange, setCurrentPage, setFilterNat, setFilterGender, setFilterVictim, setFilterPassport, setFilterCreator, setFilterProvince, setFilterRegion, setFilterAge, setStartDate, setEndDate, setDobStart, setDobEnd },
+    derived: { nationalitiesOptions, gendersOptions, creatorsOptions, provincesOptions, regionsOptions, ageOptions, tableRows, stats, natChart, provinceChart, regionChart, genderChart, channelChart, victimChart, passportChart, creatorChart, ageChart, dateTrendChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
   };
 }

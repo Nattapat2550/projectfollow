@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import {  uploadToDrive  } from "../services/googleDriveService"; 
 import fs from 'fs';
 import path from 'path';
+import { getRegionFromProvince } from "../utils/regionMapper";
 import * as cache from "../utils/cache";
 
 let thaiAddresses: any[] = [];
@@ -299,6 +300,7 @@ export const uploadExcel = async (req, res) => {
                     sub_district: parsedLocation.sub_district,
                     district: parsedLocation.district,
                     province: parsedLocation.province,
+                    region: getRegionFromProvince(parsedLocation.province),
                     building: row["ตึก ที่ทำงาน"] ? String(row["ตึก ที่ทำงาน"]) : null,
                     floor: row["ชั้น ที่ทำงาน"] ? String(row["ชั้น ที่ทำงาน"]) : null,
                     room: row["ห้อง ที่ทำงาน"] ? String(row["ห้อง ที่ทำงาน"]) : null,
@@ -421,6 +423,9 @@ export const uploadExcel = async (req, res) => {
 
                     const locationRaw = row["ที่อยู่"] ? String(row["ที่อยู่"]) : "";
                     const parsedLocation = splitThaiAddress(locationRaw);
+                    parsedLocation.province = parsedLocation.province || (row["จังหวัด"] ? String(row["จังหวัด"]).trim() : null);
+                    parsedLocation.district = parsedLocation.district || (row["อำเภอ"] ? String(row["อำเภอ"]).trim() : (row["เขต"] ? String(row["เขต"]).trim() : null));
+                    parsedLocation.sub_district = parsedLocation.sub_district || (row["ตำบล"] ? String(row["ตำบล"]).trim() : (row["แขวง"] ? String(row["แขวง"]).trim() : null));
 
                     processedRows[i] = {
                         index: i,
@@ -475,11 +480,13 @@ export const uploadExcel = async (req, res) => {
                 is_victim_val = 'YES';
             }
 
+            const region = getRegionFromProvince(pRow.parsedLocation.province);
+
             const values = [
                 pRow.thName.first || "ไม่ระบุ", pRow.thName.middle || null, pRow.thName.last || "ไม่ระบุ",
                 pRow.enName.first || null, pRow.enName.middle || null, pRow.enName.last || null,
                 pRow.dobDate, pRow.autoGender, pRow.id_card, pRow.passport,
-                pRow.parsedLocation.details, pRow.parsedLocation.sub_district, pRow.parsedLocation.district, pRow.parsedLocation.province,
+                pRow.parsedLocation.details, pRow.parsedLocation.sub_district, pRow.parsedLocation.district, pRow.parsedLocation.province, region,
                 pRow.row["ตึก ที่ทำงาน"] ? String(pRow.row["ตึก ที่ทำงาน"]) : null,
                 pRow.row["ชั้น ที่ทำงาน"] ? String(pRow.row["ชั้น ที่ทำงาน"]) : null,
                 pRow.row["ห้อง ที่ทำงาน"] ? String(pRow.row["ห้อง ที่ทำงาน"]) : null,
@@ -501,16 +508,16 @@ export const uploadExcel = async (req, res) => {
                     try {
                         let updateQ = `UPDATE repatriated_persons SET 
                             first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
-                            date_of_birth=$7, gender=$8, national_id=$9, passport_id=$10, address_details=$11, sub_district=$12, district=$13, province=$14,
-                            building=$15, floor=$16, room=$17, job_type=$18, role=$19, salary=$20, paid_by=$21, payment_method=$22,
-                            number_of_case=$23, number_of_warrant=$24, is_victim=$25, responsible_agency=$26, note=$27, nationality=$28, updated_at=NOW()`;
+                            date_of_birth=$7, gender=$8, national_id=$9, passport_id=$10, address_details=$11, sub_district=$12, district=$13, province=$14, region=$15,
+                            building=$16, floor=$17, room=$18, job_type=$19, role=$20, salary=$21, paid_by=$22, payment_method=$23,
+                            number_of_case=$24, number_of_warrant=$25, is_victim=$26, responsible_agency=$27, note=$28, nationality=$29, updated_at=NOW()`;
                         
                         const updateVals = [...values];
                         if (pRow.drivePhotoUrl) {
-                            updateQ += `, photo_url=$29 WHERE id=$30`;
+                            updateQ += `, photo_url=$30 WHERE id=$31`;
                             updateVals.push(pRow.drivePhotoUrl, existingId);
                         } else {
-                            updateQ += ` WHERE id=$29`;
+                            updateQ += ` WHERE id=$30`;
                             updateVals.push(existingId);
                         }
                         await pool.query(updateQ, updateVals);
@@ -535,7 +542,7 @@ export const uploadExcel = async (req, res) => {
         if (insertRows.length > 0) {
             const fields = [
                 'id', 'first_name_th', 'middle_name_th', 'last_name_th', 'first_name_en', 'middle_name_en', 'last_name_en',
-                'date_of_birth', 'gender', 'national_id', 'passport_id', 'address_details', 'sub_district', 'district', 'province',
+                'date_of_birth', 'gender', 'national_id', 'passport_id', 'address_details', 'sub_district', 'district', 'province', 'region',
                 'building', 'floor', 'room', 'job_type', 'role', 'salary', 'paid_by', 'payment_method',
                 'number_of_case', 'number_of_warrant', 'is_victim', 'responsible_agency', 'note', 'nationality', 'photo_url', 'created_by'
             ];
