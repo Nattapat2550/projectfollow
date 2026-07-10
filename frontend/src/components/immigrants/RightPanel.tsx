@@ -164,10 +164,7 @@ export default function RightPanel({ type, data, note, setNote, onEditClick }: R
               </span>
             </div>
 
-            <div className="flex justify-between items-center text-sm pb-1">
-              <span className="font-bold text- (--foreground) ]dark:text-slate-300">ช่องทางส่งกลับ</span>
-              <span className="font-semibold">{data.channel || "-"}</span>
-            </div>
+
           </div>
         ) : (
           <div className="flex flex-col gap-3">

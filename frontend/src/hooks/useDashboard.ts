@@ -11,7 +11,7 @@ export interface DashboardData {
     gender?: { name: string; value: number; color?: string }[]; 
     victim?: { name: string; value: number; color?: string }[]; 
     passport?: { name: string; value: number; color?: string }[]; 
-    channel?: { name: string; value: number; color?: string }[]; 
+
     creator?: { name: string; value: number; color?: string; profile_color?: string; creator_color?: string; }[]; 
     ageGroup?: { name: string; value: number; color?: string }[];
     dateTrend?: { name: string; value: number; color?: string }[];
@@ -184,7 +184,7 @@ export function useDashboard() {
   const natChart = formatStandardChartData(dashboardData?.charts?.nationality, dashboardData?.stats?.total, 0);
   const provinceChart = formatStandardChartData(dashboardData?.charts?.province, dashboardData?.stats?.total, 4);
   const regionChart = formatStandardChartData(dashboardData?.charts?.region, dashboardData?.stats?.total, 5);
-  const channelChart = formatStandardChartData(dashboardData?.charts?.channel, dashboardData?.stats?.total, 0);
+
   
   // กราฟเพศใหม่
   const genderChart = formatStandardChartData(dashboardData?.charts?.gender, dashboardData?.stats?.total, 2);
@@ -202,6 +202,6 @@ export function useDashboard() {
   return {
     states: { filterType, filterNat, filterGender, filterVictim, filterPassport, filterCreator, filterProvince, filterRegion, filterAge, startDate, endDate, dobStart, dobEnd, currentPage, sortField, sortDirection, loading, isUpdating, dashboardData },
     actions: { handleFilterChange, handleSort, resetFilters, handleTypeChange, setCurrentPage, setFilterNat, setFilterGender, setFilterVictim, setFilterPassport, setFilterCreator, setFilterProvince, setFilterRegion, setFilterAge, setStartDate, setEndDate, setDobStart, setDobEnd },
-    derived: { nationalitiesOptions, gendersOptions, creatorsOptions, provincesOptions, regionsOptions, ageOptions, tableRows, stats, natChart, provinceChart, regionChart, genderChart, channelChart, victimChart, passportChart, creatorChart, ageChart, dateTrendChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
+    derived: { nationalitiesOptions, gendersOptions, creatorsOptions, provincesOptions, regionsOptions, ageOptions, tableRows, stats, natChart, provinceChart, regionChart, genderChart, victimChart, passportChart, creatorChart, ageChart, dateTrendChart, totalPages: dashboardData?.meta?.totalPages || 1, totalItems: dashboardData?.meta?.totalItems || 0 }
   };
 }

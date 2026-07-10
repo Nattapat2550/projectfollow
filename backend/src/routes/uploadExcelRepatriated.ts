@@ -2,7 +2,7 @@ import express from "express";
 const router = express.Router();
 import multer from "multer";
 import rateLimit from "express-rate-limit"; 
-import * as testUpload2Controller from "../controllers/testUpload2Controller";
+import * as uploadExcelRepatriatedController from "../controllers/uploadExcelRepatriatedController";
 import {  protect  } from "../middleware/auth";
 
 // 🟢 แก้ไขตรงนี้: ใช้ memoryStorage() เพื่อให้ Controller สามารถอ่าน req.file.buffer ได้
@@ -16,8 +16,8 @@ const uploadLimiter = rateLimit({
 });
 
 // 🟢 ใส่ uploadLimiter ขวางไว้ก่อนเข้า protect
-router.post("/upload-excel", uploadLimiter, protect, upload.single("file"), testUpload2Controller.uploadExcel);
+router.post("/upload-excel", uploadLimiter, protect, upload.single("file"), uploadExcelRepatriatedController.uploadExcel);
 
-router.get("/upload-progress/:jobId", testUpload2Controller.getUploadProgress);
+router.get("/upload-progress/:jobId", uploadExcelRepatriatedController.getUploadProgress);
 
 export default router;

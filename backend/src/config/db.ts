@@ -17,7 +17,7 @@ pool.connect()
     console.log("✅ PostgreSQL Connected Successfully & Pool Optimized");
     client.release();
     
-    // Auto-create indexes to maximize query performance (especially for test-upload / test-upload2 duplicate checks and sorting)
+    // Auto-create indexes to maximize query performance (especially for upload-excel-illegal / upload-excel-repatriated duplicate checks and sorting)
     try {
       await pool.query(`
         CREATE INDEX IF NOT EXISTS idx_repatriated_persons_return_date ON repatriated_persons(return_date DESC NULLS LAST);

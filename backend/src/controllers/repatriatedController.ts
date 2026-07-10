@@ -58,9 +58,9 @@ export const createRepatriated = async (req, res) => {
       INSERT INTO repatriated_persons
       (id, first_name_th, middle_name_th, last_name_th, first_name_en, middle_name_en, last_name_en,
        passport_id, nationality, national_id, gender, date_of_birth, return_date, number_of_case,
-       number_of_warrant, channel, address_details, sub_district, district, province, region, building, floor, room, job_type,
+       number_of_warrant, address_details, sub_district, district, province, region, building, floor, room, job_type,
        role, salary, paid_by, payment_method, is_victim, responsible_agency, screening_details, note, photo_url, passport_photo_url, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35)
       RETURNING *;
     `;
     const region = getRegionFromProvince(data.province);
@@ -73,7 +73,6 @@ export const createRepatriated = async (req, res) => {
       safeParseDate(data.return_date),
       data.number_of_case ? parseInt(data.number_of_case) : 0,
       data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
-      data.channel || null,
       data.address_details || "ไม่ระบุ", data.sub_district || null, data.district || null, data.province || null, region,
       data.building || null, data.floor || null, data.room || null,
       data.job_type || null, data.role || null, data.salary || null, 
@@ -130,11 +129,11 @@ export const updateRepatriated = async (req, res) => {
       UPDATE repatriated_persons SET
         first_name_th=$1, middle_name_th=$2, last_name_th=$3, first_name_en=$4, middle_name_en=$5, last_name_en=$6,
         passport_id=$7, nationality=$8, national_id=$9, gender=$10, date_of_birth=$11, return_date=$12,
-        number_of_case=$13, number_of_warrant=$14, channel=$15,
-        address_details=$16, sub_district=$17, district=$18, province=$19, region=$20, building=$21, floor=$22, room=$23, job_type=$24,
-        role=$25, salary=$26, paid_by=$27, payment_method=$28, is_victim=$29, responsible_agency=$30,
-        screening_details=$31, note=$32, photo_url=$33, passport_photo_url=$34, updated_at=NOW()
-      WHERE id=$35 RETURNING *;
+        number_of_case=$13, number_of_warrant=$14,
+        address_details=$15, sub_district=$16, district=$17, province=$18, region=$19, building=$20, floor=$21, room=$22, job_type=$23,
+        role=$24, salary=$25, paid_by=$26, payment_method=$27, is_victim=$28, responsible_agency=$29,
+        screening_details=$30, note=$31, photo_url=$32, passport_photo_url=$33, updated_at=NOW()
+      WHERE id=$34 RETURNING *;
     `;
     const region = getRegionFromProvince(data.province);
     const values = [
@@ -146,7 +145,6 @@ export const updateRepatriated = async (req, res) => {
       safeParseDate(data.return_date),
       data.number_of_case ? parseInt(data.number_of_case) : 0,
       data.number_of_warrant ? parseInt(data.number_of_warrant) : 0,
-      data.channel || null,
       data.address_details || "ไม่ระบุ", data.sub_district || null, data.district || null, data.province || null, region,
       data.building || null, data.floor || null, data.room || null,
       data.job_type || null, data.role || null, data.salary || null, 

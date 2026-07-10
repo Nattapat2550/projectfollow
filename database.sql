@@ -91,7 +91,6 @@ CREATE TABLE repatriated_persons (
     
     -- ข้อมูลการส่งกลับและอื่นๆ
     return_date DATE,
-    channel VARCHAR(255),
     note TEXT,
     screening_details TEXT,
 

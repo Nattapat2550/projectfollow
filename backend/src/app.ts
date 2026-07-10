@@ -7,7 +7,7 @@ import fs from "fs";
 
 import immigrantRoutes from "./routes/immigrants";
 import dashboardRoutes from "./routes/dashboard";
-import testUpload2Routes from "./routes/testUpload2";
+import uploadExcelRepatriatedRoutes from "./routes/uploadExcelRepatriated";
 import authRoutes from "./routes/auth"; // นำเข้า Auth Route
 
 const app = express();
@@ -38,7 +38,7 @@ app.get("/", (req, res) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/immigrants", immigrantRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
-app.use("/api/v1/test-upload2", testUpload2Routes);
+app.use("/api/v1/upload-excel-repatriated", uploadExcelRepatriatedRoutes);
 
 // ⚠️ ดักจับกรณีเรียก Route ที่ไม่มีอยู่จริง (404 handler)
 // เปลี่ยนจากการส่งหน้า HTML เป็นการส่ง JSON เพื่อไม่ให้ Frontend แครช

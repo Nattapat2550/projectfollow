@@ -311,7 +311,7 @@ export const uploadExcelIllegal = async (req, res) => {
     workbook.SheetNames.forEach(sheetName => {
       const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null });
       if (sheetData.length > 0) {
-        allJsonData.push(...sheetData.map(row => ({ ...row, _sheetName: sheetName })));
+        allJsonData.push(...sheetData.map((row: any) => ({ ...row, _sheetName: sheetName })));
       }
     });
 

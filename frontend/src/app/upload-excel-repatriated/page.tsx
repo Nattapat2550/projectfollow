@@ -43,7 +43,7 @@ export default function TestUpload2Page() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
-      const response = await fetch(`${backendUrl}/api/v1/test-upload2/upload-excel?action=preview`, {
+      const response = await fetch(`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`, {
         method: 'POST',
         headers: {
            ...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {})
@@ -74,7 +74,7 @@ export default function TestUpload2Page() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`${backendUrl}/api/v1/test-upload2/upload-progress/${jobId}`);
+        const res = await fetch(`${backendUrl}/api/v1/upload-excel-repatriated/upload-progress/${jobId}`);
         const data = await res.json();
         setProgress({ current: data.current, total: data.total });
         if (data.status === 'completed') clearInterval(interval);
@@ -88,7 +88,7 @@ export default function TestUpload2Page() {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(`${backendUrl}/api/v1/test-upload2/upload-excel?action=upload&jobId=${jobId}`, {
+      const response = await fetch(`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`, {
         method: 'POST',
         headers: {
            ...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {})

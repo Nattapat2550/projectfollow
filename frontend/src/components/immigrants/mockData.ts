@@ -16,7 +16,7 @@ export interface RepatriatedPerson {
   address: string;
   age?: number;
   return_date?: string;
-  channel?: string;
+
   result: "SUCCESS" | "FAILED" | "PENDING";
 }
 
@@ -92,7 +92,7 @@ export const MOCK_DEPORTED_DATA: RepatriatedPerson[] = [
     address: "123/4 ถ.พหลโยธิน แขวงลาดยาว เขตจตุจักร กรุงเทพมหานคร 10900",
     age: 25,
     return_date: "2024-11-30",
-    channel: "ด่านพรมแดนแม่สาย",
+
     result: "SUCCESS",
   },
   { id: "mock-dep-1", first_name_th: "สมชาย", last_name_th: "ดีเลิศ", date_of_birth: "12/05/2535", national_id: "1100200011111", passport_id: "PP0000001", address: "กรุงเทพมหานคร", number_of_case: 1, number_of_warrant: 0, result: "SUCCESS" },

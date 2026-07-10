@@ -59,7 +59,7 @@ export const buildDashboardQuerySQL = (query, type) => {
       let fields = `t.first_name_th ILIKE $${paramIdx} OR t.last_name_th ILIKE $${paramIdx} OR t.first_name_en ILIKE $${paramIdx} OR t.last_name_en ILIKE $${paramIdx} OR t.passport_id ILIKE $${paramIdx}`;
       
       if (type === "repatriated") {
-        fields += ` OR t.national_id ILIKE $${paramIdx} OR t.channel ILIKE $${paramIdx}`;
+        fields += ` OR t.national_id ILIKE $${paramIdx}`;
       } else {
         fields += ` OR t.nationality ILIKE $${paramIdx} OR t.detected_location_details ILIKE $${paramIdx} OR t.detected_location_sub_district ILIKE $${paramIdx} OR t.detected_location_district ILIKE $${paramIdx} OR t.detected_location_province ILIKE $${paramIdx}`;
       }

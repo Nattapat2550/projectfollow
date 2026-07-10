@@ -241,7 +241,7 @@ export const uploadExcel = async (req, res) => {
         const imagesMap = {};
         for (const image of worksheetExt.getImages()) {
             const rowIdx = image.range.tl.nativeRow; 
-            const imgInfo = workbookExt.getImage(image.imageId);
+            const imgInfo = workbookExt.getImage(image.imageId as any);
             if (imgInfo && imgInfo.buffer) {
                 imagesMap[rowIdx] = { buffer: imgInfo.buffer, extension: imgInfo.extension || 'jpeg' };
             }

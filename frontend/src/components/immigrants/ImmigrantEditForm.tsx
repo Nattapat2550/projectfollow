@@ -332,8 +332,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
                   <div><label className={labelClass}>จำนวนหมายจับ</label><input type="number" name="number_of_warrant" value={formData.number_of_warrant || ""} onChange={handleInputChange} className={inputClass} /></div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-                  <div><label className={labelClass}>ช่องทางส่งกลับ</label><input type="text" name="channel" value={formData.channel || ""} onChange={handleInputChange} className={inputClass} /></div>
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">
                   <div><label className={labelClass}>หน่วยงานที่รับผิดชอบ</label><input type="text" name="responsible_agency" value={formData.responsible_agency || ""} onChange={handleInputChange} className={inputClass} /></div>
                 </div>
 

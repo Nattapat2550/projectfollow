@@ -20,7 +20,7 @@ export default function CreateRepatriatedImmigrant() {
     first_name_en: "", middle_name_en: "", last_name_en: "",
     passport_id: "", nationality: "", national_id: "", gender: "",
     date_of_birth: "", age: "", return_date: "",
-    number_of_case: "", number_of_warrant: "", channel: "",
+    number_of_case: "", number_of_warrant: "",
     address_details: "", sub_district: "", district: "", province: "", building: "", floor: "", room: "",
     job_type: "", role: "", salary: "", paid_by: "", payment_method: "",
     is_victim: "PENDING", responsible_agency: "", screening_details: "", note: "", photo_url: "",
@@ -144,7 +144,7 @@ export default function CreateRepatriatedImmigrant() {
           <ChevronLeft size={32} />
           <span>เพิ่มข้อมูลใหม่ (ผู้ถูกส่งตัวกลับ)</span>
         </button>
-      <Link href="/test-upload2">
+      <Link href="/upload-excel-repatriated">
           <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-600 border border-emerald-500/50 rounded-lg hover:bg-emerald-500/20 font-bold transition text-sm cursor-pointer mt-4">
             <FileSpreadsheet size={18} /> อัพโหลดจากไฟล์ Excel
           </button>
@@ -232,8 +232,7 @@ export default function CreateRepatriatedImmigrant() {
           <div><label className={labelClass}>จำนวนหมายจับ</label><input type="number" name="number_of_warrant" value={formData.number_of_warrant} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          <div><label className={labelClass}>ช่องทางส่งกลับ</label><input type="text" name="channel" value={formData.channel} onChange={handleInputChange} className={inputClass} /></div>
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-5 mb-5">
           <div><label className={labelClass}>หน่วยงานที่รับผิดชอบ</label><input type="text" name="responsible_agency" value={formData.responsible_agency} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 

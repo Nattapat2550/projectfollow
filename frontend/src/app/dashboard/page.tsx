@@ -28,7 +28,7 @@ function DashboardContent() {
     if (cookieVal) {
       setVisibleCharts(cookieVal.split(",").filter(Boolean));
     } else {
-      setVisibleCharts(["nationality", "region", "province", "gender", "victim", "passport", "channel", "creator", "ageGroup", "dateTrend"]);
+      setVisibleCharts(["nationality", "region", "province", "gender", "victim", "passport", "creator", "ageGroup", "dateTrend"]);
     }
   }, []);
 
@@ -217,7 +217,7 @@ function DashboardContent() {
                         {(!visibleCharts.length || visibleCharts.includes("ageGroup")) && derived.ageChart.length > 0 && <BarChart data={derived.ageChart} title="ช่วงอายุ" />}
                         {(!visibleCharts.length || visibleCharts.includes("gender")) && derived.genderChart.length > 0 && <BarChart data={derived.genderChart} title="เพศ" />}
                         {(!visibleCharts.length || visibleCharts.includes("victim")) && derived.victimChart.length > 0 && <BarChart data={derived.victimChart} title="สถานะผู้เสียหาย" />}
-                        {(!visibleCharts.length || visibleCharts.includes("channel")) && derived.channelChart.length > 0 && <BarChart data={derived.channelChart} title="ช่องทางการส่งกลับ" />}
+                        
                         {(!visibleCharts.length || visibleCharts.includes("creator")) && derived.creatorChart.length > 0 && <BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />}
                       </>
                     )}
@@ -378,15 +378,6 @@ function DashboardContent() {
                           <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
                             <input 
                               type="checkbox" 
-                              checked={visibleCharts.includes("channel")} 
-                              onChange={() => toggleChart("channel")} 
-                              className="w-4 h-4 accent-(--blueText)" 
-                            />
-                            ช่องทางการส่งกลับ
-                          </label>
-                          <label className="flex items-center gap-3 text-sm font-semibold text-(--header) cursor-pointer select-none">
-                            <input 
-                              type="checkbox" 
                               checked={visibleCharts.includes("creator")} 
                               onChange={() => toggleChart("creator")} 
                               className="w-4 h-4 accent-(--blueText)" 
@@ -399,7 +390,7 @@ function DashboardContent() {
                     
                     <div className="flex justify-end gap-2">
                       <button 
-                        onClick={() => saveVisibleCharts(["nationality", "region", "province", "gender", "victim", "passport", "channel", "creator", "ageGroup", "dateTrend"])} 
+                        onClick={() => saveVisibleCharts(["nationality", "region", "province", "gender", "victim", "passport", "creator", "ageGroup", "dateTrend"])} 
                         className="px-3.5 py-1.5 bg-zinc-200 dark:bg-zinc-800 text-sm font-bold text-(--header) hover:opacity-80 transition rounded cursor-pointer select-none"
                       >
                         แสดงผลทั้งหมด

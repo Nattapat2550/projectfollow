@@ -138,7 +138,7 @@ export default function CreateIllegalImmigrant() {
           <ChevronLeft size={32} />
           <span>เพิ่มข้อมูลใหม่ (ผู้ลักลอบเข้าประเทศ)</span>
         </button>
-        <Link href="/test-upload">
+        <Link href="/upload-excel-illegal">
           <button className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/50 rounded-lg hover:bg-amber-500/20 font-bold transition text-sm cursor-pointer mt-4">
             <FileSpreadsheet size={18} /> อัพโหลดจากไฟล์ Excel
           </button>

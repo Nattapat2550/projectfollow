@@ -297,7 +297,6 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
                           </div>
                           <div className="flex gap-2 w-full">
                             <div className="break-words whitespace-normal flex-1 min-w-0"><span className="font-bold">หน่วยงาน:</span> {data.responsible_agency || "-"}</div>
-                            <div className="break-words whitespace-normal flex-1 min-w-0"><span className="font-bold">ช่องทาง:</span> {data.channel || "-"}</div>
                           </div>
                         </div>
                       )}
@@ -430,7 +429,7 @@ export default function UniversalImmigrantCard({ data, type, isExporting = false
                     </div>
                   )}
                   <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span> {data.screening_details || "-"}</div>
-                  <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">ช่องทาง:</span> {data.channel || "-"}</div>
+
                   <div className="wrap-break-word"><span className="font-semibold text-[#022c22]">หมายเหตุ:</span> {data.note || "-"}</div>
                 </div>
               )}

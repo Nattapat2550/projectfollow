@@ -186,7 +186,7 @@ export const getDashboardStats = async (req, res) => {
       } else if (sortBy === "address") {
           orderClause = `ORDER BY t.province ${dir} NULLS LAST, t.district ${dir} NULLS LAST, t.sub_district ${dir} NULLS LAST, t.address_details ${dir} NULLS LAST, t.id DESC`;
       } else {
-          const allowedColumns = ["nationality", "detected_date", "is_victim", "date_of_birth", "national_id", "return_date", "result", "channel"];
+          const allowedColumns = ["nationality", "detected_date", "is_victim", "date_of_birth", "national_id", "return_date", "result"];
           if (allowedColumns.includes(sortBy)) {
               orderClause = `ORDER BY t.${sortBy} ${dir} NULLS LAST, t.id DESC`;
           }
@@ -215,8 +215,8 @@ export const getDashboardStats = async (req, res) => {
     let baseWhere = whereClause;
     let baseParams = queryParams;
 
-    let stats = { total: totalItems };
-    let charts = {};
+    let stats: any = { total: totalItems };
+    let charts: any = {};
 
     // 🌟 ดึงข้อมูลกราฟเพศ (ทำได้ทั้ง 2 ประเภทข้อมูล)
     const genderChartQuery = `
@@ -272,9 +272,6 @@ export const getDashboardStats = async (req, res) => {
       const victimCountQuery = `SELECT COUNT(*) FROM repatriated_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere ? baseWhere + " AND " : "WHERE "} t.is_victim = 'YES'`;
       const victimRes = await pool.query(victimCountQuery, baseParams);
 
-      const channelChartQuery = `SELECT COALESCE(t.channel, 'ไม่ระบุช่องทาง') as name, COUNT(*) as value FROM repatriated_persons t LEFT JOIN users u ON t.created_by = u.id ${baseWhere} GROUP BY 1 ORDER BY value DESC`;
-      const channelChartRes = await pool.query(channelChartQuery, baseParams);
-
       const victimChartQuery = `
         SELECT 
           CASE 
@@ -292,7 +289,6 @@ export const getDashboardStats = async (req, res) => {
       const victimChartRes = await pool.query(victimChartQuery, baseParams);
 
       stats.victims = parseInt(victimRes.rows[0].count);
-      charts.channel = channelChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
       charts.victim = victimChartRes.rows.map(r => ({ name: r.name, value: parseInt(r.value) }));
     }
 
