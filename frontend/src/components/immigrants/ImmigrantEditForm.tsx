@@ -88,7 +88,7 @@ export default function ImmigrantEditForm({ id, personType, initialData, onCance
   }, [initialData]);
 
   const defaultImage = personType === "illegal" ? "/enter.png" : "/return.png";
-  const inputClass = "w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all";
+  const inputClass = "w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all dark:[color-scheme:dark]";
   const labelClass = "block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
 
   const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(formData.province || "", formData.district || "");

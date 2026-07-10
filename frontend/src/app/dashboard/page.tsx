@@ -11,7 +11,7 @@ import { useDashboard } from "@/hooks/useDashboard";
 
 function DashboardContent() {
   const { states, actions, derived } = useDashboard();
-  const inputClass = "w-full bg-background border border- (--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring- (--header)]/40 [&::-webkit-calendar-picker-indicator]:dark:invert";
+  const inputClass = "w-full bg-background border border-[var(--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--header)]/40 dark:[color-scheme:dark]";
 
   const [showSettings, setShowSettings] = useState(false);
   const [visibleCharts, setVisibleCharts] = useState<string[]>([]);

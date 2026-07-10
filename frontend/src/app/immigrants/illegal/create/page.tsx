@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Save, X, FileSpreadsheet } from "lucide-react";
+import { ChevronLeft, Save, X, FileSpreadsheet, Image as ImageIcon } from "lucide-react";
 import Swal from 'sweetalert2';
-import SingleImageField from "@/components/form/single-image-field";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
 import AutocompleteInput from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
@@ -26,6 +25,8 @@ export default function CreateIllegalImmigrant() {
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [passportImagePreview, setPassportImagePreview] = useState<string | null>(null);
 
   const { provinces, districtOptions: detDistrictOptions, subDistrictOptions: detSubDistrictOptions } = useAddressOptions(formData.detected_location_province, formData.detected_location_district);
 
@@ -56,23 +57,27 @@ export default function CreateIllegalImmigrant() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file); 
+      setSelectedImage(file);
+      setImagePreview(URL.createObjectURL(file));
     }
   };
 
   const handleImageRemove = () => {
-    setSelectedImage(null); 
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const handlePassportImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedPassportImage(file); 
+      setSelectedPassportImage(file);
+      setPassportImagePreview(URL.createObjectURL(file));
     }
   };
 
   const handlePassportImageRemove = () => {
-    setSelectedPassportImage(null); 
+    setSelectedPassportImage(null);
+    setPassportImagePreview(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,13 +133,13 @@ export default function CreateIllegalImmigrant() {
     }
   };
 
-  const inputClass = "w-full bg-background border border-(--wrapper) text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-(--header)/40";
-  const labelClass = "block text-xs font-bold mb-2 text- (--header)] opacity-70";
+  const inputClass = "w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all dark:[color-scheme:dark]";
+  const labelClass = "block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
 
   return (
     <div className="min-h-screen bg-background p-6 text-foreground transition-colors duration-200">
-      <div className="max-w-4xl mx-auto mb-6">
-        <button onClick={() => router.push("/immigrants/illegal")} className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer">
+      <div className="max-w-2xl mx-auto mb-6">
+        <button onClick={() => router.push("/")} className="flex items-center gap-1 text-2xl font-bold text-(--header) hover:opacity-80 transition cursor-pointer">
           <ChevronLeft size={32} />
           <span>เพิ่มข้อมูลใหม่ (ผู้ลักลอบเข้าประเทศ)</span>
         </button>
@@ -145,24 +150,58 @@ export default function CreateIllegalImmigrant() {
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-(--container) border border-(--wrapper) rounded-2xl p-6 md:p-8 shadow-sm transition-colors mb-12">
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-(--container) rounded-2xl shadow-xl border border-gray-100 dark:border-zinc-800 p-6 sm:p-8 mb-12">
         {error && <div className="mb-6 rounded-md border border-red-500 bg-red-100 dark:bg-red-900/30 p-4 text-sm text-red-600 dark:text-red-400 font-medium">{error}</div>}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-6 p-6 rounded-xl">
           <div>
-            <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปภาพประจำตัว</h3>
+            <h3 className="text-lg font-bold mb-4">รูปภาพประจำตัว</h3>
             <div className="flex flex-col items-start gap-4">
-                <SingleImageField file={selectedImage} previewUrl="/return.png" onChange={handleImageChange} onRemove={handleImageRemove}/>
+              <img 
+                src={imagePreview || "/enter.png"} 
+                alt="Preview" 
+                referrerPolicy="no-referrer" 
+                onError={(e) => { e.currentTarget.src = "/enter.png"; }}
+                className="h-40 w-40 object-cover rounded-xl shadow-sm bg-white border border-gray-200 p-1" 
+              />
+              <div className="flex gap-3">
+                <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
+                  <ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                </label>
+                {imagePreview && (
+                  <button type="button" onClick={handleImageRemove} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer">
+                    <X size={16} /> ลบรูปภาพ
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3">รูปถ่ายพาสปอร์ต</h3>
+            <h3 className="text-lg font-bold mb-4">รูปถ่ายพาสปอร์ต</h3>
             <div className="flex flex-col items-start gap-4">
-                <SingleImageField file={selectedPassportImage} previewUrl="/passport.png" onChange={handlePassportImageChange} onRemove={handlePassportImageRemove}/>
+              <img 
+                src={passportImagePreview || "/passport.png"} 
+                alt="Passport Preview" 
+                referrerPolicy="no-referrer" 
+                onError={(e) => { e.currentTarget.src = "/passport.png"; }}
+                className="h-40 w-40 object-cover rounded-xl shadow-sm bg-white border border-gray-200 p-1" 
+              />
+              <div className="flex gap-3">
+                <label className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-md cursor-pointer hover:opacity-90 text-sm">
+                  <ImageIcon size={16} /> {passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
+                  <input type="file" accept="image/*" onChange={handlePassportImageChange} className="hidden" />
+                </label>
+                {passportImagePreview && (
+                  <button type="button" onClick={handlePassportImageRemove} className="flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer">
+                    <X size={16} /> ลบรูปภาพ
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
-        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
+        <h3 className="text-xl font-bold text-(--header) mb-4 mt-8">ข้อมูลส่วนบุคคลและชื่อ-นามสกุล</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
           <div><label className={labelClass}>ชื่อต้นภาษาไทย *</label><input required type="text" name="first_name_th" value={formData.first_name_th} onChange={handleInputChange} className={inputClass} /></div>
           <div><label className={labelClass}>ชื่อกลางภาษาไทย</label><input type="text" name="middle_name_th" value={formData.middle_name_th} onChange={handleInputChange} className={inputClass} /></div>
@@ -170,27 +209,27 @@ export default function CreateIllegalImmigrant() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
-          <div><label className={labelClass}>ชื่อต้นภาษาอังกฤษ (First Name)</label><input type="text" name="first_name_en" value={formData.first_name_en} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>ชื่อกลางภาษาอังกฤษ (Middle Name)</label><input type="text" name="middle_name_en" value={formData.middle_name_en} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>นามสกุลภาษาอังกฤษ (Last Name)</label><input type="text" name="last_name_en" value={formData.last_name_en} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>ชื่อต้นภาษาอังกฤษ</label><input type="text" name="first_name_en" value={formData.first_name_en} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>ชื่อกลางภาษาอังกฤษ</label><input type="text" name="middle_name_en" value={formData.middle_name_en} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>นามสกุลภาษาอังกฤษ</label><input type="text" name="last_name_en" value={formData.last_name_en} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          <div><label className={labelClass}>เลขหนังสือเดินทาง (Passport ID)</label><input type="text" name="passport_id" value={formData.passport_id} onChange={handleInputChange} className={inputClass} /></div>
-          <div><label className={labelClass}>สัญชาติ (Nationality)</label><AutocompleteInput name="nationality" value={formData.nationality} options={ALL_NATIONALITIES} onChange={handleInputChange} className={inputClass} /></div>
-        </div>
-
-        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดจุดตรวจเจอและการคัดกรอง</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+          <div><label className={labelClass}>เลขหนังสือเดินทาง</label><input type="text" name="passport_id" value={formData.passport_id} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>สัญชาติ</label><AutocompleteInput name="nationality" value={formData.nationality} options={ALL_NATIONALITIES} onChange={handleInputChange} className={inputClass} /></div>
           <div><label className={labelClass}>เพศ</label>
             <select name="gender" value={formData.gender} onChange={handleInputChange} className={inputClass}>
               <option value="">ไม่ระบุ</option><option value="ชาย">ชาย</option><option value="หญิง">หญิง</option>
             </select>
           </div>
-          <div><label className={labelClass}>วันที่ตรวจพบการลักลอบเข้าประเทศ</label><input type="date" name="detected_date" value={formData.detected_date} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
-        <h3 className="text-xl font-bold text-(--header) mb-6 border-b border-(--wrapper) pb-3 mt-8">รายละเอียดที่อยู่และสถานที่</h3>
+        <h3 className="text-xl font-bold text-(--header) mb-4 mt-8">รายละเอียดจุดตรวจเจอและการคัดกรอง</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <div><label className={labelClass}>วันที่ตรวจพบ</label><input type="date" name="detected_date" value={formData.detected_date} onChange={handleInputChange} className={inputClass} /></div>
+          <div><label className={labelClass}>สถานที่ทำงานปลายทาง</label><input type="text" name="workplace" value={formData.workplace} onChange={handleInputChange} className={inputClass} /></div>
+        </div>
+
         <div className="mb-5">
           <label className={labelClass}>รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *</label>
           <textarea required name="detected_location_details" value={formData.detected_location_details} onChange={handleInputChange} rows={2} className={inputClass} />
@@ -205,13 +244,9 @@ export default function CreateIllegalImmigrant() {
           <div><label className={labelClass}>สถานที่ทำงานปลายทาง</label><input type="text" name="workplace" value={formData.workplace} onChange={handleInputChange} className={inputClass} /></div>
         </div>
 
-        <div className="mb-5">
-          <label className={labelClass}>สถานะผู้เสียหาย</label>
-          <select name="is_victim" value={formData.is_victim} onChange={handleInputChange} className={inputClass}>
-            <option value="PENDING">ไม่คัดกรองสถานะ</option>
-            <option value="YES">เป็นผู้เสียหาย</option>
-            <option value="NO">ไม่เป็นผู้เสียหาย</option>
-          </select>
+        <div className="mb-5 flex items-center gap-2 bg-background p-4 rounded-xl border border-(--wrapper)">
+          <input type="checkbox" id="is_victim" name="is_victim" checked={formData.is_victim === "YES"} onChange={(e) => setFormData((prev: any) => ({ ...prev, is_victim: e.target.checked ? "YES" : "NO" }))} className="w-4 h-4 cursor-pointer" />
+          <label htmlFor="is_victim" className="text-sm font-bold cursor-pointer text-black! dark:text-white!">เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์</label>
         </div>
 
         <div className="mb-5">
@@ -225,13 +260,13 @@ export default function CreateIllegalImmigrant() {
         </div>
 
         <div className="flex justify-end gap-3 border-t border-(--wrapper) pt-6 mt-8">
-          <Link href="/immigrants/illegal">
+          <Link href="/">
             <button type="button" className="flex items-center gap-1.5 px-4 py-2 bg-stone-200 dark:bg-stone-800 text-slate-800 dark:text-slate-200 font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer">
-              <X size={16} /><span>ยกเลิก</span>
+              <X size={16} /> ยกเลิก
             </button>
           </Link>
-          <button type="submit" disabled={loading} className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:opacity-90 active:scale-[0.98] transition text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-            <Save size={16} /><span>{loading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}</span>
+          <button type="submit" disabled={loading} className="flex items-center gap-1.5 px-4 py-2 bg-(--header) text-background font-bold rounded-lg hover:opacity-90 transition text-sm cursor-pointer disabled:opacity-50">
+            <Save size={16} /> {loading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
           </button>
         </div>
       </form>
