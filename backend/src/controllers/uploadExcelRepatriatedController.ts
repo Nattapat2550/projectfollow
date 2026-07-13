@@ -220,8 +220,17 @@ export const uploadExcel = async (req, res) => {
         const action = req.query.action || "upload";
         const jobId = req.query.jobId;
 
-        // อ่านไฟล์ Excel จาก Buffer ในหน่วยความจำโดยตรง
-        const workbookXlsx = xlsx.read(req.file.buffer, { type: "buffer" });
+        // อ่านไฟล์ Excel หรือ Word จาก Buffer ในหน่วยความจำโดยตรง
+        let workbookXlsx;
+        const filename = req.file.originalname || "";
+        if (filename.toLowerCase().endsWith(".docx")) {
+            const mammoth = require("mammoth");
+            const result = await mammoth.convertToHtml({ buffer: req.file.buffer });
+            workbookXlsx = xlsx.read(result.value, { type: "string" });
+        } else {
+            workbookXlsx = xlsx.read(req.file.buffer, { type: "buffer" });
+        }
+
         const sheetName = workbookXlsx.SheetNames[0];
         let rawData = xlsx.utils.sheet_to_json(workbookXlsx.Sheets[sheetName], { defval: null });
 
@@ -233,17 +242,23 @@ export const uploadExcel = async (req, res) => {
             return (thName && String(thName).trim() !== "") || (enName && String(enName).trim() !== "") || idCard || pass;
         });
 
-        // ใช้ exceljs อ่านภาพจาก Buffer เช่นกัน
-        const workbookExt = new ExcelJS.Workbook();
-        await workbookExt.xlsx.load(req.file.buffer);
-        const worksheetExt = workbookExt.worksheets[0];
-
+        // ใช้ exceljs อ่านภาพจาก Buffer สำหรับไฟล์ excel
         const imagesMap = {};
-        for (const image of worksheetExt.getImages()) {
-            const rowIdx = image.range.tl.nativeRow; 
-            const imgInfo = workbookExt.getImage(image.imageId as any);
-            if (imgInfo && imgInfo.buffer) {
-                imagesMap[rowIdx] = { buffer: imgInfo.buffer, extension: imgInfo.extension || 'jpeg' };
+        if (!filename.toLowerCase().endsWith(".docx")) {
+            try {
+                const workbookExt = new ExcelJS.Workbook();
+                await workbookExt.xlsx.load(req.file.buffer);
+                const worksheetExt = workbookExt.worksheets[0];
+
+                for (const image of worksheetExt.getImages()) {
+                    const rowIdx = image.range.tl.nativeRow; 
+                    const imgInfo = workbookExt.getImage(image.imageId as any);
+                    if (imgInfo && imgInfo.buffer) {
+                        imagesMap[rowIdx] = { buffer: imgInfo.buffer, extension: imgInfo.extension || 'jpeg' };
+                    }
+                }
+            } catch (err) {
+                console.error("Error extracting images with exceljs:", err);
             }
         }
 
