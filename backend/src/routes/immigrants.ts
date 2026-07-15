@@ -5,6 +5,7 @@ import multer from "multer";
 // นำเข้า Controller
 import * as immigrantController from "../controllers/immigrantController";
 import * as illegalController from "../controllers/illegalController";
+import * as illegal from "../handler/illegal";
 import * as repatriated from "../handler/repatriated";
 
 import uploadMiddleware from "../middleware/upload";
@@ -23,7 +24,7 @@ router.get("/dashboard", immigrantController.getDashboardData);
 // ----------------------------------------------------
 // Illegal (แอบเข้าเมือง)
 // ----------------------------------------------------
-router.get("/illegal/:id", illegalController.getIllegalById);
+router.get("/illegal/:id", illegal.getIllegalById);
 // 🟢 ใส่ protect เข้าไปก่อนหน้าฟังก์ชัน controller
 router.post(
   "/illegal",
@@ -32,7 +33,7 @@ router.post(
     { name: "photo", maxCount: 1 },
     { name: "passport_photo", maxCount: 1 },
   ]),
-  illegalController.createIllegal,
+  illegal.createIllegal,
 );
 router.put(
   "/illegal/:id",
@@ -41,9 +42,9 @@ router.put(
     { name: "photo", maxCount: 1 },
     { name: "passport_photo", maxCount: 1 },
   ]),
-  illegalController.updateIllegal,
+  illegal.updateIllegal,
 );
-router.delete("/illegal/:id", protect, illegalController.deleteIllegal);
+router.delete("/illegal/:id", protect, illegal.deleteIllegal);
 
 // ระบบ Excel อัปโหลดและตรวจสอบ Progress
 // 🟢 ใส่ protect เข้าไปที่ระบบอัปโหลด Excel
