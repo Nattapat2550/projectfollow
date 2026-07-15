@@ -1,5 +1,3 @@
-import { PreProcessedFileInfo } from "typescript";
-
 export class HTTPError extends Error {
   public status: number;
 
@@ -17,11 +15,6 @@ export function isHTTPError(err: unknown): err is HTTPError {
   return err instanceof HTTPError;
 }
 
-export type ErrorResponse = {
-  status: false;
-  message: string;
-};
-
 export function getErrorResponse(err: unknown): {
   status: number;
   response: ErrorResponse;
@@ -29,13 +22,13 @@ export function getErrorResponse(err: unknown): {
   if (isHTTPError(err)) {
     return {
       status: err.status,
-      response: { status: false, message: err.message },
+      response: { success: false, message: err.message },
     };
   } else {
     console.error(err);
     return {
       status: 500,
-      response: { status: false, message: "Internal Server Error" },
+      response: { success: false, message: "Internal Server Error" },
     };
   }
 }
