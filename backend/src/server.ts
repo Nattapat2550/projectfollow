@@ -1,16 +1,12 @@
 import dotenv from "dotenv";
-import fs from "fs";
-
 import path from "path";
 
 // 1. โหลด config.env ก่อนที่จะ require ไฟล์อื่นๆ ที่ต้องใช้ process.env
-const envPath = path.join(__dirname, 'config/config.env');
+const envPath = path.join(__dirname, "config/config.env");
 dotenv.config({ path: envPath });
 
-// 2. นำเข้าไฟล์ db.js
-import pool from "./config/db";
-
 import app from "./app";
+import "./config/db";
 
 const PORT = parseInt(process.env.PORT as string, 10) || 8000;
 
