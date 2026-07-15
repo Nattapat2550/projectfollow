@@ -14,9 +14,7 @@ import { getRegionFromProvince } from "../utils/regionMapper";
 import * as cache from "../utils/cache";
 
 import * as schema from "../schema/repatriated";
-import { Request } from "express";
 import { error } from "../utils/errors";
-import { ExpressFileFields } from "../utils/types";
 
 export async function getRepatriatedById(
   id: string,
@@ -37,7 +35,7 @@ export async function getRepatriatedById(
 
 export async function createRepatriated(
   body: Partial<schema.CreateRepatriatedRequest>,
-  files: ExpressFileFields,
+  files: Partial<schema.CreateRepatriatedRequestFile>,
   user: User,
 ): Promise<schema.CreateRepatriatedResponse> {
   const data = body;
@@ -148,8 +146,8 @@ export async function createRepatriated(
 
 export async function updateRepatriated(
   id: string,
-  body: schema.UpdateRepatriatedRequest,
-  files: ExpressFileFields,
+  body: Partial<schema.UpdateRepatriatedRequest>,
+  files: Partial<schema.UpdateRepatriatedRequestFile>,
 ): Promise<schema.UpdateRepatriatedResponse> {
   const data = body;
 

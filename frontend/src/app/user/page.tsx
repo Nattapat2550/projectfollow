@@ -6,7 +6,7 @@ import React, { SubmitEventHandler, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 import { getClientAuthData } from "@/lib/client/auth";
-import { getMe, updatePassword, updateProfile } from "@/lib/server/auth";
+import { getMe, updatePassword, updateProfile } from "@/lib/service/auth";
 export default function UserProfilePage() {
 	const [name, setName] = useState("");
 	const [color, setColor] = useState("#ffffff");

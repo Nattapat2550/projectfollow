@@ -10,15 +10,33 @@ export const backendUrl =
 
 export async function fetchWrapper<T>(
 	input: string | URL | Request,
-	init?: RequestInit
+	init?: RequestInit,
+	searchParams?: Record<string, string>
 ): Promise<T | ErrorResponse> {
 	try {
-		const response = await fetch(`${backendUrl}${input}`, init);
+		let url = `${backendUrl}${input}`;
+
+		if (searchParams) {
+			url = `${url}?${new URLSearchParams(searchParams).toString()}`;
+		}
+
+		const response = await fetch(url, init);
 		return (await response.json()) as T;
 	} catch (error) {
 		console.error(error);
 		return { success: false, message: "API Fetch Failed" };
 	}
+}
+
+export function withAuthHeader(token: string, init?: RequestInit): RequestInit {
+	if (!init) init = {};
+
+	init.headers = {
+		...init.headers,
+		Authorization: `Bearer ${token}`,
+	};
+
+	return init;
 }
 
 export function withJSONBody(
@@ -36,13 +54,18 @@ export function withJSONBody(
 	return init;
 }
 
-export function withAuthHeader(token: string, init?: RequestInit): RequestInit {
-	if (!init) init = {};
+export function withFormDataBody(
+	payload: Record<string, unknown>,
+	method: string = "POST",
+	init: RequestInit = {}
+): RequestInit {
+	init.method = method;
 
-	init.headers = {
-		...init.headers,
-		Authorization: `Bearer ${token}`,
-	};
+	const formData = new FormData();
+	for (const [key, value] of Object.entries(payload)) {
+		formData.append(key, value instanceof File ? value : String(value));
+	}
+	init.body = formData;
 
 	return init;
 }

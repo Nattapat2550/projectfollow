@@ -4,7 +4,7 @@ import { Eye, EyeOff, Lock, User } from "lucide-react";
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 
-import { login } from "@/lib/server/auth";
+import { login } from "@/lib/service/auth";
 
 import { InputField } from "./InputField";
 import { SubmitButton } from "./SubmitButton";

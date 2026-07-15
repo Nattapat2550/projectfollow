@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { clearClientAuthData, getClientAuthData } from "@/lib/client/auth";
-import { getMe, logout } from "@/lib/server/auth";
+import { getMe, logout } from "@/lib/service/auth";
 
 import DarkModeBtn from "./DarkModeBtn";
 
