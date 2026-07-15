@@ -1,17 +1,15 @@
-// backend/routes/immigrants.js
-
 import express from "express";
 const router = express.Router();
 import multer from "multer";
 
-// นำเข้า Controller 
+// นำเข้า Controller
 import * as immigrantController from "../controllers/immigrantController";
 import * as illegalController from "../controllers/illegalController";
-import * as repatriatedController from "../controllers/repatriatedController";
+import * as repatriated from "../handler/repatriated";
 
 import uploadMiddleware from "../middleware/upload";
 // 🟢 เพิ่มนำเข้า Middleware protect เพื่อเช็ค User จาก Token
-import {  protect  } from "../middleware/auth"; 
+import { protect } from "../middleware/auth";
 
 const memoryStorage = multer.memoryStorage();
 const uploadExcel = multer({ storage: memoryStorage });
@@ -27,21 +25,58 @@ router.get("/dashboard", immigrantController.getDashboardData);
 // ----------------------------------------------------
 router.get("/illegal/:id", illegalController.getIllegalById);
 // 🟢 ใส่ protect เข้าไปก่อนหน้าฟังก์ชัน controller
-router.post("/illegal", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), illegalController.createIllegal);
-router.put("/illegal/:id", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), illegalController.updateIllegal);
+router.post(
+  "/illegal",
+  protect,
+  uploadMiddleware.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "passport_photo", maxCount: 1 },
+  ]),
+  illegalController.createIllegal,
+);
+router.put(
+  "/illegal/:id",
+  protect,
+  uploadMiddleware.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "passport_photo", maxCount: 1 },
+  ]),
+  illegalController.updateIllegal,
+);
 router.delete("/illegal/:id", protect, illegalController.deleteIllegal);
 
 // ระบบ Excel อัปโหลดและตรวจสอบ Progress
 // 🟢 ใส่ protect เข้าไปที่ระบบอัปโหลด Excel
-router.post("/upload-excel-illegal", protect, uploadExcel.single("file"), illegalController.uploadExcelIllegal);
+router.post(
+  "/upload-excel-illegal",
+  protect,
+  uploadExcel.single("file"),
+  illegalController.uploadExcelIllegal,
+);
 router.get("/upload-progress/:jobId", illegalController.getUploadProgress);
 
 // ----------------------------------------------------
 // Repatriated (ส่งกลับ)
 // ----------------------------------------------------
-router.get("/repatriated/:id", repatriatedController.getRepatriatedById);
-router.post("/repatriated", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), repatriatedController.createRepatriated);
-router.put("/repatriated/:id", protect, uploadMiddleware.fields([{ name: "photo", maxCount: 1 }, { name: "passport_photo", maxCount: 1 }]), repatriatedController.updateRepatriated);
-router.delete("/repatriated/:id", protect, repatriatedController.deleteRepatriated);
+router.get("/repatriated/:id", repatriated.getRepatriatedById);
+router.post(
+  "/repatriated",
+  protect,
+  uploadMiddleware.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "passport_photo", maxCount: 1 },
+  ]),
+  repatriated.createRepatriated,
+);
+router.put(
+  "/repatriated/:id",
+  protect,
+  uploadMiddleware.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "passport_photo", maxCount: 1 },
+  ]),
+  repatriated.updateRepatriated,
+);
+router.delete("/repatriated/:id", protect, repatriated.deleteRepatriated);
 
 export default router;

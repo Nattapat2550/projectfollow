@@ -33,16 +33,23 @@ export function getErrorResponse(err: unknown): {
   }
 }
 
-export async function handlerWrapper<
-  U extends Promise<{ [key: string]: unknown }> | { [key: string]: unknown },
-  T = unknown,
->(
-  controller: (...args: T[]) => Promise<U> | ((...args: T[]) => U),
-  thisArg: unknown,
-  ...args: T[]
-): Promise<{ status: number; response: Awaited<U> | ErrorResponse }> {
+/**
+ * Wraps controller and take care of error handling .
+ *
+ * @param f controller function
+ * @param [thisArg=undefined] The object to be used as the current object.
+ * @param args controller arguments
+ */
+export async function handlerWrapper<F extends (...args: any) => any>(
+  f: F,
+  thisArg: unknown = undefined,
+  ...args: Parameters<F>
+): Promise<{
+  status: number;
+  response: Awaited<ReturnType<F>> | ErrorResponse;
+}> {
   try {
-    const response = await controller.call(thisArg, ...args);
+    const response = await f.call(thisArg, ...args);
     return { status: 200, response };
   } catch (err) {
     const { status, response } = getErrorResponse(err);

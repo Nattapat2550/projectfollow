@@ -8,7 +8,7 @@ import { handlerWrapper } from "../utils/errors";
 import { RequestHandlerWithUser } from "../middleware/auth";
 
 export const register: RequestHandler = async (req, res) => {
-  const { status, response } = await handlerWrapper<schema.RegisterResponse>(
+  const { status, response } = await handlerWrapper(
     controller.register,
     undefined,
     req.body,
@@ -18,7 +18,7 @@ export const register: RequestHandler = async (req, res) => {
 };
 
 export const login: RequestHandler = async (req, res) => {
-  const { status, response } = await handlerWrapper<schema.LoginResponse>(
+  const { status, response } = await handlerWrapper(
     controller.login,
     undefined,
     req.body,
@@ -28,7 +28,7 @@ export const login: RequestHandler = async (req, res) => {
 };
 
 export const logout: RequestHandler = async (req, res) => {
-  const { status, response } = await handlerWrapper<schema.LogoutResponse>(
+  const { status, response } = await handlerWrapper(
     controller.logout,
     undefined,
     res,
@@ -37,7 +37,7 @@ export const logout: RequestHandler = async (req, res) => {
 };
 
 export const getMe: RequestHandlerWithUser = async (req, res) => {
-  const { response, status } = await handlerWrapper<schema.GetMeResponse>(
+  const { response, status } = await handlerWrapper(
     controller.getMe,
     undefined,
     res.locals.user,
@@ -46,23 +46,21 @@ export const getMe: RequestHandlerWithUser = async (req, res) => {
 };
 
 export const updateProfile: RequestHandlerWithUser = async (req, res) => {
-  const { response, status } =
-    await handlerWrapper<schema.UpdateProfileResponse>(
-      controller.updateProfile,
-      undefined,
-      req.body,
-      res.locals.user,
-    );
+  const { response, status } = await handlerWrapper(
+    controller.updateProfile,
+    undefined,
+    req.body,
+    res.locals.user,
+  );
   res.status(status).json(response);
 };
 
 export const updatePassword: RequestHandlerWithUser = async (req, res) => {
-  const { response, status } =
-    await handlerWrapper<schema.UpdatePasswordResponse>(
-      controller.updatePassword,
-      undefined,
-      req.body,
-      res.locals.user,
-    );
+  const { response, status } = await handlerWrapper(
+    controller.updatePassword,
+    undefined,
+    req.body,
+    res.locals.user,
+  );
   res.status(status).json(response);
 };
