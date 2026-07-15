@@ -3,201 +3,201 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  --row-hover: #f1f1e8;
+	--row-hover: #f1f1e8;
 
-  --header-bg: #3F1818;
-  --background: #ffffff;
-  --foreground: #171717;
-  --header: #3f1818;
-  --wrapper:#DBDBD4;
-  --container:#F7F6EE;
-  --button:#FFFDF8;
-  --shadow:#bfbfbf;
+	--header-bg: #3f1818;
+	--background: #ffffff;
+	--foreground: #171717;
+	--header: #3f1818;
+	--wrapper: #dbdbd4;
+	--container: #f7f6ee;
+	--button: #fffdf8;
+	--shadow: #bfbfbf;
 
-  --redText: #900707;
-  --redBG: #e98586;
-  --redBorder: #DC2626;
+	--redText: #900707;
+	--redBG: #e98586;
+	--redBorder: #dc2626;
 
-  --orangeText:#903207;
-  --orangeBG:#e9aa85;
-  --orangeBorder:#be835b;
+	--orangeText: #903207;
+	--orangeBG: #e9aa85;
+	--orangeBorder: #be835b;
 
-  --yellowText: #872d00;
-  --yellowBG: #ffea94;
-  --yellowBorder: #D97706;
+	--yellowText: #872d00;
+	--yellowBG: #ffea94;
+	--yellowBorder: #d97706;
 
-  --greenText: #008755;
-  --greenBG: #94ffb8;
-  --greenBorder: #059669;
+	--greenText: #008755;
+	--greenBG: #94ffb8;
+	--greenBorder: #059669;
 
-  --greyText:#eaeaea;
-  --greyBG:#696969;
-  --greyBorder:#5f5f5f;
+	--greyText: #eaeaea;
+	--greyBG: #696969;
+	--greyBorder: #5f5f5f;
 
-  --blueText:#1447e6;
+	--blueText: #1447e6;
 
-  /* 🌟 ใหม่: คัดสรรชุดสีกราฟให้สวยงามและตัดกันชัดเจนแยกง่าย (Light Theme) */
-  --chart-1: #8B2635; /* แดงเบอร์กันดีเข้ม */
-  --chart-2: #D96B43; /* ส้มอิฐอบอุ่น */
-  --chart-3: #2F5D62; /* เขียวหัวเป็ด/ Slate Green */
-  --chart-4: #E1B12C; /* เหลืองมัสตาร์ด/โอเคอร์ */
-  --chart-5: #563D67; /* ม่วงพลัมเข้ม */
-  --chart-6: #A77B58; /* น้ำตาลทอง/บรอนซ์ */
-  --chart-other: #7F8C8D; /* เทากลางสำหรับหมวดหมู่อื่นๆ */
-  color-scheme: light;
+	/* 🌟 ใหม่: คัดสรรชุดสีกราฟให้สวยงามและตัดกันชัดเจนแยกง่าย (Light Theme) */
+	--chart-1: #8b2635; /* แดงเบอร์กันดีเข้ม */
+	--chart-2: #d96b43; /* ส้มอิฐอบอุ่น */
+	--chart-3: #2f5d62; /* เขียวหัวเป็ด/ Slate Green */
+	--chart-4: #e1b12c; /* เหลืองมัสตาร์ด/โอเคอร์ */
+	--chart-5: #563d67; /* ม่วงพลัมเข้ม */
+	--chart-6: #a77b58; /* น้ำตาลทอง/บรอนซ์ */
+	--chart-other: #7f8c8d; /* เทากลางสำหรับหมวดหมู่อื่นๆ */
+	color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sarabun);
-  --font-mono: var(--font-sarabun);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--font-sans: var(--font-sarabun);
+	--font-mono: var(--font-sarabun);
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: Sarabun, Arial, Helvetica, sans-serif;
-  font-size: 1.25rem;
+	background-color: var(--background);
+	color: var(--foreground);
+	font-family: Sarabun, Arial, Helvetica, sans-serif;
+	font-size: 1.25rem;
 }
 
-.TaskItem_DateMonth__m6uGV{
-    color: inherit;
+.TaskItem_DateMonth__m6uGV {
+	color: inherit;
 }
 
-#main-topbar, 
-#main-topbar strong, 
+#main-topbar,
+#main-topbar strong,
 #main-topbar span {
-    color: #FFFFFF ;
+	color: #ffffff;
 }
 
 *::-webkit-scrollbar {
-  width: 5px;
+	width: 5px;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: var(--shadow);
+	background: var(--shadow);
 }
 
 *::-webkit-scrollbar-track {
-  background: var(--wrapper);
+	background: var(--wrapper);
 }
 
 [data-theme="dark"] {
-  --background: #14121F;
-  --foreground: #AED3DD;
-  --header-bg: #202130;
-  --header: #ffffff;
-  --wrapper: #13131E;
-  --container: #202130;
-  --button: #34334E;
-  --shadow: #0f0d17;
+	--background: #14121f;
+	--foreground: #aed3dd;
+	--header-bg: #202130;
+	--header: #ffffff;
+	--wrapper: #13131e;
+	--container: #202130;
+	--button: #34334e;
+	--shadow: #0f0d17;
 
-  --blueText:#94fff6;
+	--blueText: #94fff6;
 
-  --redText: #fcb4b4;
-  --redBG: #9f3234;
-  --redBorder: #ff9191;
+	--redText: #fcb4b4;
+	--redBG: #9f3234;
+	--redBorder: #ff9191;
 
-  --orangeText:#ffaf5f;
-  --orangeBG:#8b3916;
-  --orangeBorder:#fb9057;
+	--orangeText: #ffaf5f;
+	--orangeBG: #8b3916;
+	--orangeBorder: #fb9057;
 
-  --yellowText: #ffea5f;
-  --yellowBG: #8b6216;
-  --yellowBorder: #fbc957;
+	--yellowText: #ffea5f;
+	--yellowBG: #8b6216;
+	--yellowBorder: #fbc957;
 
-  --greenText: #72fac8;
-  --greenBG: #1a6553;
-  --greenBorder: #57fb8e;
+	--greenText: #72fac8;
+	--greenBG: #1a6553;
+	--greenBorder: #57fb8e;
 
-  --greyText:#eaeaea;
-  --greyBG:#696969;
-  --greyBorder:#5f5f5f;
-  
-  /* 🌟 ใหม่: ชุดสีกราฟสำหรับโหมดมืด ปรับให้สว่างขึ้นเพื่อให้เห็นเด่นชัดเหนือกราฟพื้นหลัง (Dark Theme) */
-  --chart-1: #FF7675; /* ชมพูอมแดงสดใส */
-  --chart-2: #FAB1A0; /* ส้มพีชสว่าง */
-  --chart-3: #55E6C1; /* เขียวมิ้นต์/เทอร์คอยส์ */
-  --chart-4: #FFEAA7; /* เหลืองนวลพาสเทล */
-  --chart-5: #D6A2E8; /* ม่วงลาเวนเดอร์ */
-  --chart-6: #EDCFA9; /* ครีมทองหรูหรา */
-  --chart-other: #A4B0BE; /* เทาอ่อน */
-  color-scheme: dark;
+	--greyText: #eaeaea;
+	--greyBG: #696969;
+	--greyBorder: #5f5f5f;
+
+	/* 🌟 ใหม่: ชุดสีกราฟสำหรับโหมดมืด ปรับให้สว่างขึ้นเพื่อให้เห็นเด่นชัดเหนือกราฟพื้นหลัง (Dark Theme) */
+	--chart-1: #ff7675; /* ชมพูอมแดงสดใส */
+	--chart-2: #fab1a0; /* ส้มพีชสว่าง */
+	--chart-3: #55e6c1; /* เขียวมิ้นต์/เทอร์คอยส์ */
+	--chart-4: #ffeaa7; /* เหลืองนวลพาสเทล */
+	--chart-5: #d6a2e8; /* ม่วงลาเวนเดอร์ */
+	--chart-6: #edcfa9; /* ครีมทองหรูหรา */
+	--chart-other: #a4b0be; /* เทาอ่อน */
+	color-scheme: dark;
 }
 
 [data-theme="dark"] body {
-  background-color: var(--background);
-  color: var(--foreground);
+	background-color: var(--background);
+	color: var(--foreground);
 
-  --row-hover: #2a2b3d;
+	--row-hover: #2a2b3d;
 }
 
 [data-theme="dark"] #main-topbar,
 [data-theme="dark"] #main-topbar strong,
 [data-theme="dark"] #main-topbar span {
-  color: #ffffff;
+	color: #ffffff;
 }
 
 .assignee-badge {
-  background-color: var(--badge-bg-light);
-  border: 1px solid var(--badge-border-light);
-  color: var(--badge-text-light);
+	background-color: var(--badge-bg-light);
+	border: 1px solid var(--badge-border-light);
+	color: var(--badge-text-light);
 }
 
 [data-theme="dark"] .assignee-badge {
-  background-color: var(--badge-bg-dark);
-  border: 1px solid var(--badge-border-dark);
-  color: var(--badge-text-dark);
+	background-color: var(--badge-bg-dark);
+	border: 1px solid var(--badge-border-dark);
+	color: var(--badge-text-dark);
 }
 
 .badge-dot {
-  background-color: var(--dot-color);
+	background-color: var(--dot-color);
 }
 
 [data-theme="dark"] .badge-dot {
-  background-color: rgba(255, 255, 255, 0.9);
+	background-color: rgba(255, 255, 255, 0.9);
 }
 
 /* 🌟 Custom Styles for Select and Date Inputs to match Theme */
-select, 
+select,
 input[type="date"],
 input[type="time"] {
-  color-scheme: light;
+	color-scheme: light;
 }
 
 select {
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23171717' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1.2em;
-  padding-right: 2.5rem !important;
+	appearance: none;
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23171717' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+	background-repeat: no-repeat;
+	background-position: right 0.75rem center;
+	background-size: 1.2em;
+	padding-right: 2.5rem !important;
 }
 
 [data-theme="dark"] select,
 [data-theme="dark"] input[type="date"],
 [data-theme="dark"] input[type="time"] {
-  color-scheme: dark;
+	color-scheme: dark;
 }
 
 [data-theme="dark"] select {
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23AED3DD' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23AED3DD' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+	cursor: pointer;
+	opacity: 0.6;
+	transition: opacity 0.2s;
 }
 
 [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 [data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) !important;
+	filter: invert(1) !important;
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator:hover,
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
+	opacity: 1;
+}

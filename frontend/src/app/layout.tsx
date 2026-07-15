@@ -35,13 +35,13 @@ export default function RootLayout({
 					enableSystem
 					disableTransitionOnChange
 				>
-                    {/* ✨ ห่อทุกอย่างด้วยหน้ากากโหลดปลุกเซิร์ฟเวอร์ */}
-                    <ServerAwaker>
-                        <header>
-                            <TopBar></TopBar>
-                        </header>
-                        {children}
-                    </ServerAwaker>
+					{/* ✨ ห่อทุกอย่างด้วยหน้ากากโหลดปลุกเซิร์ฟเวอร์ */}
+					<ServerAwaker>
+						<header>
+							<TopBar></TopBar>
+						</header>
+						{children}
+					</ServerAwaker>
 				</ThemeProvider>
 			</body>
 		</html>

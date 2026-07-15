@@ -51,7 +51,7 @@ export default function SingleImageField({
 					className="absolute top-0 left-0 block h-full w-full cursor-pointer opacity-0"
 				/>
 
-				<div className="size-40 relative pointer-events-none select-none">
+				<div className="pointer-events-none relative size-40 select-none">
 					{/* Image */}
 					<Image
 						src={file ? URL.createObjectURL(file) : previewUrl}
