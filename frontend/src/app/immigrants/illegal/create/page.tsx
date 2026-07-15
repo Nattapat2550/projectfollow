@@ -9,12 +9,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { SubmitEventHandler, useState } from "react";
 import Swal from "sweetalert2";
 
 import AutocompleteInput from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
+import { createIllegal } from "@/lib/service/illegal";
 
 export default function CreateIllegalImmigrant() {
 	const router = useRouter();
@@ -29,6 +30,7 @@ export default function CreateIllegalImmigrant() {
 		middle_name_en: "",
 		last_name_en: "",
 		passport_id: "",
+		date_of_birth: "",
 		gender: "",
 		nationality: "",
 		detected_date: "",
@@ -120,47 +122,18 @@ export default function CreateIllegalImmigrant() {
 		setPassportImagePreview(null);
 	};
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit: SubmitEventHandler = async (e) => {
 		e.preventDefault();
 		setLoading(true);
 		setError("");
 
-		try {
-			const backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-			const submitData = new FormData();
+		const response = await createIllegal({
+			...formData,
+			photo: selectedImage,
+			passport_photo: selectedPassportImage,
+		});
 
-			Object.keys(formData).forEach((key) => {
-				const val = (formData as any)[key];
-				if (val !== null && val !== undefined && val !== "") {
-					submitData.append(key, String(val));
-				}
-			});
-
-			if (selectedImage) {
-				submitData.append("photo", selectedImage);
-			}
-			if (selectedPassportImage) {
-				submitData.append("passport_photo", selectedPassportImage);
-			}
-
-			const token = document.cookie
-				.split("; ")
-				.find((row) => row.startsWith("token="))
-				?.split("=")[1];
-
-			const res = await fetch(`${backendUrl}/api/v1/immigrants/illegal`, {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-				body: submitData,
-			});
-
-			if (!res.ok) {
-				const errData = await res.json().catch(() => ({}));
-				throw new Error(errData.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
-			}
+		if (response.success) {
 			Swal.fire({
 				icon: "success", // เปลี่ยนเป็น 'error', 'warning', 'info' ได้
 				title: "สำเร็จ!",
@@ -168,13 +141,13 @@ export default function CreateIllegalImmigrant() {
 				timer: 1500,
 				showConfirmButton: false,
 			});
+
 			router.push("/immigrants/illegal");
 			router.refresh();
-		} catch (err: any) {
-			setError(err.message || "Something went wrong");
-		} finally {
-			setLoading(false);
+		} else {
+			setError(response.message || "Something went wrong");
 		}
+		setLoading(false);
 	};
 
 	const inputClass =

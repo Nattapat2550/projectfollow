@@ -27,8 +27,7 @@ export async function getRepatriatedById(
     `,
     [id],
   );
-  // เปลี่ยนจาก 404 เป็น 200 { success: false } เพื่อลดแจ้งเตือน 404 แดงๆ ใน Console ฝั่งผู้ใช้
-  if (rows.length === 0) return { success: false, message: "Not found" };
+  if (rows.length === 0) return error(404, "Not found");
 
   return { success: true, data: rows[0] };
 }

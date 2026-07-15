@@ -1,4 +1,4 @@
 interface ErrorResponse {
-  success: false;
-  message: string;
+	success: false;
+	message: string;
 }

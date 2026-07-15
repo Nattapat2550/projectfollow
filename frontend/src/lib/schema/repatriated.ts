@@ -13,9 +13,8 @@ type RepatriatedOmited = Omit<
 export type RepatriatedRequestData = Record<keyof RepatriatedOmited, string>;
 
 export type GetRepatriatedByIdResponse = {
-	success: boolean;
-	data?: RepatriatedData;
-	message?: string;
+	success: true;
+	data: RepatriatedData;
 };
 
 export type CreateRepatriatedRequest = RepatriatedRequestData & {

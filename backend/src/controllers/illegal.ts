@@ -28,7 +28,7 @@ export async function getIllegalById(
 `,
     [id],
   );
-  if (rows.length === 0) return { success: false, message: "Not found" };
+  if (rows.length === 0) return error(404, "Not found");
 
   return { success: true, data: rows[0] };
 }

@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 
+import { deleteIllegal, updateIllegal } from "@/lib/service/illegal";
 import {
 	deleteRepatriated,
 	updateRepatriated,
 } from "@/lib/service/repatriated";
+
 interface RightPanelProps {
 	type: "repatriated" | "illegal";
 	data: any;
@@ -30,16 +32,8 @@ export default function RightPanel({
 	const handleSaveNote = async () => {
 		try {
 			setIsSavingNote(true);
-			const backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 			const endpoint = type === "repatriated" ? "repatriated" : "illegal";
-			const token = document.cookie
-				.split("; ")
-				.find((row) => row.startsWith("token="))
-				?.split("=")[1];
 
-			// 🟢 กลับมาใช้ FormData เพื่อให้เข้ากับ Multer ของ Backend
-			const submitData = new FormData();
 			const payload = { ...data, note: note };
 
 			// ฟอร์แมตวันที่และตัวเลข
@@ -56,17 +50,6 @@ export default function RightPanel({
 					payload.detected_date = String(payload.detected_date).split("T")[0];
 			}
 
-			// นำข้อมูลเข้า FormData อย่างปลอดภัย (ตัด null/undefined ออก)
-			Object.keys(payload).forEach((key) => {
-				if (
-					payload[key] !== null
-					&& payload[key] !== undefined
-					&& typeof payload[key] !== "object"
-				) {
-					submitData.append(key, String(payload[key]));
-				}
-			});
-
 			if (endpoint == "repatriated") {
 				const response = await updateRepatriated(data.id, { ...data });
 				if (!response.success) {
@@ -75,22 +58,10 @@ export default function RightPanel({
 					);
 				}
 			} else {
-				// 🟢 ส่งข้อมูลแบบไร้ Content-Type (ให้ Browser ตั้งค่า Boundary เองสำหรับ FormData)
-				const res = await fetch(
-					`${backendUrl}/api/v1/immigrants/${endpoint}/${data.id}`,
-					{
-						method: "PUT",
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-						body: submitData,
-					}
-				);
-
-				if (!res.ok) {
-					const err = await res.json().catch(() => ({}));
+				const response = await updateIllegal(data.id, { ...data });
+				if (!response.success) {
 					throw new Error(
-						err.message || err.error || "Failed to save note to database"
+						response.message || "Failed to save note to database"
 					);
 				}
 			}
@@ -101,7 +72,7 @@ export default function RightPanel({
 				timer: 1500,
 				showConfirmButton: false,
 			});
-		} catch (error: any) {
+		} catch (error) {
 			console.error("Error saving note:", error);
 			Swal.fire({
 				icon: "error",
@@ -130,14 +101,7 @@ export default function RightPanel({
 
 		try {
 			setIsDeleting(true);
-			const backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 			const endpoint = type === "repatriated" ? "repatriated" : "illegal";
-
-			const token = document.cookie
-				.split("; ")
-				.find((row) => row.startsWith("token="))
-				?.split("=")[1];
 
 			if (endpoint == "repatriated") {
 				const response = await deleteRepatriated(data.id);
@@ -146,17 +110,8 @@ export default function RightPanel({
 					throw new Error("Failed to delete from database");
 				}
 			} else {
-				const res = await fetch(
-					`${backendUrl}/api/v1/immigrants/${endpoint}/${data.id}`,
-					{
-						method: "DELETE",
-						headers: {
-							Authorization: `Bearer ${token}`,
-						},
-					}
-				);
-
-				if (!res.ok) {
+				const response = await deleteIllegal(data.id);
+				if (!response.success) {
 					throw new Error("Failed to delete from database");
 				}
 			}
