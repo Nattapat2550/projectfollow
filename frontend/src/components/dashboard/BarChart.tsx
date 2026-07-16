@@ -1,13 +1,7 @@
 import React from "react";
 import { ChartItem } from "@/hooks/useDashboard";
 
-export default function BarChart({
-	data,
-	title,
-}: {
-	data: ChartItem[];
-	title: string;
-}) {
+export default function BarChart({ data, title }: { data: ChartItem[]; title: string }) {
 	const total = data.reduce((s, d) => s + d.value, 0);
 	if (total === 0) return null;
 
@@ -36,13 +30,8 @@ export default function BarChart({
 					const pct = ((d.value / total) * 100).toFixed(1);
 					return (
 						<div key={i} className="flex items-center gap-2 text-xs">
-							<span
-								className="h-3 w-3 shrink-0 rounded-sm"
-								style={{ backgroundColor: d.color }}
-							/>
-							<span className="text-foreground flex-1 truncate font-medium">
-								{d.name}
-							</span>
+							<span className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: d.color }} />
+							<span className="text-foreground flex-1 truncate font-medium">{d.name}</span>
 							<span className="shrink-0 font-mono font-semibold text-(--header)">
 								{d.value.toLocaleString("th-TH")}{" "}
 								<span className="text-[10px] opacity-60">({pct}%)</span>
@@ -55,9 +44,7 @@ export default function BarChart({
 			{/* สรุปยอดรวม */}
 			<div className="mt-1 flex w-full justify-between border-t border-(--wrapper) pt-2 text-xs text-(--header) opacity-80">
 				<span>รวมทั้งหมด</span>
-				<span className="font-bold">
-					{total.toLocaleString("th-TH")} รายการ
-				</span>
+				<span className="font-bold">{total.toLocaleString("th-TH")} รายการ</span>
 			</div>
 		</div>
 	);

@@ -1,8 +1,4 @@
-import {
-	clearClientAuthData,
-	getClientAuthData,
-	setClientAuthData,
-} from "../client/auth";
+import { clearClientAuthData, getClientAuthData, setClientAuthData } from "../client/auth";
 import * as schema from "../schema/auth";
 import { fetchWrapper, withAuthHeader, withJSONBody } from "../utils";
 
@@ -36,10 +32,7 @@ export async function getMe(): Promise<schema.GetMeResponse | ErrorResponse> {
 	const { token } = getClientAuthData();
 	if (!token) return { success: false, message: "token missing" };
 
-	return fetchWrapper(
-		`/api/v1/auth/me`,
-		withAuthHeader(token, { credentials: "include" })
-	);
+	return fetchWrapper(`/api/v1/auth/me`, withAuthHeader(token, { credentials: "include" }));
 }
 
 export async function updateProfile(
@@ -48,10 +41,7 @@ export async function updateProfile(
 	const { token } = getClientAuthData();
 	if (!token) return { success: false, message: "token missing" };
 
-	return fetchWrapper(
-		`/api/v1/auth/profile`,
-		withJSONBody(req, "PUT", withAuthHeader(token))
-	);
+	return fetchWrapper(`/api/v1/auth/profile`, withJSONBody(req, "PUT", withAuthHeader(token)));
 }
 
 export async function updatePassword(
@@ -60,8 +50,5 @@ export async function updatePassword(
 	const { token } = getClientAuthData();
 	if (!token) return { success: false, message: "token missing" };
 
-	return fetchWrapper(
-		`/api/v1/auth/password`,
-		withJSONBody(req, "PUT", withAuthHeader(token))
-	);
+	return fetchWrapper(`/api/v1/auth/password`, withJSONBody(req, "PUT", withAuthHeader(token)));
 }

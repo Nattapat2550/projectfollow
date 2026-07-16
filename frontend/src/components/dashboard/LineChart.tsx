@@ -1,13 +1,7 @@
 import React from "react";
 import { ChartItem } from "@/hooks/useDashboard";
 
-export default function LineChart({
-	data,
-	title,
-}: {
-	data: ChartItem[];
-	title: string;
-}) {
+export default function LineChart({ data, title }: { data: ChartItem[]; title: string }) {
 	const total = data.reduce((s, d) => s + d.value, 0);
 	if (data.length === 0) return null;
 
@@ -32,18 +26,10 @@ export default function LineChart({
 					className="flex w-6 shrink-0 flex-col items-end justify-between font-mono text-[10px] text-(--foreground) opacity-70"
 					style={{ height: "calc(100% - 2rem)" }}
 				>
-					<span className="-mt-1.5">
-						{Math.round(maxValue).toLocaleString("th-TH")}
-					</span>
-					<span className="-mt-1.5">
-						{Math.round(maxValue * 0.75).toLocaleString("th-TH")}
-					</span>
-					<span className="-mt-1.5">
-						{Math.round(maxValue * 0.5).toLocaleString("th-TH")}
-					</span>
-					<span className="-mt-1.5">
-						{Math.round(maxValue * 0.25).toLocaleString("th-TH")}
-					</span>
+					<span className="-mt-1.5">{Math.round(maxValue).toLocaleString("th-TH")}</span>
+					<span className="-mt-1.5">{Math.round(maxValue * 0.75).toLocaleString("th-TH")}</span>
+					<span className="-mt-1.5">{Math.round(maxValue * 0.5).toLocaleString("th-TH")}</span>
+					<span className="-mt-1.5">{Math.round(maxValue * 0.25).toLocaleString("th-TH")}</span>
 					<span className="-mt-1.5">0</span>
 				</div>
 
@@ -116,9 +102,7 @@ export default function LineChart({
 
 			<div className="mt-1 flex w-full justify-between border-t border-(--wrapper) pt-2 text-xs text-(--header) opacity-80">
 				<span>รวมทั้งหมด</span>
-				<span className="font-bold">
-					{total.toLocaleString("th-TH")} รายการ
-				</span>
+				<span className="font-bold">{total.toLocaleString("th-TH")} รายการ</span>
 			</div>
 		</div>
 	);

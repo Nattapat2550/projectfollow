@@ -84,10 +84,7 @@ export default function IllegalTable({
 								<input
 									type="checkbox"
 									className="h-4 w-4 cursor-pointer accent-(--blueText)"
-									checked={
-										data.length > 0
-										&& data.every((p) => selectedIds?.includes(p.id))
-									}
+									checked={data.length > 0 && data.every((p) => selectedIds?.includes(p.id))}
 									onChange={(e) => onSelectAll?.(e.target.checked)}
 								/>
 							</th>
@@ -126,19 +123,13 @@ export default function IllegalTable({
 									className="cursor-pointer transition-colors"
 									style={{
 										backgroundColor:
-											selectedIds?.includes(person.id) ?
-												"var(--row-hover)"
-											:	"var(--background)",
+											selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)",
 										borderBottom: "1px solid var(--wrapper)",
 									}}
-									onMouseEnter={(e) =>
-										(e.currentTarget.style.backgroundColor = "var(--row-hover)")
-									}
+									onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--row-hover)")}
 									onMouseLeave={(e) =>
 										(e.currentTarget.style.backgroundColor =
-											selectedIds?.includes(person.id) ?
-												"var(--row-hover)"
-											:	"var(--background)")
+											selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)")
 									}
 								>
 									{isExportMode && (

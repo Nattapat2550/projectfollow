@@ -41,17 +41,14 @@ export default function TestUpload2Page() {
 		const token = localStorage.getItem("token");
 
 		try {
-			const backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+			const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 			const response = await fetch(
 				`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
 				{
 					method: "POST",
 					headers: {
-						...(token && token !== "null" ?
-							{ Authorization: `Bearer ${token}` }
-						:	{}),
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 					},
 					body: formData,
 				}
@@ -76,8 +73,7 @@ export default function TestUpload2Page() {
 		if (!file) return;
 		setIsUploading(true);
 		const jobId = Date.now().toString();
-		const backendUrl =
-			process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		const interval = setInterval(async () => {
 			try {
@@ -102,9 +98,7 @@ export default function TestUpload2Page() {
 				{
 					method: "POST",
 					headers: {
-						...(token && token !== "null" ?
-							{ Authorization: `Bearer ${token}` }
-						:	{}),
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 					},
 					body: formData,
 				}
@@ -141,9 +135,7 @@ export default function TestUpload2Page() {
 		(currentPage - 1) * itemsPerPage,
 		currentPage * itemsPerPage
 	);
-	const totalPages = Math.ceil(
-		(result?.preview_data?.length || 0) / itemsPerPage
-	);
+	const totalPages = Math.ceil((result?.preview_data?.length || 0) / itemsPerPage);
 
 	return (
 		<div className="bg-background text-foreground mx-auto min-h-screen max-w-7xl p-8">
@@ -175,9 +167,7 @@ export default function TestUpload2Page() {
 						disabled={loading || isUploading}
 						className="w-full rounded-lg bg-(--blueText) px-4 py-2.5 text-sm font-medium text-(--button) shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-(--wrapper) disabled:text-(--header) disabled:opacity-50"
 					>
-						{loading ?
-							"กำลังประมวลผลและอ่านไฟล์..."
-						:	"พรีวิวข้อมูล (ยังไม่บันทึก)"}
+						{loading ? "กำลังประมวลผลและอ่านไฟล์..." : "พรีวิวข้อมูล (ยังไม่บันทึก)"}
 					</button>
 				</div>
 			</form>
@@ -191,20 +181,16 @@ export default function TestUpload2Page() {
 			{result && (
 				<div className="animate-fadeIn space-y-6">
 					<div className="rounded-xl border border-(--wrapper) bg-(--container) p-6 shadow-sm">
-						<h3 className="mb-2 text-lg font-bold text-(--blueText)">
-							ยืนยันการนำเข้าข้อมูล
-						</h3>
+						<h3 className="mb-2 text-lg font-bold text-(--blueText)">ยืนยันการนำเข้าข้อมูล</h3>
 						<p className="mb-4 text-sm text-(--header) opacity-80">
-							เมื่อกดปุ่มนี้ ระบบจะเริ่มบันทึกข้อมูลและอัปโหลดรูปภาพทั้งหมดขึ้น
-							Google Drive ทันที
+							เมื่อกดปุ่มนี้ ระบบจะเริ่มบันทึกข้อมูลและอัปโหลดรูปภาพทั้งหมดขึ้น Google Drive ทันที
 						</p>
 						{isUploading ?
 							<div className="w-full">
 								<div className="mb-1 flex justify-between text-sm font-semibold text-(--blueText)">
 									<span>กำลังบันทึกลง Database & Google Drive...</span>
 									<span>
-										{progress.current} / {progress.total || result.total_rows}{" "}
-										รายการ
+										{progress.current} / {progress.total || result.total_rows} รายการ
 									</span>
 								</div>
 								<div className="h-3 w-full rounded-full bg-(--wrapper)">
@@ -227,9 +213,7 @@ export default function TestUpload2Page() {
 
 					<div className="flex items-center justify-between rounded-xl border border-(--greenBorder) bg-(--greenBG) p-5 text-(--greenText) shadow-sm">
 						<div>
-							<p className="text-lg font-bold text-(--greenText)">
-								✨ {result.message}
-							</p>
+							<p className="text-lg font-bold text-(--greenText)">✨ {result.message}</p>
 							<p className="mt-1 text-sm">
 								ข้อมูลพร้อมสำหรับนำเข้าฐานข้อมูลจริง (repatriated_persons)
 							</p>
@@ -241,9 +225,7 @@ export default function TestUpload2Page() {
 					</div>
 
 					<div>
-						<h3 className="mb-4 text-xl font-bold text-(--header)">
-							🔍 ตารางพรีวิวข้อมูล
-						</h3>
+						<h3 className="mb-4 text-xl font-bold text-(--header)">🔍 ตารางพรีวิวข้อมูล</h3>
 
 						{totalPages > 1 && (
 							<div className="mb-4 flex items-center justify-between rounded-xl border border-(--wrapper) bg-(--container) p-4 shadow-sm">
@@ -271,9 +253,7 @@ export default function TestUpload2Page() {
 							<table className="w-full min-w-200 border-collapse text-left text-sm">
 								<thead className="border-b border-(--wrapper) bg-(--container) text-xs font-bold text-(--header) uppercase">
 									<tr>
-										<th className="w-16 border-r border-(--wrapper) p-4 text-center">
-											แถวที่
-										</th>
+										<th className="w-16 border-r border-(--wrapper) p-4 text-center">แถวที่</th>
 										<th className="border-wrapper w-3/5 border-r bg-(--container) p-4 text-(--blueText)">
 											ข้อมูลที่จะถูกบันทึกลงฐานข้อมูล (แยกตามชื่อคอลัมน์จริง)
 										</th>
@@ -340,17 +320,11 @@ export default function TestUpload2Page() {
 															ข้อมูลส่วนบุคคล (วันเกิด/เพศ/สัญชาติ)
 														</span>
 														<div className="text-sm">
-															<span className="mr-1 text-(--header) opacity-50">
-																[DB: dob]
-															</span>{" "}
-															<span className="font-medium">
-																{row.dob || renderNull()}
-															</span>
+															<span className="mr-1 text-(--header) opacity-50">[DB: dob]</span>{" "}
+															<span className="font-medium">{row.dob || renderNull()}</span>
 														</div>
 														<div className="text-sm">
-															<span className="mr-1 text-(--header) opacity-50">
-																[DB: gender]
-															</span>{" "}
+															<span className="mr-1 text-(--header) opacity-50">[DB: gender]</span>{" "}
 															<span className="font-medium text-(--blueText)">
 																{row.gender || renderNull()}
 															</span>
@@ -372,17 +346,13 @@ export default function TestUpload2Page() {
 															<span className="mr-1 text-(--header) opacity-50">
 																[DB: national_id]
 															</span>{" "}
-															<span className="font-mono">
-																{row.id_card || renderNull()}
-															</span>
+															<span className="font-mono">{row.id_card || renderNull()}</span>
 														</div>
 														<div className="text-sm">
 															<span className="mr-1 text-(--header) opacity-50">
 																[DB: passport_id]
 															</span>{" "}
-															<span className="font-mono">
-																{row.passport || renderNull()}
-															</span>
+															<span className="font-mono">{row.passport || renderNull()}</span>
 														</div>
 														<div className="mt-1 text-sm">
 															<span className="mb-2 block text-(--header) opacity-50">
@@ -415,9 +385,7 @@ export default function TestUpload2Page() {
 															ที่อยู่ (หลังแยกคำ):
 														</span>
 														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">
-																[DB: address_details]
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: address_details]</span>{" "}
 															{row.address_details || renderNull()}
 															<br />
 															<span className="mr-2 text-xs opacity-60">
@@ -425,14 +393,10 @@ export default function TestUpload2Page() {
 															</span>{" "}
 															{row.sub_district || renderNull()}
 															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: district]
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: district]</span>{" "}
 															{row.district || renderNull()}
 															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: province]
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: province]</span>{" "}
 															{row.province || renderNull()}
 														</div>
 													</div>
@@ -444,16 +408,12 @@ export default function TestUpload2Page() {
 															<span className="mr-2 text-xs opacity-60">
 																[DB: case_id_count] จำนวนคดี:
 															</span>{" "}
-															<span className="font-semibold">
-																{row.case_id_count || 0}
-															</span>
+															<span className="font-semibold">{row.case_id_count || 0}</span>
 															<br />
 															<span className="mr-2 text-xs opacity-60">
 																[DB: warrant] หมายจับ:
 															</span>{" "}
-															<span className="font-semibold">
-																{row.warrant || 0}
-															</span>
+															<span className="font-semibold">{row.warrant || 0}</span>
 															<br />
 															<span className="mr-2 text-xs opacity-60">
 																[DB: is_victim] สถานะผู้เสียหาย:
@@ -478,9 +438,7 @@ export default function TestUpload2Page() {
 															ข้อมูลสถานที่ทำงาน:
 														</span>
 														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">
-																[DB: building] ตึก:
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: building] ตึก:</span>{" "}
 															{row.building || renderNull()}
 															<br />
 															<span className="mr-2 text-xs opacity-60">
@@ -488,9 +446,7 @@ export default function TestUpload2Page() {
 															</span>{" "}
 															{row.floor || renderNull()}
 															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: room] ห้อง:
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: room] ห้อง:</span>{" "}
 															{row.room || renderNull()}
 														</div>
 													</div>
@@ -532,9 +488,7 @@ export default function TestUpload2Page() {
 														ข้อมูลเพิ่มเติม:
 													</span>
 													<div className="mt-1 text-sm text-(--header)">
-														<span className="mr-2 text-xs opacity-60">
-															[DB: note] หมายเหตุ:
-														</span>{" "}
+														<span className="mr-2 text-xs opacity-60">[DB: note] หมายเหตุ:</span>{" "}
 														{row.note || renderNull()}
 													</div>
 												</div>

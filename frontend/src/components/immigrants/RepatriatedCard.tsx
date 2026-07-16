@@ -29,22 +29,11 @@ const getDirectImageUrl = (url: string, uniqueId?: string) => {
 	return url;
 };
 
-const Base64Image = ({
-	src,
-	alt,
-	className,
-	crossOrigin,
-	referrerPolicy,
-}: any) => {
+const Base64Image = ({ src, alt, className, crossOrigin, referrerPolicy }: any) => {
 	const [base64, setBase64] = useState<string>(src);
 
 	useEffect(() => {
-		if (
-			!src
-			|| src.startsWith("data:")
-			|| src.startsWith("blob:")
-			|| src.startsWith("/")
-		) {
+		if (!src || src.startsWith("data:") || src.startsWith("blob:") || src.startsWith("/")) {
 			setBase64(src);
 			return;
 		}
@@ -80,10 +69,7 @@ const Base64Image = ({
 	);
 };
 
-export default function RepatriatedCard({
-	data,
-	isExporting = false,
-}: RepatriatedCardProps) {
+export default function RepatriatedCard({ data, isExporting = false }: RepatriatedCardProps) {
 	const fullNameTh = `${data.first_name_th}${data.middle_name_th ? " " + data.middle_name_th : ""} ${data.last_name_th}`;
 	const fullNameEn =
 		data.first_name_en ?
@@ -204,10 +190,7 @@ export default function RepatriatedCard({
 					>
 						{data.photo_url ?
 							<Base64Image
-								src={getDirectImageUrl(
-									data.photo_url,
-									data.id || Math.random().toString()
-								)}
+								src={getDirectImageUrl(data.photo_url, data.id || Math.random().toString())}
 								alt="Profile"
 								className="h-full w-full object-cover"
 								referrerPolicy="no-referrer" /* กุญแจสำคัญในการเลี่ยงการบล็อก */
@@ -242,13 +225,7 @@ export default function RepatriatedCard({
 	);
 }
 
-function FieldRow({
-	label,
-	children,
-}: {
-	label: string;
-	children: React.ReactNode;
-}) {
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
 	return (
 		<div className="flex items-center gap-[2%]">
 			<span

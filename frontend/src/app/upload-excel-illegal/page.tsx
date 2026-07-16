@@ -40,16 +40,13 @@ export default function TestUploadPage() {
 		const token = localStorage.getItem("token");
 
 		try {
-			const backendUrl =
-				process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+			const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 			const response = await fetch(
 				`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
 				{
 					method: "POST",
 					headers: {
-						...(token && token !== "null" ?
-							{ Authorization: `Bearer ${token}` }
-						:	{}),
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 					},
 					body: formData,
 				}
@@ -75,14 +72,11 @@ export default function TestUploadPage() {
 		setIsUploading(true);
 		const jobId = Date.now().toString();
 
-		const backendUrl =
-			process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		const interval = setInterval(async () => {
 			try {
-				const res = await fetch(
-					`${backendUrl}/api/v1/immigrants/upload-progress/${jobId}`
-				);
+				const res = await fetch(`${backendUrl}/api/v1/immigrants/upload-progress/${jobId}`);
 				const data = await res.json();
 				setProgress({ current: data.current, total: data.total });
 				if (data.status === "completed") clearInterval(interval);
@@ -101,9 +95,7 @@ export default function TestUploadPage() {
 				{
 					method: "POST",
 					headers: {
-						...(token && token !== "null" ?
-							{ Authorization: `Bearer ${token}` }
-						:	{}),
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 					},
 					body: formData,
 				}
@@ -140,9 +132,7 @@ export default function TestUploadPage() {
 		(currentPage - 1) * itemsPerPage,
 		currentPage * itemsPerPage
 	);
-	const totalPages = Math.ceil(
-		(result?.preview_data?.length || 0) / itemsPerPage
-	);
+	const totalPages = Math.ceil((result?.preview_data?.length || 0) / itemsPerPage);
 
 	return (
 		<div className="bg-background text-foreground mx-auto min-h-screen max-w-7xl p-8">
@@ -174,9 +164,7 @@ export default function TestUploadPage() {
 						disabled={loading || isUploading}
 						className="w-full rounded-lg bg-(--blueText) px-4 py-2.5 text-sm font-medium text-(--button) shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-(--wrapper) disabled:text-(--header) disabled:opacity-50"
 					>
-						{loading ?
-							"กำลังประมวลผลและอ่านไฟล์..."
-						:	"พรีวิวข้อมูล (ยังไม่บันทึก)"}
+						{loading ? "กำลังประมวลผลและอ่านไฟล์..." : "พรีวิวข้อมูล (ยังไม่บันทึก)"}
 					</button>
 				</div>
 			</form>
@@ -190,20 +178,16 @@ export default function TestUploadPage() {
 			{result && (
 				<div className="animate-fadeIn space-y-6">
 					<div className="rounded-xl border border-(--wrapper) bg-(--container) p-6 shadow-sm">
-						<h3 className="mb-2 text-lg font-bold text-(--blueText)">
-							ยืนยันการนำเข้าข้อมูล
-						</h3>
+						<h3 className="mb-2 text-lg font-bold text-(--blueText)">ยืนยันการนำเข้าข้อมูล</h3>
 						<p className="mb-4 text-sm text-(--header) opacity-80">
-							ตรวจสอบข้อมูลพรีวิวด้านล่าง หากถูกต้องแล้ว
-							กดปุ่มเพื่อนำเข้าฐานข้อมูลจริง
+							ตรวจสอบข้อมูลพรีวิวด้านล่าง หากถูกต้องแล้ว กดปุ่มเพื่อนำเข้าฐานข้อมูลจริง
 						</p>
 						{isUploading ?
 							<div className="w-full">
 								<div className="mb-1 flex justify-between text-sm font-semibold text-(--blueText)">
 									<span>กำลังบันทึกลง Database...</span>
 									<span>
-										{progress.current} / {progress.total || result.total_rows}{" "}
-										รายการ
+										{progress.current} / {progress.total || result.total_rows} รายการ
 									</span>
 								</div>
 								<div className="h-3 w-full rounded-full bg-(--wrapper)">
@@ -226,9 +210,7 @@ export default function TestUploadPage() {
 
 					<div className="flex items-center justify-between rounded-xl border border-(--greenBorder) bg-(--greenBG) p-5 text-(--greenText) shadow-sm">
 						<div>
-							<p className="text-lg font-bold text-(--greenText)">
-								✨ {result.message}
-							</p>
+							<p className="text-lg font-bold text-(--greenText)">✨ {result.message}</p>
 							<p className="mt-1 text-sm">
 								ข้อมูลพร้อมสำหรับนำเข้าตาราง <strong>illegal_immigrants</strong>
 							</p>
@@ -240,9 +222,7 @@ export default function TestUploadPage() {
 					</div>
 
 					<div>
-						<h3 className="mb-4 text-xl font-bold text-(--header)">
-							🔍 ตารางพรีวิวข้อมูล
-						</h3>
+						<h3 className="mb-4 text-xl font-bold text-(--header)">🔍 ตารางพรีวิวข้อมูล</h3>
 
 						{totalPages > 1 && (
 							<div className="mb-4 flex items-center justify-between rounded-xl border border-(--wrapper) bg-(--container) p-4 shadow-sm">
@@ -270,9 +250,7 @@ export default function TestUploadPage() {
 							<table className="w-full min-w-200 border-collapse text-left text-sm">
 								<thead className="border-b border-(--wrapper) bg-(--container) text-xs font-bold text-(--header) uppercase">
 									<tr>
-										<th className="w-16 border-r border-(--wrapper) p-4 text-center">
-											แถวที่
-										</th>
+										<th className="w-16 border-r border-(--wrapper) p-4 text-center">แถวที่</th>
 										<th className="w-3/5 border-r border-(--wrapper) bg-(--container) p-4 text-(--blueText)">
 											ข้อมูลที่จะถูกบันทึกลงฐานข้อมูล (แยกตามชื่อคอลัมน์จริง)
 										</th>
@@ -355,9 +333,7 @@ export default function TestUploadPage() {
 														<span className="block text-xs text-(--header) opacity-60">
 															[DB: nationality] สัญชาติ:
 														</span>
-														<span className="font-medium">
-															{row.nationality || renderNull()}
-														</span>
+														<span className="font-medium">{row.nationality || renderNull()}</span>
 													</div>
 													<div>
 														<span className="block text-xs text-(--header) opacity-60">
@@ -371,9 +347,7 @@ export default function TestUploadPage() {
 														<span className="block text-xs text-(--header) opacity-60">
 															[DB: gender] เพศ (อัตโนมัติ):
 														</span>
-														<span className="font-medium">
-															{row.gender || renderNull()}
-														</span>
+														<span className="font-medium">{row.gender || renderNull()}</span>
 													</div>
 													<div>
 														<span className="block text-xs text-zinc-500">
@@ -391,25 +365,18 @@ export default function TestUploadPage() {
 															ที่อยู่ / สถานที่ตรวจพบ:
 														</span>
 														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">
-																[DB: details]
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: details]</span>{" "}
 															{row.detected_location_details || renderNull()}
 															<br />
 															<span className="mr-2 text-xs opacity-60">
 																[DB: sub_district]
 															</span>{" "}
-															{row.detected_location_sub_district
-																|| renderNull()}
+															{row.detected_location_sub_district || renderNull()}
 															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: district]
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: district]</span>{" "}
 															{row.detected_location_district || renderNull()}
 															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: province]
-															</span>{" "}
+															<span className="mr-2 text-xs opacity-60">[DB: province]</span>{" "}
 															{row.detected_location_province || renderNull()}
 														</div>
 													</div>

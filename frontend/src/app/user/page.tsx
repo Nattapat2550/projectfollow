@@ -109,9 +109,7 @@ export default function UserProfilePage() {
 	return (
 		<div className="bg-background min-h-screen p-8">
 			<div className="mx-auto max-w-2xl space-y-8">
-				<h1 className="text-3xl font-bold text-(--header)">
-					จัดการโปรไฟล์ผู้ใช้งาน
-				</h1>
+				<h1 className="text-3xl font-bold text-(--header)">จัดการโปรไฟล์ผู้ใช้งาน</h1>
 
 				{/* Form อัปเดตข้อมูลทั่วไป */}
 				<form
@@ -123,9 +121,7 @@ export default function UserProfilePage() {
 					</h2>
 
 					<div>
-						<label className="text-foreground mb-1 block text-sm">
-							ชื่อผู้ใช้งาน
-						</label>
+						<label className="text-foreground mb-1 block text-sm">ชื่อผู้ใช้งาน</label>
 						<input
 							type="text"
 							value={name}
@@ -146,9 +142,7 @@ export default function UserProfilePage() {
 								onChange={(e) => setColor(e.target.value)}
 								className="h-10 w-16 cursor-pointer rounded border border-(--shadow) bg-(--button) p-1"
 							/>
-							<span className="text-foreground uppercase opacity-70">
-								{color}
-							</span>
+							<span className="text-foreground uppercase opacity-70">{color}</span>
 						</div>
 					</div>
 
@@ -170,9 +164,7 @@ export default function UserProfilePage() {
 					</h2>
 
 					<div>
-						<label className="text-foreground mb-1 block text-sm">
-							รหัสผ่านใหม่
-						</label>
+						<label className="text-foreground mb-1 block text-sm">รหัสผ่านใหม่</label>
 						<input
 							type="password"
 							value={password}

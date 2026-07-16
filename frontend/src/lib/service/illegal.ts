@@ -8,10 +8,7 @@ export async function getIllegalById(
 	const { token } = getClientAuthData();
 	if (!token) return { success: false, message: "token missing" };
 
-	return fetchWrapper(
-		`/api/v1/immigrants/illegal/${id}`,
-		withAuthHeader(token)
-	);
+	return fetchWrapper(`/api/v1/immigrants/illegal/${id}`, withAuthHeader(token));
 }
 
 export async function createIllegal(

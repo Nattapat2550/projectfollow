@@ -41,11 +41,7 @@ const illegalTranslationMap: { [key: string]: string } = {
 
 const formatValue = (key: string, val: any) => {
 	if (val === null || val === undefined) return "-";
-	if (
-		key.includes("date")
-		&& typeof val === "string"
-		&& !isNaN(Date.parse(val))
-	) {
+	if (key.includes("date") && typeof val === "string" && !isNaN(Date.parse(val))) {
 		return new Date(val).toLocaleDateString("th-TH");
 	}
 	if (val === true || val === "true") return "ใช่";
@@ -103,8 +99,7 @@ function IllegalPageContent() {
 				if (!data) setLoading(true);
 				else setIsUpdating(true);
 
-				const backendUrl =
-					process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+				const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 				const params = new URLSearchParams({
 					type: "illegal",
@@ -121,10 +116,9 @@ function IllegalPageContent() {
 					params.append("search", debouncedSearch.trim());
 				}
 
-				const res = await fetch(
-					`${backendUrl}/api/v1/immigrants/dashboard?${params.toString()}`,
-					{ cache: "no-store" }
-				);
+				const res = await fetch(`${backendUrl}/api/v1/immigrants/dashboard?${params.toString()}`, {
+					cache: "no-store",
+				});
 				if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลจากเซิร์ฟเวอร์ได้");
 
 				const json = await res.json();
@@ -182,9 +176,7 @@ function IllegalPageContent() {
 			setSelectedRows(newRows);
 		} else {
 			const currentViewIds = tableRows.map((r: any) => r.id);
-			setSelectedRows((prev) =>
-				prev.filter((r) => !currentViewIds.includes(r.id))
-			);
+			setSelectedRows((prev) => prev.filter((r) => !currentViewIds.includes(r.id)));
 		}
 	};
 
@@ -313,16 +305,7 @@ function IllegalPageContent() {
 						} else {
 							pdf.addPage([width, height], "l");
 						}
-						pdf.addImage(
-							imgData,
-							"JPEG",
-							0,
-							0,
-							width,
-							height,
-							undefined,
-							"FAST"
-						);
+						pdf.addImage(imgData, "JPEG", 0, 0, width, height, undefined, "FAST");
 
 						// Update progress bar
 						const percent = Math.round(((i + 1) / selectedRows.length) * 100);
@@ -347,20 +330,12 @@ function IllegalPageContent() {
 
 	const tableRows = (data?.tableData || []).map((item: any) => {
 		const firstName =
-			(
-				!item.first_name_th
-				|| item.first_name_th.trim() === ""
-				|| item.first_name_th === "ไม่ระบุ"
-			) ?
+			!item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ" ?
 				item.first_name_en || "ไม่ระบุ"
 			:	item.first_name_th;
 
 		const lastName =
-			(
-				!item.last_name_th
-				|| item.last_name_th.trim() === ""
-				|| item.last_name_th === "ไม่ระบุ"
-			) ?
+			!item.last_name_th || item.last_name_th.trim() === "" || item.last_name_th === "ไม่ระบุ" ?
 				item.last_name_en || "ไม่ระบุ"
 			:	item.last_name_th;
 
@@ -416,9 +391,7 @@ function IllegalPageContent() {
 										disabled={isExporting}
 										className="cursor-pointer rounded-sm bg-(--blueText) px-4 py-2 text-sm font-bold text-(--button) transition hover:opacity-90 disabled:opacity-50"
 									>
-										{isExporting ?
-											"กำลัง Export..."
-										:	`ยืนยัน (${selectedRows.length})`}
+										{isExporting ? "กำลัง Export..." : `ยืนยัน (${selectedRows.length})`}
 									</button>
 								</>
 							:	<>
@@ -499,21 +472,15 @@ function IllegalPageContent() {
 					{loading && !data ?
 						<div className="flex h-64 flex-col items-center justify-center">
 							<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-(--wrapper) border-t-(--header)"></div>
-							<span className="text-muted-foreground text-sm font-medium">
-								กำลังโหลดข้อมูล...
-							</span>
+							<span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูล...</span>
 						</div>
 					:	<div
 							className={`mb-10 bg-transparent transition-opacity duration-300 ${isUpdating ? "pointer-events-none opacity-50" : "opacity-100"}`}
 						>
 							<div className="text-muted-foreground mb-4 flex items-center justify-between text-sm font-medium">
-								<span>
-									ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)
-								</span>
+								<span>ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)</span>
 								{isUpdating && (
-									<span className="animate-pulse text-xs text-(--header)">
-										กำลังอัปเดต...
-									</span>
+									<span className="animate-pulse text-xs text-(--header)">กำลังอัปเดต...</span>
 								)}
 							</div>
 
@@ -563,9 +530,7 @@ function IllegalPageContent() {
 												</button>
 												<button
 													disabled={currentPage === 1}
-													onClick={() =>
-														handlePageChange(Math.max(currentPage - 1, 1))
-													}
+													onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
 													className="text-foreground cursor-pointer rounded-sm border border-(--wrapper) bg-(--button) px-3 py-2 text-sm font-medium transition hover:bg-(--row-hover) disabled:opacity-30"
 													title="ก่อนหน้า"
 												>
@@ -590,11 +555,7 @@ function IllegalPageContent() {
 
 												<button
 													disabled={currentPage === totalPages}
-													onClick={() =>
-														handlePageChange(
-															Math.min(currentPage + 1, totalPages)
-														)
-													}
+													onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
 													className="text-foreground cursor-pointer rounded-sm border border-(--wrapper) bg-(--button) px-3 py-2 text-sm font-medium transition hover:bg-(--row-hover) disabled:opacity-30"
 													title="ถัดไป"
 												>
@@ -638,11 +599,7 @@ function IllegalPageContent() {
 								backgroundColor: "white",
 							}}
 						>
-							<UniversalImmigrantCard
-								data={person}
-								type="illegal"
-								isExporting={true}
-							/>
+							<UniversalImmigrantCard data={person} type="illegal" isExporting={true} />
 						</div>
 					))}
 				</div>

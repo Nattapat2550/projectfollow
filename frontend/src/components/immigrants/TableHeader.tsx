@@ -18,19 +18,10 @@ interface TableHeaderProps {
 	type: "repatriated" | "illegal";
 }
 
-export default function TableHeader({
-	sortField,
-	sortDirection,
-	onSort,
-	type,
-}: TableHeaderProps) {
+export default function TableHeader({ sortField, sortDirection, onSort, type }: TableHeaderProps) {
 	const renderSortIcon = (field: SortField) => {
 		if (sortField !== field)
-			return (
-				<span className="ml-1 inline-block w-4 shrink-0 text-transparent">
-					↕
-				</span>
-			);
+			return <span className="ml-1 inline-block w-4 shrink-0 text-transparent">↕</span>;
 		return sortDirection === "asc" ?
 				<ChevronUp className="text-foreground ml-1 inline-block h-4 w-4 shrink-0" />
 			:	<ChevronDown className="text-foreground ml-1 inline-block h-4 w-4 shrink-0" />;
@@ -76,9 +67,7 @@ export default function TableHeader({
 					<Th field="is_victim" className="w-[15%]">
 						สถานะผู้เสียหาย
 					</Th>
-					<th className="w-[10%] truncate p-4 font-semibold text-(--header)">
-						จัดการ
-					</th>
+					<th className="w-[10%] truncate p-4 font-semibold text-(--header)">จัดการ</th>
 				</tr>
 			</thead>
 		);
@@ -105,9 +94,7 @@ export default function TableHeader({
 				<Th field="is_victim" className="w-[10%]">
 					สถานะผู้เสียหาย
 				</Th>
-				<th className="w-[10%] truncate p-4 font-semibold text-(--header)">
-					จัดการ
-				</th>
+				<th className="w-[10%] truncate p-4 font-semibold text-(--header)">จัดการ</th>
 			</tr>
 		</thead>
 	);

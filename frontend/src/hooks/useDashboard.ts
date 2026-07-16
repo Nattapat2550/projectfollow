@@ -61,18 +61,13 @@ const dashboardFetchCache = new Map<string, DashboardData>();
 export function useDashboard() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
-	const typeParam =
-		(searchParams.get("type") as "illegal" | "repatriated") || "repatriated";
+	const typeParam = (searchParams.get("type") as "illegal" | "repatriated") || "repatriated";
 
-	const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-		null
-	);
+	const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [isUpdating, setIsUpdating] = useState(false);
 
-	const [filterType, setFilterType] = useState<"illegal" | "repatriated">(
-		typeParam
-	);
+	const [filterType, setFilterType] = useState<"illegal" | "repatriated">(typeParam);
 	const [filterNat, setFilterNat] = useState<string>("ทั้งหมด");
 	const [filterGender, setFilterGender] = useState<string>("ทั้งหมด");
 	const [filterVictim, setFilterVictim] = useState<string>("ทั้งหมด");
@@ -91,8 +86,7 @@ export function useDashboard() {
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
 	useEffect(() => {
-		const backendUrl =
-			process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 		const params = new URLSearchParams({
 			type: filterType,
 			nationality: filterType === "illegal" ? filterNat : "ทั้งหมด",
@@ -186,8 +180,7 @@ export function useDashboard() {
 		setCurrentPage(1);
 	};
 	const handleSort = (field: string) => {
-		if (sortField === field)
-			setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+		if (sortField === field) setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
 		else {
 			setSortField(field);
 			setSortDirection("asc");
@@ -216,54 +209,27 @@ export function useDashboard() {
 		router.replace(`/dashboard?type=${val}`, { scroll: false });
 	};
 
-	const nationalitiesOptions = dashboardData?.meta?.allNationalities || [
-		"ทั้งหมด",
-	];
+	const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
 	// เพิ่มการรับประกันว่า "ไม่ระบุ" จะถูกรวมใน dropdown เสมอ
 	const gendersOptions = Array.from(
-		new Set([
-			"ทั้งหมด",
-			"ชาย",
-			"หญิง",
-			"ไม่ระบุ",
-			...(dashboardData?.meta?.allGenders || []),
-		])
+		new Set(["ทั้งหมด", "ชาย", "หญิง", "ไม่ระบุ", ...(dashboardData?.meta?.allGenders || [])])
 	);
 	const creatorsOptions = dashboardData?.meta?.allCreators || ["ทั้งหมด"];
 	const provincesOptions = Array.from(
-		new Set([
-			"ทั้งหมด",
-			"ไม่ระบุ",
-			...(dashboardData?.meta?.allProvinces || []),
-		])
+		new Set(["ทั้งหมด", "ไม่ระบุ", ...(dashboardData?.meta?.allProvinces || [])])
 	);
 	const regionsOptions = Array.from(
 		new Set(["ทั้งหมด", "ไม่ระบุ", ...(dashboardData?.meta?.allRegions || [])])
 	);
-	const ageOptions = [
-		"ทั้งหมด",
-		"0-18 ปี",
-		"19-30 ปี",
-		"31-50 ปี",
-		"51 ปีขึ้นไป",
-		"ไม่ระบุ",
-	];
+	const ageOptions = ["ทั้งหมด", "0-18 ปี", "19-30 ปี", "31-50 ปี", "51 ปีขึ้นไป", "ไม่ระบุ"];
 
 	const tableRows = (dashboardData?.tableData || []).map((item: any) => {
 		const fnTh =
-			(
-				!item.first_name_th
-				|| item.first_name_th.trim() === ""
-				|| item.first_name_th === "ไม่ระบุ"
-			) ?
+			!item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ" ?
 				item.first_name_en || "ไม่ระบุ"
 			:	item.first_name_th;
 		const lnTh =
-			(
-				!item.last_name_th
-				|| item.last_name_th.trim() === ""
-				|| item.last_name_th === "ไม่ระบุ"
-			) ?
+			!item.last_name_th || item.last_name_th.trim() === "" || item.last_name_th === "ไม่ระบุ" ?
 				item.last_name_en || "ไม่ระบุ"
 			:	item.last_name_th;
 		return { ...item, first_name_th: fnTh, last_name_th: lnTh };
@@ -295,11 +261,7 @@ export function useDashboard() {
 				];
 	})();
 
-	const formatStandardChartData = (
-		raw: any[] = [],
-		total: number = 0,
-		colorOffset: number = 0
-	) => {
+	const formatStandardChartData = (raw: any[] = [], total: number = 0, colorOffset: number = 0) => {
 		const sum = raw.reduce((acc, curr) => acc + curr.value, 0);
 		const mapped = raw.map((d, i) => ({
 			...d,

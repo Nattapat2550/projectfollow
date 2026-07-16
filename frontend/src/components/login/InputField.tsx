@@ -6,12 +6,7 @@ interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 	rightElement?: React.ReactNode;
 }
 
-export const InputField: React.FC<InputFieldProps> = ({
-	label,
-	icon,
-	rightElement,
-	...props
-}) => {
+export const InputField: React.FC<InputFieldProps> = ({ label, icon, rightElement, ...props }) => {
 	return (
 		<div className="space-y-2">
 			<label className="text-foreground flex items-center gap-2 text-sm font-medium">
@@ -23,9 +18,7 @@ export const InputField: React.FC<InputFieldProps> = ({
 					{...props}
 				/>
 				{rightElement && (
-					<div className="absolute top-1/2 right-3 -translate-y-1/2">
-						{rightElement}
-					</div>
+					<div className="absolute top-1/2 right-3 -translate-y-1/2">{rightElement}</div>
 				)}
 			</div>
 		</div>

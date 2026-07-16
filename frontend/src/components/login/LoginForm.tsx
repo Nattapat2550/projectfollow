@@ -35,11 +35,7 @@ const LoginForm = () => {
 
 			// ถ้ามี URL เดิมติดมาด้วย ให้พากลับไปหน้าเดิม แต่ถ้าไม่มีให้พากลับหน้า /dashboard
 			const decodedUrl = decodeURIComponent(callbackUrl || "");
-			if (
-				decodedUrl
-				&& decodedUrl.startsWith("/")
-				&& !decodedUrl.startsWith("//")
-			) {
+			if (decodedUrl && decodedUrl.startsWith("/") && !decodedUrl.startsWith("//")) {
 				window.location.href = decodedUrl;
 			} else {
 				window.location.href = "/dashboard";
@@ -57,12 +53,8 @@ const LoginForm = () => {
 	return (
 		<div className="mx-auto mt-20 flex w-full max-w-md flex-col gap-2 rounded-2xl border-2 border-(--shadow) bg-(--container) p-8 shadow-lg transition-all">
 			<div className="mb-8 text-center">
-				<h1 className="mb-2 text-3xl font-bold text-(--header)">
-					ยินดีต้อนรับ
-				</h1>
-				<p className="text-foreground opacity-70">
-					กรุณาเข้าสู่ระบบเพื่อใช้งาน
-				</p>
+				<h1 className="mb-2 text-3xl font-bold text-(--header)">ยินดีต้อนรับ</h1>
+				<p className="text-foreground opacity-70">กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
 			</div>
 
 			<form onSubmit={handleLogin} className="space-y-6">

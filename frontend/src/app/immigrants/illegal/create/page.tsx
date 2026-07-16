@@ -1,12 +1,6 @@
 "use client";
 
-import {
-	ChevronLeft,
-	FileSpreadsheet,
-	Image as ImageIcon,
-	Save,
-	X,
-} from "lucide-react";
+import { ChevronLeft, FileSpreadsheet, Image as ImageIcon, Save, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SubmitEventHandler, useState } from "react";
@@ -46,21 +40,15 @@ export default function CreateIllegalImmigrant() {
 	});
 
 	const [selectedImage, setSelectedImage] = useState<File | null>(null);
-	const [selectedPassportImage, setSelectedPassportImage] =
-		useState<File | null>(null);
+	const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
-	const [passportImagePreview, setPassportImagePreview] = useState<
-		string | null
-	>(null);
+	const [passportImagePreview, setPassportImagePreview] = useState<string | null>(null);
 
 	const {
 		provinces,
 		districtOptions: detDistrictOptions,
 		subDistrictOptions: detSubDistrictOptions,
-	} = useAddressOptions(
-		formData.detected_location_province,
-		formData.detected_location_district
-	);
+	} = useAddressOptions(formData.detected_location_province, formData.detected_location_district);
 
 	const handleSelectDetDistrict = (opt: any) => {
 		const { district, province } = opt.extra;
@@ -82,15 +70,12 @@ export default function CreateIllegalImmigrant() {
 	};
 
 	const handleInputChange = (
-		e: React.ChangeEvent<
-			HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-		>
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
 	) => {
 		const { name, value, type } = e.target;
 		setFormData((prev) => ({
 			...prev,
-			[name]:
-				type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+			[name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
 		}));
 	};
 
@@ -107,9 +92,7 @@ export default function CreateIllegalImmigrant() {
 		setImagePreview(null);
 	};
 
-	const handlePassportImageChange = (
-		e: React.ChangeEvent<HTMLInputElement>
-	) => {
+	const handlePassportImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (file) {
 			setSelectedPassportImage(file);
@@ -152,8 +135,7 @@ export default function CreateIllegalImmigrant() {
 
 	const inputClass =
 		"w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all dark:[color-scheme:dark]";
-	const labelClass =
-		"block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
+	const labelClass = "block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
 
 	return (
 		<div className="bg-background text-foreground min-h-screen p-6 transition-colors duration-200">
@@ -197,8 +179,7 @@ export default function CreateIllegalImmigrant() {
 							/>
 							<div className="flex gap-3">
 								<label className="flex cursor-pointer items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm text-white hover:opacity-90">
-									<ImageIcon size={16} />{" "}
-									{imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
+									<ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
 									<input
 										type="file"
 										accept="image/*"
@@ -233,9 +214,7 @@ export default function CreateIllegalImmigrant() {
 							<div className="flex gap-3">
 								<label className="flex cursor-pointer items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm text-white hover:opacity-90">
 									<ImageIcon size={16} />{" "}
-									{passportImagePreview ?
-										"แก้ไขรูปพาสปอร์ต"
-									:	"อัปโหลดรูปพาสปอร์ต"}
+									{passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
 									<input
 										type="file"
 										accept="image/*"
@@ -390,9 +369,7 @@ export default function CreateIllegalImmigrant() {
 				</div>
 
 				<div className="mb-5">
-					<label className={labelClass}>
-						รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *
-					</label>
+					<label className={labelClass}>รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *</label>
 					<textarea
 						required
 						name="detected_location_details"
@@ -460,9 +437,7 @@ export default function CreateIllegalImmigrant() {
 							name="is_victim"
 							value={formData.is_victim}
 							className="bg-background w-full rounded-sm border border-(--wrapper) px-3 py-1.5 text-sm !text-black transition-all focus:outline-none dark:!text-white dark:[color-scheme:dark]"
-							onChange={(e) =>
-								setFormData({ ...formData, is_victim: e.target.value })
-							}
+							onChange={(e) => setFormData({ ...formData, is_victim: e.target.value })}
 						>
 							<option value="PENDING">ไม่คัดกรองสถานะ</option>
 							<option value="YES">เป็นผู้เสียหาย</option>

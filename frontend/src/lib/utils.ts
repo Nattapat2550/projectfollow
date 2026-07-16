@@ -5,8 +5,7 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-export const backendUrl =
-	process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+export const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 export async function fetchWrapper<T>(
 	input: string | URL | Request,

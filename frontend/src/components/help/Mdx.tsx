@@ -55,8 +55,7 @@ export const MdxComponents = {
 		<div
 			style={{
 				// Uses your standard CSS wrapper variable and safely defaults to a soft gray if not loaded
-				borderColor:
-					"color-mix(in srgb, var(--wrapper, #e2e8f0) 100%, transparent)",
+				borderColor: "color-mix(in srgb, var(--wrapper, #e2e8f0) 100%, transparent)",
 			}}
 			className="bg- (--button)] my-6 overflow-hidden rounded-lg border p-2"
 		>
@@ -67,9 +66,7 @@ export const MdxComponents = {
 				height={height}
 				className="h-auto w-full rounded object-contain"
 			/>
-			{alt && (
-				<p className="mt-2 text-center text-sm italic opacity-50">{alt}</p>
-			)}
+			{alt && <p className="mt-2 text-center text-sm italic opacity-50">{alt}</p>}
 		</div>
 	),
 
@@ -87,11 +84,7 @@ export const MdxComponents = {
 				"bg-amber-50 border-amber-500/30 text-amber-900"
 			:	"bg-blue-50 border-blue-500/30 text-blue-900";
 		return (
-			<div
-				className={`my-4 rounded-md border p-4 shadow-sm ${bgColors} text-base`}
-			>
-				{children}
-			</div>
+			<div className={`my-4 rounded-md border p-4 shadow-sm ${bgColors} text-base`}>{children}</div>
 		);
 	},
 };

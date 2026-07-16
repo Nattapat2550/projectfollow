@@ -230,9 +230,7 @@ const COUNTRY_MAP: { [key: string]: string } = {
 };
 
 // นำ Keys มาเรียงลำดับจาก "คำยาวที่สุด" ไป "สั้นที่สุด" ป้องกันปัญหาคำทับซ้อน (เช่น "เกาหลีใต้" vs "เกาหลี")
-const SORTED_COUNTRY_KEYS = Object.keys(COUNTRY_MAP).sort(
-	(a, b) => b.length - a.length
-);
+const SORTED_COUNTRY_KEYS = Object.keys(COUNTRY_MAP).sort((a, b) => b.length - a.length);
 
 const getFlagUrl = (nationality: string) => {
 	if (!nationality) return null;
@@ -241,28 +239,15 @@ const getFlagUrl = (nationality: string) => {
 	// วนลูปหาคำที่ตรงกันจากชุดคำที่เรียงความยาวไว้แล้ว
 	const foundKey = SORTED_COUNTRY_KEYS.find((key) => nat.includes(key));
 
-	return foundKey ?
-			`https://flagcdn.com/w40/${COUNTRY_MAP[foundKey]}.png`
-		:	null;
+	return foundKey ? `https://flagcdn.com/w40/${COUNTRY_MAP[foundKey]}.png` : null;
 };
 // ----------------------------------------------------------------------
 
-const Base64Image = ({
-	src,
-	alt,
-	className,
-	crossOrigin,
-	referrerPolicy,
-}: any) => {
+const Base64Image = ({ src, alt, className, crossOrigin, referrerPolicy }: any) => {
 	const [base64, setBase64] = useState<string>(src);
 
 	useEffect(() => {
-		if (
-			!src
-			|| src.startsWith("data:")
-			|| src.startsWith("blob:")
-			|| src.startsWith("/")
-		) {
+		if (!src || src.startsWith("data:") || src.startsWith("blob:") || src.startsWith("/")) {
 			setBase64(src);
 			return;
 		}
@@ -298,10 +283,7 @@ const Base64Image = ({
 	);
 };
 
-export default function IllegalCard({
-	data,
-	isExporting = false,
-}: IllegalCardProps) {
+export default function IllegalCard({ data, isExporting = false }: IllegalCardProps) {
 	const fullNameTh =
 		`${data.first_name_th || ""}${data.middle_name_th ? " " + data.middle_name_th : ""} ${data.last_name_th || ""}`.trim();
 	const fullNameEn =
@@ -327,10 +309,7 @@ export default function IllegalCard({
 		>
 			<div className="absolute inset-0 flex gap-[4%] p-[4%]">
 				{/* คอลัมน์ซ้าย (รูปภาพและป้ายสัญชาติ) */}
-				<div
-					className="flex shrink-0 flex-col items-center"
-					style={{ width: "30%" }}
-				>
+				<div className="flex shrink-0 flex-col items-center" style={{ width: "30%" }}>
 					<p
 						className="mb-[3%] text-center leading-tight font-bold text-emerald-900"
 						style={{ fontSize: "clamp(8px, 2.4vw, 20px)" }}
@@ -359,10 +338,7 @@ export default function IllegalCard({
 					>
 						{data.photo_url ?
 							<Base64Image
-								src={getDirectImageUrl(
-									data.photo_url,
-									data.id || Math.random().toString()
-								)}
+								src={getDirectImageUrl(data.photo_url, data.id || Math.random().toString())}
 								alt="Profile"
 								className="h-full w-full object-cover"
 								referrerPolicy="no-referrer"
@@ -444,10 +420,7 @@ export default function IllegalCard({
 
 function ILabel({ children }: { children: React.ReactNode }) {
 	return (
-		<span
-			className="font-bold text-emerald-950"
-			style={{ fontSize: "clamp(5px, 1.3vw, 11px)" }}
-		>
+		<span className="font-bold text-emerald-950" style={{ fontSize: "clamp(5px, 1.3vw, 11px)" }}>
 			{children}
 		</span>
 	);

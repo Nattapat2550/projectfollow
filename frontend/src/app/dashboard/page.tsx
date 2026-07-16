@@ -2,9 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
-import IllegalTable, {
-	SortField as IllegalSortField,
-} from "@/components/immigrants/IllegalTable";
+import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
 import RepatriatedTable, {
 	SortField as RepatriatedSortField,
 } from "@/components/immigrants/RepatriatedTable";
@@ -56,10 +54,7 @@ function DashboardContent() {
 
 	const toggleChart = (key: string) => {
 		const isVisible = visibleCharts.includes(key);
-		const updated =
-			isVisible ?
-				visibleCharts.filter((k) => k !== key)
-			:	[...visibleCharts, key];
+		const updated = isVisible ? visibleCharts.filter((k) => k !== key) : [...visibleCharts, key];
 		saveVisibleCharts(updated);
 	};
 
@@ -81,19 +76,13 @@ function DashboardContent() {
 			<div className="flex w-full flex-col items-start gap-6 lg:flex-row">
 				{/* แผงควบคุม Filters */}
 				<div className="flex w-full shrink-0 flex-col gap-5 rounded-[0.2rem] border border-(--wrapper) bg-(--container) p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)] lg:w-72">
-					<span className="text-lg font-bold text-(--header)">
-						ฟิลเตอร์ตัวเลือก
-					</span>
+					<span className="text-lg font-bold text-(--header)">ฟิลเตอร์ตัวเลือก</span>
 					<div className="flex flex-col gap-2">
-						<label className="text- (--header)] text-sm font-bold opacity-70">
-							ประเภทข้อมูล
-						</label>
+						<label className="text- (--header)] text-sm font-bold opacity-70">ประเภทข้อมูล</label>
 						<select
 							value={states.filterType}
 							onChange={(e) =>
-								actions.handleTypeChange(
-									e.target.value as "illegal" | "repatriated"
-								)
+								actions.handleTypeChange(e.target.value as "illegal" | "repatriated")
 							}
 							className={inputClass}
 						>
@@ -103,14 +92,10 @@ function DashboardContent() {
 					</div>
 
 					<div className="flex flex-col gap-2">
-						<label className="text- (--header)] text-sm font-bold opacity-70">
-							สัญชาติ
-						</label>
+						<label className="text- (--header)] text-sm font-bold opacity-70">สัญชาติ</label>
 						<select
 							value={states.filterNat}
-							onChange={(e) =>
-								actions.handleFilterChange(actions.setFilterNat, e.target.value)
-							}
+							onChange={(e) => actions.handleFilterChange(actions.setFilterNat, e.target.value)}
 							className={inputClass}
 						>
 							{derived.nationalitiesOptions.map((n) => (
@@ -122,17 +107,10 @@ function DashboardContent() {
 					</div>
 
 					<div className="flex flex-col gap-2">
-						<label className="text- (--header)] text-sm font-bold opacity-70">
-							เพศ
-						</label>
+						<label className="text- (--header)] text-sm font-bold opacity-70">เพศ</label>
 						<select
 							value={states.filterGender}
-							onChange={(e) =>
-								actions.handleFilterChange(
-									actions.setFilterGender,
-									e.target.value
-								)
-							}
+							onChange={(e) => actions.handleFilterChange(actions.setFilterGender, e.target.value)}
 							className={inputClass}
 						>
 							{derived.gendersOptions.map((g) => (
@@ -149,12 +127,7 @@ function DashboardContent() {
 						</label>
 						<select
 							value={states.filterRegion}
-							onChange={(e) =>
-								actions.handleFilterChange(
-									actions.setFilterRegion,
-									e.target.value
-								)
-							}
+							onChange={(e) => actions.handleFilterChange(actions.setFilterRegion, e.target.value)}
 							className={inputClass}
 						>
 							{derived.regionsOptions.map((r) => (
@@ -172,10 +145,7 @@ function DashboardContent() {
 						<select
 							value={states.filterProvince}
 							onChange={(e) =>
-								actions.handleFilterChange(
-									actions.setFilterProvince,
-									e.target.value
-								)
+								actions.handleFilterChange(actions.setFilterProvince, e.target.value)
 							}
 							className={inputClass}
 						>
@@ -193,12 +163,7 @@ function DashboardContent() {
 						</label>
 						<select
 							value={states.filterCreator}
-							onChange={(e) =>
-								actions.handleFilterChange(
-									actions.setFilterCreator,
-									e.target.value
-								)
-							}
+							onChange={(e) => actions.handleFilterChange(actions.setFilterCreator, e.target.value)}
 							className={inputClass}
 						>
 							{derived.creatorsOptions.map((c) => (
@@ -210,14 +175,10 @@ function DashboardContent() {
 					</div>
 
 					<div className="flex flex-col gap-2">
-						<label className="text- (--header)] text-sm font-bold opacity-70">
-							ช่วงอายุ
-						</label>
+						<label className="text- (--header)] text-sm font-bold opacity-70">ช่วงอายุ</label>
 						<select
 							value={states.filterAge}
-							onChange={(e) =>
-								actions.handleFilterChange(actions.setFilterAge, e.target.value)
-							}
+							onChange={(e) => actions.handleFilterChange(actions.setFilterAge, e.target.value)}
 							className={inputClass}
 						>
 							{derived.ageOptions.map((a) => (
@@ -237,10 +198,7 @@ function DashboardContent() {
 								<select
 									value={states.filterVictim}
 									onChange={(e) =>
-										actions.handleFilterChange(
-											actions.setFilterVictim,
-											e.target.value
-										)
+										actions.handleFilterChange(actions.setFilterVictim, e.target.value)
 									}
 									className={inputClass}
 								>
@@ -257,10 +215,7 @@ function DashboardContent() {
 								<select
 									value={states.filterPassport}
 									onChange={(e) =>
-										actions.handleFilterChange(
-											actions.setFilterPassport,
-											e.target.value
-										)
+										actions.handleFilterChange(actions.setFilterPassport, e.target.value)
 									}
 									className={inputClass}
 								>
@@ -281,24 +236,18 @@ function DashboardContent() {
 						<input
 							type="date"
 							value={states.startDate}
-							onChange={(e) =>
-								actions.handleFilterChange(actions.setStartDate, e.target.value)
-							}
+							onChange={(e) => actions.handleFilterChange(actions.setStartDate, e.target.value)}
 							className={inputClass}
 						/>
 					</div>
 					<div className="flex flex-col gap-2">
 						<label className="text- (--header)] text-sm font-bold opacity-70">
-							{states.filterType === "repatriated" ?
-								"วันที่ส่งกลับ (ถึง)"
-							:	"ถึงวันที่ตรวจพบ"}
+							{states.filterType === "repatriated" ? "วันที่ส่งกลับ (ถึง)" : "ถึงวันที่ตรวจพบ"}
 						</label>
 						<input
 							type="date"
 							value={states.endDate}
-							onChange={(e) =>
-								actions.handleFilterChange(actions.setEndDate, e.target.value)
-							}
+							onChange={(e) => actions.handleFilterChange(actions.setEndDate, e.target.value)}
 							className={inputClass}
 						/>
 					</div>
@@ -312,12 +261,7 @@ function DashboardContent() {
 								<input
 									type="date"
 									value={states.dobStart}
-									onChange={(e) =>
-										actions.handleFilterChange(
-											actions.setDobStart,
-											e.target.value
-										)
-									}
+									onChange={(e) => actions.handleFilterChange(actions.setDobStart, e.target.value)}
 									className={inputClass}
 								/>
 							</div>
@@ -328,12 +272,7 @@ function DashboardContent() {
 								<input
 									type="date"
 									value={states.dobEnd}
-									onChange={(e) =>
-										actions.handleFilterChange(
-											actions.setDobEnd,
-											e.target.value
-										)
-									}
+									onChange={(e) => actions.handleFilterChange(actions.setDobEnd, e.target.value)}
 									className={inputClass}
 								/>
 							</div>
@@ -364,9 +303,7 @@ function DashboardContent() {
 								<span className="mb-4 block justify-between text-lg font-bold text-(--header)">
 									<span>สถิติเบื้องต้น</span>
 									{states.isUpdating && (
-										<span className="ml-4 animate-pulse text-xs opacity-70">
-											กำลังอัปเดต...
-										</span>
+										<span className="ml-4 animate-pulse text-xs opacity-70">กำลังอัปเดต...</span>
 									)}
 								</span>
 								<div className="flex flex-wrap gap-10">
@@ -386,9 +323,7 @@ function DashboardContent() {
 							{/* Charts - เปลี่ยนไปใช้ BarChart หมด */}
 							<div className="relative rounded-[0.2rem] border border-(--wrapper) bg-(--container) p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
 								<div className="mb-6 flex items-center justify-between">
-									<span className="text-lg font-bold text-(--header)">
-										กราฟสรุปจำนวนคนทั้งหมด
-									</span>
+									<span className="text-lg font-bold text-(--header)">กราฟสรุปจำนวนคนทั้งหมด</span>
 									<button
 										onClick={() => setShowSettings(true)}
 										className="flex cursor-pointer items-center gap-1 rounded border border-zinc-300 bg-(--wrapper) px-3 py-1.5 text-xs font-bold text-(--header) transition select-none hover:opacity-80 active:scale-95 dark:border-zinc-700"
@@ -397,142 +332,89 @@ function DashboardContent() {
 									</button>
 								</div>
 
-								{(
-									!states.dashboardData
-									|| states.dashboardData.tableData.length === 0
-								) ?
+								{!states.dashboardData || states.dashboardData.tableData.length === 0 ?
 									<div className="text-muted-foreground flex h-48 items-center justify-center text-sm font-medium">
 										ไม่มีข้อมูลแสดงผลตามสัญชาติหรือวันที่ระบุ
 									</div>
 								:	<div className="grid w-full grid-cols-1 items-start justify-start gap-8 pb-2 sm:grid-cols-2">
 										{states.filterType === "illegal" ?
 											<>
-												{(!visibleCharts.length
-													|| visibleCharts.includes("dateTrend"))
+												{(!visibleCharts.length || visibleCharts.includes("dateTrend"))
 													&& derived.dateTrendChart.length > 0 && (
 														<LineChart
 															data={derived.dateTrendChart}
 															title="แนวโน้มวันที่พบ (รายเดือน)"
 														/>
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("nationality"))
+												{(!visibleCharts.length || visibleCharts.includes("nationality"))
 													&& derived.natChart.length > 0 && (
-														<BarChart
-															data={derived.natChart}
-															title="สัญชาติ (Top 6)"
-														/>
+														<BarChart data={derived.natChart} title="สัญชาติ (Top 6)" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("region"))
+												{(!visibleCharts.length || visibleCharts.includes("region"))
 													&& derived.regionChart.length > 0 && (
 														<BarChart data={derived.regionChart} title="ภาค" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("province"))
+												{(!visibleCharts.length || visibleCharts.includes("province"))
 													&& derived.provinceChart.length > 0 && (
-														<BarChart
-															data={derived.provinceChart}
-															title="จังหวัด (Top 6)"
-														/>
+														<BarChart data={derived.provinceChart} title="จังหวัด (Top 6)" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("ageGroup"))
+												{(!visibleCharts.length || visibleCharts.includes("ageGroup"))
 													&& derived.ageChart.length > 0 && (
-														<BarChart
-															data={derived.ageChart}
-															title="ช่วงอายุ"
-														/>
+														<BarChart data={derived.ageChart} title="ช่วงอายุ" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("gender"))
+												{(!visibleCharts.length || visibleCharts.includes("gender"))
 													&& derived.genderChart.length > 0 && (
 														<BarChart data={derived.genderChart} title="เพศ" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("victim"))
+												{(!visibleCharts.length || visibleCharts.includes("victim"))
 													&& derived.victimChart.length > 0 && (
-														<BarChart
-															data={derived.victimChart}
-															title="สถานะผู้เสียหาย"
-														/>
+														<BarChart data={derived.victimChart} title="สถานะผู้เสียหาย" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("passport"))
+												{(!visibleCharts.length || visibleCharts.includes("passport"))
 													&& derived.passportChart.length > 0 && (
-														<BarChart
-															data={derived.passportChart}
-															title="สถานะหนังสือเดินทาง"
-														/>
+														<BarChart data={derived.passportChart} title="สถานะหนังสือเดินทาง" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("creator"))
+												{(!visibleCharts.length || visibleCharts.includes("creator"))
 													&& derived.creatorChart.length > 0 && (
-														<BarChart
-															data={derived.creatorChart}
-															title="ผู้เพิ่มข้อมูล"
-														/>
+														<BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />
 													)}
 											</>
 										:	<>
-												{(!visibleCharts.length
-													|| visibleCharts.includes("dateTrend"))
+												{(!visibleCharts.length || visibleCharts.includes("dateTrend"))
 													&& derived.dateTrendChart.length > 0 && (
 														<LineChart
 															data={derived.dateTrendChart}
 															title="แนวโน้มวันที่ส่งกลับ (รายเดือน)"
 														/>
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("nationality"))
+												{(!visibleCharts.length || visibleCharts.includes("nationality"))
 													&& derived.natChart.length > 0 && (
-														<BarChart
-															data={derived.natChart}
-															title="สัญชาติ (Top 6)"
-														/>
+														<BarChart data={derived.natChart} title="สัญชาติ (Top 6)" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("region"))
+												{(!visibleCharts.length || visibleCharts.includes("region"))
 													&& derived.regionChart.length > 0 && (
 														<BarChart data={derived.regionChart} title="ภาค" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("province"))
+												{(!visibleCharts.length || visibleCharts.includes("province"))
 													&& derived.provinceChart.length > 0 && (
-														<BarChart
-															data={derived.provinceChart}
-															title="จังหวัด (Top 6)"
-														/>
+														<BarChart data={derived.provinceChart} title="จังหวัด (Top 6)" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("ageGroup"))
+												{(!visibleCharts.length || visibleCharts.includes("ageGroup"))
 													&& derived.ageChart.length > 0 && (
-														<BarChart
-															data={derived.ageChart}
-															title="ช่วงอายุ"
-														/>
+														<BarChart data={derived.ageChart} title="ช่วงอายุ" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("gender"))
+												{(!visibleCharts.length || visibleCharts.includes("gender"))
 													&& derived.genderChart.length > 0 && (
 														<BarChart data={derived.genderChart} title="เพศ" />
 													)}
-												{(!visibleCharts.length
-													|| visibleCharts.includes("victim"))
+												{(!visibleCharts.length || visibleCharts.includes("victim"))
 													&& derived.victimChart.length > 0 && (
-														<BarChart
-															data={derived.victimChart}
-															title="สถานะผู้เสียหาย"
-														/>
+														<BarChart data={derived.victimChart} title="สถานะผู้เสียหาย" />
 													)}
 
-												{(!visibleCharts.length
-													|| visibleCharts.includes("creator"))
+												{(!visibleCharts.length || visibleCharts.includes("creator"))
 													&& derived.creatorChart.length > 0 && (
-														<BarChart
-															data={derived.creatorChart}
-															title="ผู้เพิ่มข้อมูล"
-														/>
+														<BarChart data={derived.creatorChart} title="ผู้เพิ่มข้อมูล" />
 													)}
 											</>
 										}
@@ -738,8 +620,7 @@ function DashboardContent() {
 							<div className="mb-10 bg-transparent">
 								<div className="mb-6 flex items-center justify-between">
 									<span className="text-lg font-bold text-(--header)">
-										ตารางข้อมูล ({derived.totalItems.toLocaleString("th-TH")}{" "}
-										รายการ)
+										ตารางข้อมูล ({derived.totalItems.toLocaleString("th-TH")} รายการ)
 									</span>
 								</div>
 								<div className="overflow-hidden rounded-[0.2rem] border border-(--wrapper) bg-(--container) shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
@@ -798,9 +679,7 @@ function DashboardContent() {
 													<button
 														disabled={states.currentPage === 1}
 														onClick={() =>
-															actions.setCurrentPage(
-																Math.max(states.currentPage - 1, 1)
-															)
+															actions.setCurrentPage(Math.max(states.currentPage - 1, 1))
 														}
 														className="cursor-pointer rounded-sm border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
 														title="ก่อนหน้า"
@@ -827,9 +706,7 @@ function DashboardContent() {
 													<button
 														disabled={states.currentPage === totalPages}
 														onClick={() =>
-															actions.setCurrentPage(
-																Math.min(states.currentPage + 1, totalPages)
-															)
+															actions.setCurrentPage(Math.min(states.currentPage + 1, totalPages))
 														}
 														className="cursor-pointer rounded-sm border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
 														title="ถัดไป"

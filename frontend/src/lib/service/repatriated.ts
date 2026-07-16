@@ -8,10 +8,7 @@ export async function getRepatriatedById(
 	const { token } = getClientAuthData();
 	if (!token) return { success: false, message: "token missing" };
 
-	return fetchWrapper(
-		`/api/v1/immigrants/repatriated/${id}`,
-		withAuthHeader(token)
-	);
+	return fetchWrapper(`/api/v1/immigrants/repatriated/${id}`, withAuthHeader(token));
 }
 
 export async function createRepatriated(
@@ -28,8 +25,7 @@ export async function createRepatriated(
 
 export async function updateRepatriated(
 	id: string,
-	req: Partial<schema.UpdateRepatriatedRequest>
-		& schema.UpdateRepatriatedRequestFile
+	req: Partial<schema.UpdateRepatriatedRequest> & schema.UpdateRepatriatedRequestFile
 ): Promise<schema.UpdateRepatriatedResponse | ErrorResponse> {
 	const { token } = getClientAuthData();
 	if (!token) return { success: false, message: "token missing" };

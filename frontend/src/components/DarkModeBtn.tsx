@@ -24,8 +24,7 @@ const DarkModeBtn = () => {
 		padding: "7px",
 		borderRadius: "50%",
 		cursor: "pointer",
-		backgroundColor:
-			theme === "light" ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.25)",
+		backgroundColor: theme === "light" ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.25)",
 		color: "#ffffff",
 		border: "1px solid rgba(255,255,255,0.3)",
 		display: "flex",

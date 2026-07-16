@@ -3,18 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { Loader2, ServerCrash } from "lucide-react";
 
-export default function ServerAwaker({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
+export default function ServerAwaker({ children }: { children: React.ReactNode }) {
 	const [isServerAlive, setIsServerAlive] = useState<boolean | null>(null);
 	const [retryCount, setRetryCount] = useState(0);
 
 	// 🟢 แก้ไข: เปลี่ยนไปปิงที่ Root URL (หน้าแรกสุด) ของ Backend แทนที่จะเป็น /auth/me
 	// เพื่อหลีกเลี่ยง Error 401 Unauthorized กวนใจใน Console
-	const API_PING_URL =
-		process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+	const API_PING_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 	useEffect(() => {
 		let intervalId: NodeJS.Timeout;
@@ -58,9 +53,7 @@ export default function ServerAwaker({
 		return (
 			<div className="bg-background flex h-screen w-full flex-col items-center justify-center space-y-4 p-6">
 				<Loader2 className="h-12 w-12 animate-spin text-blue-500" />
-				<div className="text-muted-foreground animate-pulse font-medium">
-					กำลังโหลดระบบ...
-				</div>
+				<div className="text-muted-foreground animate-pulse font-medium">กำลังโหลดระบบ...</div>
 			</div>
 		);
 	}
@@ -75,21 +68,17 @@ export default function ServerAwaker({
 					</div>
 
 					<div className="space-y-2">
-						<h2 className="text-foreground text-xl font-bold">
-							กำลังปลุกระบบหลังบ้าน (Backend)
-						</h2>
+						<h2 className="text-foreground text-xl font-bold">กำลังปลุกระบบหลังบ้าน (Backend)</h2>
 						<p className="text-muted-foreground px-4 text-sm">
-							ระบบกำลังเริ่มทำงานเนื่องจากไม่มีการใช้งานชั่วคราวบน Cloud
-							อาจใช้เวลาประมาณ 30-50 วินาที โปรดรอสักครู่...
+							ระบบกำลังเริ่มทำงานเนื่องจากไม่มีการใช้งานชั่วคราวบน Cloud อาจใช้เวลาประมาณ 30-50
+							วินาที โปรดรอสักครู่...
 						</p>
 					</div>
 
 					<div className="bg-muted/50 space-y-1 rounded-xl border border-(--wrapper) p-3 text-left font-mono text-xs">
 						<div className="text-muted-foreground flex justify-between">
 							<span>สถานะเซิร์ฟเวอร์:</span>
-							<span className="animate-pulse font-semibold text-amber-500">
-								Waking Up...
-							</span>
+							<span className="animate-pulse font-semibold text-amber-500">Waking Up...</span>
 						</div>
 						<div className="text-muted-foreground flex justify-between">
 							<span>ยิงคำขอเพื่อปลุกแล้ว:</span>

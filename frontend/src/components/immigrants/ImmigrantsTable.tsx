@@ -10,14 +10,9 @@ interface ImmigrantsTableProps {
 	type: "repatriated" | "illegal";
 }
 
-export default function ImmigrantsTable({
-	data,
-	isMock,
-	type,
-}: ImmigrantsTableProps) {
+export default function ImmigrantsTable({ data, isMock, type }: ImmigrantsTableProps) {
 	// 🟢 ย้ายตรรกะทั้งหมดออกไปใน Custom Hook
-	const { sortField, sortDirection, handleSort, sortedData } =
-		useTableSort(data);
+	const { sortField, sortDirection, handleSort, sortedData } = useTableSort(data);
 
 	return (
 		<div
@@ -31,18 +26,10 @@ export default function ImmigrantsTable({
 					onSort={handleSort}
 					type={type}
 				/>
-				<tbody
-					className="bg-background divide-y"
-					style={{ borderColor: "var(--wrapper)" }}
-				>
+				<tbody className="bg-background divide-y" style={{ borderColor: "var(--wrapper)" }}>
 					{sortedData.length > 0 ?
 						sortedData.map((person) => (
-							<TableRow
-								key={person.id}
-								person={person}
-								isMock={isMock}
-								type={type}
-							/>
+							<TableRow key={person.id} person={person} isMock={isMock} type={type} />
 						))
 					:	<tr>
 							<td colSpan={7} className="text-muted-foreground p-8 text-center">

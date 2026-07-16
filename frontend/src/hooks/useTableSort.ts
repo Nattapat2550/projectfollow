@@ -28,8 +28,7 @@ export function useTableSort(data: any[]) {
 						const parts = dateStr.split("/");
 						if (parts.length === 3) {
 							const [day, month, year] = parts;
-							const parsedYear =
-								parseInt(year) > 2500 ? parseInt(year) - 543 : parseInt(year);
+							const parsedYear = parseInt(year) > 2500 ? parseInt(year) - 543 : parseInt(year);
 							return new Date(`${parsedYear}-${month}-${day}`).getTime() || 0;
 						}
 					}

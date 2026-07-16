@@ -22,8 +22,7 @@ export function useAddressOptions(province: string, district: string) {
 
 	// 2. District Options: Format as "District » Province"
 	const districtOptions = useMemo(() => {
-		const filtered =
-			province ? addresses.filter((a) => a.province === province) : addresses;
+		const filtered = province ? addresses.filter((a) => a.province === province) : addresses;
 
 		const seen = new Set<string>();
 		const opts: AutocompleteOption[] = [];
@@ -49,9 +48,7 @@ export function useAddressOptions(province: string, district: string) {
 	const subDistrictOptions = useMemo(() => {
 		let filtered = addresses;
 		if (province && district) {
-			filtered = addresses.filter(
-				(a) => a.province === province && a.amphoe === district
-			);
+			filtered = addresses.filter((a) => a.province === province && a.amphoe === district);
 		} else if (province) {
 			filtered = addresses.filter((a) => a.province === province);
 		} else if (district) {

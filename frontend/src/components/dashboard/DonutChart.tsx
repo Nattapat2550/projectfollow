@@ -1,13 +1,7 @@
 import React from "react";
 import { ChartItem } from "@/hooks/useDashboard";
 
-export default function DonutChart({
-	data,
-	title,
-}: {
-	data: ChartItem[];
-	title: string;
-}) {
+export default function DonutChart({ data, title }: { data: ChartItem[]; title: string }) {
 	const total = data.reduce((s, d) => s + d.value, 0);
 	if (total === 0) return null;
 
@@ -51,16 +45,9 @@ export default function DonutChart({
 		<div className="flex w-full flex-col items-center justify-start gap-3 overflow-hidden xl:min-w-50 xl:flex-1">
 			<p className="shrink-0 text-sm font-semibold text-(--header)">{title}</p>
 			<div className="flex h-55 w-full shrink-0 items-center justify-center">
-				<svg
-					viewBox={`0 0 ${SIZE} ${SIZE}`}
-					style={{ width: "100%", height: "100%" }}
-				>
+				<svg viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ width: "100%", height: "100%" }}>
 					{slices.map((s, i) => (
-						<path
-							key={i}
-							d={arcPath(s.startAngle, s.endAngle)}
-							style={{ fill: s.color }}
-						/>
+						<path key={i} d={arcPath(s.startAngle, s.endAngle)} style={{ fill: s.color }} />
 					))}
 					<text
 						x={cx}

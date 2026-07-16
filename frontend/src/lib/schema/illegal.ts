@@ -22,10 +22,7 @@ export type GetIllegalByIdResponse = {
 };
 
 export type CreateIllegalRequest = IllegalRequestData;
-export type CreateIllegalRequestFile = Record<
-	"photo" | "passport_photo",
-	File | undefined | null
->;
+export type CreateIllegalRequestFile = Record<"photo" | "passport_photo", File | undefined | null>;
 export type CreateIllegalResponse = {
 	success: boolean;
 	data?: IllegalData;
@@ -33,10 +30,7 @@ export type CreateIllegalResponse = {
 };
 
 export type UpdateIllegalRequest = IllegalRequestData;
-export type UpdateIllegalRequestFile = Record<
-	"photo" | "passport_photo",
-	File | undefined | null
->;
+export type UpdateIllegalRequestFile = Record<"photo" | "passport_photo", File | undefined | null>;
 export type UpdateIllegalResponse = {
 	success: boolean;
 	data?: IllegalData;

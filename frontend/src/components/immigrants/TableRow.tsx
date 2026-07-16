@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
 
-export const helperFormatDOBAndAge = (
-	dob: string | null,
-	age: number | string | null
-): string => {
+export const helperFormatDOBAndAge = (dob: string | null, age: number | string | null): string => {
 	let ageStr = age ? `${age} ปี` : "";
 	if (dob) {
 		const d = new Date(dob);
@@ -30,10 +27,7 @@ export default function TableRow({
 	type: "repatriated" | "illegal";
 }) {
 	const ActionButtons = () => {
-		const detailUrl =
-			type === "illegal" ?
-				`/immigrant/${person.id}`
-			:	`/repatriate/${person.id}`;
+		const detailUrl = type === "illegal" ? `/immigrant/${person.id}` : `/repatriate/${person.id}`;
 
 		return (
 			<div className="flex items-center gap-2">
