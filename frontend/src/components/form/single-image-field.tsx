@@ -18,6 +18,7 @@ type SingleImageFieldProps = {
 	uploadIcon?: React.ReactElement;
 	editIcon?: React.ReactElement;
 	removeIcon?: React.ReactElement;
+	deletable?: boolean;
 	props?: Partial<ImageProps>;
 };
 
@@ -38,6 +39,7 @@ export default function SingleImageField({
 	uploadIcon = <ImageIcon size={16} />,
 	editIcon = <ImageIcon size={16} />,
 	removeIcon = <X size={16} />,
+	deletable,
 	props,
 }: SingleImageFieldProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +111,7 @@ export default function SingleImageField({
 							<span>{file ? editLabel : uploadLabel}</span>
 						</div>
 					</label>
-					{file && (
+					{file && deletable && (
 						<button
 							type="button"
 							className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"

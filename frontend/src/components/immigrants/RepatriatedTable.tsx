@@ -1,12 +1,9 @@
 "use client";
 
+import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
-export const helperFormatDOBAndAge = (
-	dob: string | null,
-	age: number | string | null
-): string => {
+export const helperFormatDOBAndAge = (dob: string | null, age: number | string | null): string => {
 	let computedAge = age;
 
 	if (dob && !computedAge) {
@@ -24,7 +21,7 @@ export const helperFormatDOBAndAge = (
 		}
 	}
 
-	let ageStr = computedAge ? `${computedAge} ปี` : "";
+	const ageStr = computedAge ? `${computedAge} ปี` : "";
 	if (dob) {
 		const d = new Date(dob);
 		if (!isNaN(d.getTime())) {
@@ -120,10 +117,7 @@ export default function RepatriatedTable({
 								<input
 									type="checkbox"
 									className="h-4 w-4 cursor-pointer accent-(--blueText)"
-									checked={
-										data.length > 0
-										&& data.every((p) => selectedIds?.includes(p.id))
-									}
+									checked={data.length > 0 && data.every((p) => selectedIds?.includes(p.id))}
 									onChange={(e) => onSelectAll?.(e.target.checked)}
 								/>
 							</th>
@@ -152,8 +146,7 @@ export default function RepatriatedTable({
 					{data.length > 0 ?
 						data.map((person) => {
 							const fullName = `${person.first_name_th} ${person.last_name_th}`;
-							const nationalId =
-								person.national_id || person.passport_id || "ไม่ระบุ";
+							const nationalId = person.national_id || person.passport_id || "ไม่ระบุ";
 							const address =
 								person.address_details ?
 									`${person.address_details} ${person.sub_district ? "ต." + person.sub_district : ""} ${person.district ? "อ." + person.district : ""} ${person.province ? "จ." + person.province : ""}`
@@ -166,25 +159,19 @@ export default function RepatriatedTable({
 										if (isExportMode) {
 											onToggleSelect?.(person.id);
 										} else {
-											router.push(`/immigrants/${person.id}`);
+											router.push(`/immigrants/repatriated/${person.id}`);
 										}
 									}}
 									className="cursor-pointer transition-colors"
 									style={{
 										backgroundColor:
-											selectedIds?.includes(person.id) ?
-												"var(--row-hover)"
-											:	"var(--background)",
+											selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)",
 										borderBottom: "1px solid var(--wrapper)",
 									}}
-									onMouseEnter={(e) =>
-										(e.currentTarget.style.backgroundColor = "var(--row-hover)")
-									}
+									onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--row-hover)")}
 									onMouseLeave={(e) =>
 										(e.currentTarget.style.backgroundColor =
-											selectedIds?.includes(person.id) ?
-												"var(--row-hover)"
-											:	"var(--background)")
+											selectedIds?.includes(person.id) ? "var(--row-hover)" : "var(--background)")
 									}
 								>
 									{isExportMode && (

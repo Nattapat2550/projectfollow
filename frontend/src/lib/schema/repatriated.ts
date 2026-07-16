@@ -10,18 +10,17 @@ type RepatriatedOmited = Omit<
 	| "passport_photo_url"
 >;
 
-export type RepatriatedRequestData = Record<keyof RepatriatedOmited, string>;
-
+export type RepatriatedRequestData = Record<keyof RepatriatedOmited, string> & {
+	age?: string;
+	is_victim?: string;
+	screening_details?: string;
+};
 export type GetRepatriatedByIdResponse = {
 	success: true;
 	data: RepatriatedData;
 };
 
-export type CreateRepatriatedRequest = RepatriatedRequestData & {
-	age?: string;
-	is_victim?: string;
-	screening_details?: string;
-};
+export type CreateRepatriatedRequest = RepatriatedRequestData;
 export type CreateRepatriatedRequestFile = Record<
 	"photo" | "passport_photo",
 	File | undefined | null
@@ -32,11 +31,7 @@ export type CreateRepatriatedResponse = {
 	message?: string;
 };
 
-export type UpdateRepatriatedRequest = RepatriatedRequestData & {
-	age?: string;
-	is_victim?: string;
-	screening_details?: string;
-};
+export type UpdateRepatriatedRequest = RepatriatedRequestData;
 export type UpdateRepatriatedRequestFile = Record<
 	"photo" | "passport_photo",
 	File | undefined | null

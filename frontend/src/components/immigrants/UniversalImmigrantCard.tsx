@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface UniversalImmigrantCardProps {
 	data: any;
@@ -129,38 +129,23 @@ const COUNTRY_MAP: { [key: string]: string } = {
 	usa: "us",
 };
 
-const SORTED_COUNTRY_KEYS = Object.keys(COUNTRY_MAP).sort(
-	(a, b) => b.length - a.length
-);
+const SORTED_COUNTRY_KEYS = Object.keys(COUNTRY_MAP).sort((a, b) => b.length - a.length);
 
 const getFlagUrl = (nationality: string) => {
 	if (!nationality) return null;
 	const nat = nationality.trim().toLowerCase();
 	const foundKey = SORTED_COUNTRY_KEYS.find((key) => nat.includes(key));
-	return foundKey ?
-			`https://flagcdn.com/w40/${COUNTRY_MAP[foundKey]}.png`
-		:	null;
+	return foundKey ? `https://flagcdn.com/w40/${COUNTRY_MAP[foundKey]}.png` : null;
 };
 
 // ----------------------------------------------------------------------
 // Component หลัก
 // ----------------------------------------------------------------------
-const Base64Image = ({
-	src,
-	alt,
-	className,
-	crossOrigin,
-	referrerPolicy,
-}: any) => {
+const Base64Image = ({ src, alt, className, crossOrigin, referrerPolicy }: any) => {
 	const [base64, setBase64] = useState<string>(src);
 
 	useEffect(() => {
-		if (
-			!src
-			|| src.startsWith("data:")
-			|| src.startsWith("blob:")
-			|| src.startsWith("/")
-		) {
+		if (!src || src.startsWith("data:") || src.startsWith("blob:") || src.startsWith("/")) {
 			setBase64(src);
 			return;
 		}
@@ -215,9 +200,7 @@ export default function UniversalImmigrantCard({
 		:	"";
 
 	// วันที่พบตัว / ส่งกลับ
-	const dateValue = formatDate(
-		isIllegal ? data.detected_date : data.return_date
-	);
+	const dateValue = formatDate(isIllegal ? data.detected_date : data.return_date);
 
 	// วันเดือนปีเกิด
 	const getDobText = () => {
@@ -250,19 +233,12 @@ export default function UniversalImmigrantCard({
 		if (isIllegal) {
 			const parts = [];
 			if (data.workplace) parts.push(`ที่ทำงาน: ${data.workplace}`);
-			if (data.detected_location_details)
-				parts.push(data.detected_location_details);
+			if (data.detected_location_details) parts.push(data.detected_location_details);
 
 			const subParts = [
-				data.detected_location_sub_district ?
-					`ต.${data.detected_location_sub_district}`
-				:	"",
-				data.detected_location_district ?
-					`อ.${data.detected_location_district}`
-				:	"",
-				data.detected_location_province ?
-					`จ.${data.detected_location_province}`
-				:	"",
+				data.detected_location_sub_district ? `ต.${data.detected_location_sub_district}` : "",
+				data.detected_location_district ? `อ.${data.detected_location_district}` : "",
+				data.detected_location_province ? `จ.${data.detected_location_province}` : "",
 			]
 				.filter(Boolean)
 				.join(" ");
@@ -293,18 +269,10 @@ export default function UniversalImmigrantCard({
 	let victimStatusStr = "ไม่คัดกรองสถานะ";
 	let victimColorClass = "text-[#a16207] bg-[#fef9c3] border-[#facc15]";
 
-	if (
-		data.is_victim === "YES"
-		|| data.is_victim === true
-		|| data.is_victim === "true"
-	) {
+	if (data.is_victim === "YES" || data.is_victim === true || data.is_victim === "true") {
 		victimStatusStr = "เป็นผู้เสียหาย";
 		victimColorClass = "text-[#b91c1c] bg-[#fee2e2] border-[#f87171]";
-	} else if (
-		data.is_victim === "NO"
-		|| data.is_victim === false
-		|| data.is_victim === "false"
-	) {
+	} else if (data.is_victim === "NO" || data.is_victim === false || data.is_victim === "false") {
 		victimStatusStr = "ไม่เป็นผู้เสียหาย";
 		victimColorClass = "text-[#15803d] bg-[#dcfce7] border-[#4ade80]";
 	}
@@ -324,23 +292,15 @@ export default function UniversalImmigrantCard({
 				>
 					<div className="flex w-full shrink-0 items-center bg-[#0047a5] px-[4%] py-[2%] text-white">
 						<div className="flex flex-col">
-							<span
-								className="leading-tight font-bold tracking-wide"
-								style={{ fontSize: "26px" }}
-							>
-								{isIllegal ?
-									"บันทึกข้อมูลผู้ลักลอบเข้าประเทศ"
-								:	"บันทึกข้อมูลผู้ถูกส่งตัวกลับ"}
+							<span className="leading-tight font-bold tracking-wide" style={{ fontSize: "26px" }}>
+								{isIllegal ? "บันทึกข้อมูลผู้ลักลอบเข้าประเทศ" : "บันทึกข้อมูลผู้ถูกส่งตัวกลับ"}
 							</span>
 							<span className="opacity-80" style={{ fontSize: "14px" }}>
 								IMMIGRATION RECORD
 							</span>
 						</div>
 						<div className="ml-auto text-right">
-							<span
-								className="font-bold opacity-90"
-								style={{ fontSize: "20px" }}
-							>
+							<span className="font-bold opacity-90" style={{ fontSize: "20px" }}>
 								{data.national_id ? formatNationalId(data.national_id) : "-"}
 							</span>
 						</div>
@@ -350,10 +310,7 @@ export default function UniversalImmigrantCard({
 						<div className="flex min-w-0 flex-1 flex-col justify-between pr-[3%]">
 							<div className="flex w-full gap-2">
 								<div className="w-1/2">
-									<InfoItem
-										label="ชื่อ-นามสกุล / Name (TH)"
-										value={fullNameTh}
-									/>
+									<InfoItem label="ชื่อ-นามสกุล / Name (TH)" value={fullNameTh} />
 								</div>
 								<div className="w-1/2">
 									<InfoItem label="Name (EN)" value={fullNameEn} />
@@ -362,29 +319,20 @@ export default function UniversalImmigrantCard({
 
 							<div className="mt-2 flex w-full gap-2">
 								<div className="w-[35%]">
-									<InfoItem
-										label="เกิดวันที่ / Date of Birth"
-										value={getDobText()}
-									/>
+									<InfoItem label="เกิดวันที่ / Date of Birth" value={getDobText()} />
 								</div>
 								<div className="w-[20%]">
 									<InfoItem label="เพศ / Sex" value={data.gender} />
 								</div>
 								<div className="w-[45%]">
-									<InfoItem
-										label="หนังสือเดินทาง / Passport No."
-										value={data.passport_id}
-									/>
+									<InfoItem label="หนังสือเดินทาง / Passport No." value={data.passport_id} />
 								</div>
 							</div>
 
 							<div className="mt-2 flex w-full gap-2">
 								<div className="w-full">
 									<div className="flex min-w-0 flex-col items-start">
-										<span
-											className="font-bold text-[#0047a5]"
-											style={{ fontSize: "14px" }}
-										>
+										<span className="font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
 											สัญชาติ / Nationality
 										</span>
 										<div className="mt-0.5 flex items-center gap-1.5">
@@ -410,9 +358,7 @@ export default function UniversalImmigrantCard({
 							<div className="mt-2 flex w-full gap-2">
 								<div className="w-full">
 									<InfoItem
-										label={
-											isIllegal ? "สถานที่ / Location" : "ที่อยู่ / Address"
-										}
+										label={isIllegal ? "สถานที่ / Location" : "ที่อยู่ / Address"}
 										value={getLocationText()}
 									/>
 								</div>
@@ -420,10 +366,7 @@ export default function UniversalImmigrantCard({
 
 							<div className="mt-2 flex w-full gap-2">
 								<div className="flex w-full min-w-0 flex-col items-start">
-									<span
-										className="mb-0.5 font-bold text-[#0047a5]"
-										style={{ fontSize: "14px" }}
-									>
+									<span className="mb-0.5 font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
 										สถานะผู้เสียหาย / Victim Status
 									</span>
 									<span
@@ -438,10 +381,7 @@ export default function UniversalImmigrantCard({
 							{/* ข้อมูลเพิ่มเติม (Additional Info) */}
 							<div className="mt-2 flex w-full shrink-0 gap-2 pb-1">
 								<div className="flex w-full min-w-0 flex-col items-start">
-									<span
-										className="mb-0.5 font-bold text-[#0047a5]"
-										style={{ fontSize: "14px" }}
-									>
+									<span className="mb-0.5 font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
 										ข้อมูลเพิ่มเติม / Additional Info
 									</span>
 									<div
@@ -455,34 +395,27 @@ export default function UniversalImmigrantCard({
 													{data.screening_details || "-"}
 												</div>
 												<div className="break-words whitespace-normal">
-													<span className="font-bold">หมายเหตุ:</span>{" "}
-													{data.note || "-"}
+													<span className="font-bold">หมายเหตุ:</span> {data.note || "-"}
 												</div>
 											</div>
 										:	<div className="flex w-full flex-col gap-y-1">
 												<div className="flex w-full gap-2">
 													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">อาชีพ:</span>{" "}
-														{data.job_type || "-"}
+														<span className="font-bold">อาชีพ:</span> {data.job_type || "-"}
 														{data.role ? ` (${data.role})` : ""}
 													</div>
 													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">รายได้/เดือน:</span>{" "}
-														{data.salary || "-"}
+														<span className="font-bold">รายได้/เดือน:</span> {data.salary || "-"}
 													</div>
 												</div>
 												<div className="flex w-full gap-2">
 													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">ผู้จ่ายเงิน:</span>{" "}
-														{data.paid_by || "-"}
-														{data.payment_method ?
-															` (${data.payment_method})`
-														:	""}
+														<span className="font-bold">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}
+														{data.payment_method ? ` (${data.payment_method})` : ""}
 													</div>
 													<div className="min-w-0 flex-1 break-words whitespace-normal">
 														<span className="font-bold">คดี/หมายจับ:</span>{" "}
-														{data.number_of_case || "0"} /{" "}
-														{data.number_of_warrant || "0"}
+														{data.number_of_case || "0"} / {data.number_of_warrant || "0"}
 													</div>
 												</div>
 												<div className="flex w-full gap-2">
@@ -531,10 +464,7 @@ export default function UniversalImmigrantCard({
 								>
 									{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"} / Date
 								</div>
-								<div
-									className="mt-1 font-bold text-[#002f6c]"
-									style={{ fontSize: "18px" }}
-								>
+								<div className="mt-1 font-bold text-[#002f6c]" style={{ fontSize: "18px" }}>
 									{dateValue}
 								</div>
 							</div>
@@ -564,15 +494,9 @@ export default function UniversalImmigrantCard({
 
 				<div className="absolute inset-0 top-[11%] flex p-[4%] pt-0">
 					{/* คอลัมน์ซ้าย (รายละเอียดข้อมูล) */}
-					<div
-						className="flex min-w-0 flex-col"
-						style={{ width: "67%", marginRight: "3%" }}
-					>
+					<div className="flex min-w-0 flex-col" style={{ width: "67%", marginRight: "3%" }}>
 						{/* แถว 1: ชื่อ-นามสกุล (แยกกล่อง ไทย - อังกฤษ) */}
-						<div
-							className="flex w-full justify-between"
-							style={{ marginBottom: "2%" }}
-						>
+						<div className="flex w-full justify-between" style={{ marginBottom: "2%" }}>
 							<div className="flex flex-col" style={{ width: "48.5%" }}>
 								<ILabel>ชื่อ - นามสกุล</ILabel>
 								<IBox>{fullNameTh || "-"}</IBox>
@@ -584,10 +508,7 @@ export default function UniversalImmigrantCard({
 						</div>
 
 						{/* แถว 2: เลขที่บัตร */}
-						<div
-							className="flex w-full justify-between"
-							style={{ marginBottom: "2%" }}
-						>
+						<div className="flex w-full justify-between" style={{ marginBottom: "2%" }}>
 							<div className="flex flex-col" style={{ width: "48.5%" }}>
 								<ILabel>เลขประจำตัวประชาชน</ILabel>
 								<IBox mono>{formatNationalId(data.national_id) || "-"}</IBox>
@@ -600,17 +521,11 @@ export default function UniversalImmigrantCard({
 
 						{/* แถว 3: วันเกิด / เพศ-อายุ / สัญชาติ */}
 						<div className="flex w-full" style={{ marginBottom: "2%" }}>
-							<div
-								className="flex flex-col"
-								style={{ width: "37.6%", marginRight: "3%" }}
-							>
+							<div className="flex flex-col" style={{ width: "37.6%", marginRight: "3%" }}>
 								<ILabel>วันเดือนปีเกิด / DOB</ILabel>
 								<IBox>{getDobText()}</IBox>
 							</div>
-							<div
-								className="flex flex-col"
-								style={{ width: "25.1%", marginRight: "3%" }}
-							>
+							<div className="flex flex-col" style={{ width: "25.1%", marginRight: "3%" }}>
 								<ILabel>เพศ/อายุ</ILabel>
 								<IBox>
 									{data.gender || "-"}
@@ -637,11 +552,7 @@ export default function UniversalImmigrantCard({
 
 						{/* แถว 4: สถานที่ */}
 						<div className="flex flex-col" style={{ marginBottom: "2%" }}>
-							<ILabel>
-								{isIllegal ?
-									"สถานที่ทำงาน / จุดตรวจพบ"
-								:	"ที่อยู่ปัจจุบันตามบันทึก"}
-							</ILabel>
+							<ILabel>{isIllegal ? "สถานที่ทำงาน / จุดตรวจพบ" : "ที่อยู่ปัจจุบันตามบันทึก"}</ILabel>
 							<IBox noTruncate className="w-full justify-start! text-left">
 								<div className="w-full truncate">{getLocationText()}</div>
 							</IBox>
@@ -650,66 +561,42 @@ export default function UniversalImmigrantCard({
 						{/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
 						<div className="mb-1 flex flex-1 flex-col">
 							<ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-							<IBox
-								noTruncate
-								className="h-full justify-start! overflow-hidden text-left"
-							>
+							<IBox noTruncate className="h-full justify-start! overflow-hidden text-left">
 								{
 									isIllegal ?
 										// เปลี่ยนเป็น flex-col จัดเรียงบรรทัดละหัวข้อ และใช้ break-words เพื่อให้ขึ้นบรรทัดใหม่เมื่อข้อความยาว
-										<div
-											className="flex w-full flex-col gap-y-1.5"
-											style={{ fontSize: "0.95em" }}
-										>
+										<div className="flex w-full flex-col gap-y-1.5" style={{ fontSize: "0.95em" }}>
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													รายละเอียดคัดกรอง:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
 												{data.screening_details || "-"}
 											</div>
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													หมายเหตุ:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">หมายเหตุ:</span>{" "}
 												{data.note || "-"}
 											</div>
 										</div>
 										// เปลี่ยนเป็น flex-col เช่นเดียวกัน
-									:	<div
-											className="flex w-full flex-col gap-y-1.5"
-											style={{ fontSize: "0.85em" }}
-										>
+									:	<div className="flex w-full flex-col gap-y-1.5" style={{ fontSize: "0.85em" }}>
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													อาชีพ:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">อาชีพ:</span>{" "}
 												{data.job_type || "-"}
 												{data.role ? ` (${data.role})` : ""}
 											</div>
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													รายได้/เดือน:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">รายได้/เดือน:</span>{" "}
 												{data.salary || "-"}
 											</div>
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													ผู้จ่ายเงิน:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">ผู้จ่ายเงิน:</span>{" "}
 												{data.paid_by || "-"}
 												{data.payment_method ? ` (${data.payment_method})` : ""}
 											</div>
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													คดี/หมายจับ:
-												</span>{" "}
-												{data.number_of_case || "0"} /{" "}
-												{data.number_of_warrant || "0"}
+												<span className="font-semibold text-[#022c22]">คดี/หมายจับ:</span>{" "}
+												{data.number_of_case || "0"} / {data.number_of_warrant || "0"}
 											</div>
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													หน่วยงาน:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">หน่วยงาน:</span>{" "}
 												{data.responsible_agency || "-"}
 											</div>
 											{(data.is_victim === true
@@ -719,9 +606,7 @@ export default function UniversalImmigrantCard({
 												|| data.is_victim === "true"
 												|| data.is_victim === "false") && (
 												<div className="wrap-break-word">
-													<span className="font-semibold text-[#022c22]">
-														สถานะผู้เสียหาย:
-													</span>{" "}
+													<span className="font-semibold text-[#022c22]">สถานะผู้เสียหาย:</span>{" "}
 													{(
 														data.is_victim === true
 														|| data.is_victim === "YES"
@@ -732,16 +617,12 @@ export default function UniversalImmigrantCard({
 												</div>
 											)}
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													รายละเอียดคัดกรอง:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
 												{data.screening_details || "-"}
 											</div>
 
 											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">
-													หมายเหตุ:
-												</span>{" "}
+												<span className="font-semibold text-[#022c22]">หมายเหตุ:</span>{" "}
 												{data.note || "-"}
 											</div>
 										</div>
@@ -752,10 +633,7 @@ export default function UniversalImmigrantCard({
 					</div>
 
 					{/* คอลัมน์ขวา (รูปภาพ ไว้ฝั่งขวา) */}
-					<div
-						className="flex shrink-0 flex-col items-center"
-						style={{ width: "30%" }}
-					>
+					<div className="flex shrink-0 flex-col items-center" style={{ width: "30%" }}>
 						<div
 							className="relative mb-[5%] flex w-full items-end justify-center overflow-hidden rounded-xl border border-[#a7f3d0] bg-white shadow-inner"
 							style={{ aspectRatio: "3/4" }}
@@ -772,11 +650,7 @@ export default function UniversalImmigrantCard({
 									crossOrigin="anonymous"
 								/>
 							:	<div className="flex h-full w-full flex-col items-center justify-end pb-[8%]">
-									<img
-										src={"/enter.png"}
-										className="w-1/2 opacity-40"
-										alt="Placeholder"
-									></img>
+									<img src={"/enter.png"} className="w-1/2 opacity-40" alt="Placeholder"></img>
 								</div>
 							}
 						</div>
@@ -792,13 +666,9 @@ export default function UniversalImmigrantCard({
 						{/* วันที่พบตัว (โชว์เด่นๆ ฝั่งขวาใต้รูป) */}
 						<div className="flex w-full flex-col items-center">
 							<div style={{ marginBottom: "4px" }}>
-								<ILabel>
-									{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"}
-								</ILabel>
+								<ILabel>{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"}</ILabel>
 							</div>
-							<IBox className="flex w-full justify-center text-center font-bold">
-								{dateValue}
-							</IBox>
+							<IBox className="flex w-full justify-center text-center font-bold">{dateValue}</IBox>
 						</div>
 					</div>
 				</div>
@@ -810,13 +680,7 @@ export default function UniversalImmigrantCard({
 // ----------------------------------------------------------------------
 // Styled Components ภายใน
 // ----------------------------------------------------------------------
-function ILabel({
-	children,
-	className = "",
-}: {
-	children: React.ReactNode;
-	className?: string;
-}) {
+function ILabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
 	const isExporting = useContext(ExportContext);
 	return (
 		<span

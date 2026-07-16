@@ -1,37 +1,13 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
+import { getValidImageUrl } from "@/lib/imageUrl";
 import { getIllegalById, updateIllegal } from "@/lib/service/illegal";
-import {
-	getRepatriatedById,
-	updateRepatriated,
-} from "@/lib/service/repatriated";
-
-export const getValidImageUrl = (url: string | null) => {
-	if (!url) return null;
-	if (url.startsWith("blob:")) return url;
-	if (url.includes("drive.google.com/file/d/")) {
-		const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-		if (match && match[1])
-			return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-	} else if (url.includes("id=")) {
-		const match = url.match(/id=([^&]+)/);
-		if (match && match[1])
-			return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-	}
-	if (url.startsWith("/")) {
-		const backendUrl =
-			process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-		return `${backendUrl}${url}`;
-	}
-	return url;
-};
+import { getRepatriatedById, updateRepatriated } from "@/lib/service/repatriated";
 
 export function useImmigrantDetail(id: string) {
 	const [person, setPerson] = useState<any | null>(null);
-	const [personType, setPersonType] = useState<
-		"repatriated" | "illegal" | null
-	>(null);
+	const [personType, setPersonType] = useState<"repatriated" | "illegal" | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [note, setNote] = useState("");
 
@@ -40,11 +16,8 @@ export function useImmigrantDetail(id: string) {
 	const [isSaving, setIsSaving] = useState(false);
 	const [selectedImage, setSelectedImage] = useState<File | null>(null);
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
-	const [selectedPassportImage, setSelectedPassportImage] =
-		useState<File | null>(null);
-	const [passportImagePreview, setPassportImagePreview] = useState<
-		string | null
-	>(null);
+	const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
+	const [passportImagePreview, setPassportImagePreview] = useState<string | null>(null);
 
 	const fetchData = async () => {
 		setLoading(true);
@@ -62,9 +35,7 @@ export function useImmigrantDetail(id: string) {
 				return_date: response.data.return_date?.split("T")[0] || "",
 			});
 			setImagePreview(getValidImageUrl(response.data.photo_url ?? null));
-			setPassportImagePreview(
-				getValidImageUrl(response.data.passport_photo_url ?? null)
-			);
+			setPassportImagePreview(getValidImageUrl(response.data.passport_photo_url ?? null));
 			setLoading(false);
 			return;
 		}
@@ -80,9 +51,7 @@ export function useImmigrantDetail(id: string) {
 				detected_date: res.data.detected_date?.split("T")[0] || "",
 			});
 			setImagePreview(getValidImageUrl(res.data.photo_url ?? null));
-			setPassportImagePreview(
-				getValidImageUrl(res.data.passport_photo_url ?? null)
-			);
+			setPassportImagePreview(getValidImageUrl(res.data.passport_photo_url ?? null));
 			setLoading(false);
 			return;
 		}
@@ -137,8 +106,7 @@ export function useImmigrantDetail(id: string) {
 				}
 			});
 			if (selectedImage) submitData.append("photo", selectedImage);
-			if (selectedPassportImage)
-				submitData.append("passport_photo", selectedPassportImage);
+			if (selectedPassportImage) submitData.append("passport_photo", selectedPassportImage);
 
 			if (personType === "repatriated") {
 				const response = await updateRepatriated(id, {
@@ -147,9 +115,7 @@ export function useImmigrantDetail(id: string) {
 					passport_photo: selectedPassportImage,
 				});
 				if (!response.success) {
-					throw new Error(
-						response.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล"
-					);
+					throw new Error(response.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
 				}
 			} else {
 				const response = await updateIllegal(id, {
@@ -158,9 +124,7 @@ export function useImmigrantDetail(id: string) {
 					passport_photo: selectedPassportImage,
 				});
 				if (!response.success) {
-					throw new Error(
-						response.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล"
-					);
+					throw new Error(response.message || "เกิดข้อผิดพลาดในการอัปเดตข้อมูล");
 				}
 			}
 			Swal.fire({
