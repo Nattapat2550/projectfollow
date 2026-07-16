@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { Camera as ImageIcon, Save, X } from "lucide-react"; // เปลี่ยนเป็น Camera ป้องกัน Error เวอร์ชัน
 import { useRouter } from "next/navigation";
-import { Save, X, Camera as ImageIcon } from "lucide-react"; // เปลี่ยนเป็น Camera ป้องกัน Error เวอร์ชัน
-import { useAddressOptions } from "@/hooks/useAddressOptions";
+import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
+
 import AutocompleteInput from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
-import Swal from "sweetalert2";
+import { useAddressOptions } from "@/hooks/useAddressOptions";
 
 interface ImmigrantEditFormProps {
 	id: string;
@@ -33,8 +34,7 @@ export default function ImmigrantEditForm({
 	onSaveSuccess,
 }: ImmigrantEditFormProps) {
 	const router = useRouter();
-	const backendUrl =
-		process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+	const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 	// 🟢 ฟังก์ชันแปลงลิงก์อัจฉริยะ (ดึงมาจากหน้าการ์ดที่แสดงผลได้สำเร็จ)
 	const getFullImageUrl = (url: string) => {
@@ -74,9 +74,7 @@ export default function ImmigrantEditForm({
 	const [isSaving, setIsSaving] = useState(false);
 
 	const [imagePreview, setImagePreview] = useState<string | null>(null);
-	const [passportImagePreview, setPassportImagePreview] = useState<
-		string | null
-	>(null);
+	const [passportImagePreview, setPassportImagePreview] = useState<string | null>(null);
 	const [imageFile, setImageFile] = useState<File | null>(null);
 	const [passportFile, setPassportFile] = useState<File | null>(null);
 
@@ -85,33 +83,25 @@ export default function ImmigrantEditForm({
 			const startingData = { ...initialData };
 
 			if (startingData.detected_date)
-				startingData.detected_date = formatDateForInput(
-					startingData.detected_date
-				);
+				startingData.detected_date = formatDateForInput(startingData.detected_date);
 			if (startingData.date_of_birth)
-				startingData.date_of_birth = formatDateForInput(
-					startingData.date_of_birth
-				);
+				startingData.date_of_birth = formatDateForInput(startingData.date_of_birth);
 			if (startingData.return_date)
 				startingData.return_date = formatDateForInput(startingData.return_date);
 
 			setFormData(startingData);
 
 			// เรียกใช้ฟังก์ชันแปลงลิงก์ใหม่ตอนดึงข้อมูลเก่ามาใส่ฟอร์ม
-			if (startingData.photo_url)
-				setImagePreview(getFullImageUrl(startingData.photo_url));
+			if (startingData.photo_url) setImagePreview(getFullImageUrl(startingData.photo_url));
 			if (startingData.passport_photo_url)
-				setPassportImagePreview(
-					getFullImageUrl(startingData.passport_photo_url)
-				);
+				setPassportImagePreview(getFullImageUrl(startingData.passport_photo_url));
 		}
 	}, [initialData]);
 
 	const defaultImage = personType === "illegal" ? "/enter.png" : "/return.png";
 	const inputClass =
 		"w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all dark:[color-scheme:dark]";
-	const labelClass =
-		"block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
+	const labelClass = "block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
 
 	const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(
 		formData.province || "",
@@ -138,9 +128,7 @@ export default function ImmigrantEditForm({
 		}
 	};
 
-	const handlePassportImageChange = (
-		e: React.ChangeEvent<HTMLInputElement>
-	) => {
+	const handlePassportImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
 			setPassportFile(e.target.files[0]);
 			setPassportImagePreview(URL.createObjectURL(e.target.files[0]));
@@ -201,17 +189,14 @@ export default function ImmigrantEditForm({
 			// 🟢 1. ดึง token จาก localStorage เหมือนหน้าอื่นๆ (cookie เป็น HttpOnly อ่านจาก JS ไม่ได้)
 			const token = localStorage.getItem("token");
 
-			const res = await fetch(
-				`${backendUrl}/api/v1/immigrants/${personType}/${id}`,
-				{
-					method: "PUT",
-					// 🟢 2. เพิ่ม headers และแนบ token เข้าไป
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-					body: submitData,
-				}
-			);
+			const res = await fetch(`${backendUrl}/api/v1/immigrants/${personType}/${id}`, {
+				method: "PUT",
+				// 🟢 2. เพิ่ม headers และแนบ token เข้าไป
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+				body: submitData,
+			});
 
 			if (!res.ok) {
 				const errData = await res.json().catch(() => ({}));
@@ -268,8 +253,7 @@ export default function ImmigrantEditForm({
 								/>
 								{/* ล็อกสีปุ่มให้อยู่ในโทนเข้มเสมอกับพื้นหลังขาว */}
 								<label className="flex cursor-pointer items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm text-white hover:opacity-90">
-									<ImageIcon size={16} />{" "}
-									{imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
+									<ImageIcon size={16} /> {imagePreview ? "แก้ไขรูปประจำตัว" : "อัปโหลดรูปประจำตัว"}
 									<input
 										type="file"
 										accept="image/*"
@@ -297,9 +281,7 @@ export default function ImmigrantEditForm({
 								{/* ล็อกสีปุ่มให้อยู่ในโทนเข้มเสมอกับพื้นหลังขาว */}
 								<label className="flex cursor-pointer items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm text-white hover:opacity-90">
 									<ImageIcon size={16} />{" "}
-									{passportImagePreview ?
-										"แก้ไขรูปพาสปอร์ต"
-									:	"อัปโหลดรูปพาสปอร์ต"}
+									{passportImagePreview ? "แก้ไขรูปพาสปอร์ต" : "อัปโหลดรูปพาสปอร์ต"}
 									<input
 										type="file"
 										accept="image/*"
@@ -519,9 +501,7 @@ export default function ImmigrantEditForm({
 							</div>
 
 							<div className="mb-5">
-								<label className={labelClass}>
-									บันทึกรายละเอียดผลการคัดกรอง
-								</label>
+								<label className={labelClass}>บันทึกรายละเอียดผลการคัดกรอง</label>
 								<textarea
 									name="screening_details"
 									value={formData.screening_details || ""}
@@ -692,9 +672,7 @@ export default function ImmigrantEditForm({
 									/>
 								</div>
 								<div>
-									<label className={labelClass}>
-										วิธีชำระเงิน (Payment Method)
-									</label>
+									<label className={labelClass}>วิธีชำระเงิน (Payment Method)</label>
 									<input
 										type="text"
 										name="payment_method"
@@ -756,9 +734,7 @@ export default function ImmigrantEditForm({
 
 							<div className="mb-5 grid grid-cols-1 gap-5 md:grid-cols-1">
 								<div>
-									<label className={labelClass}>
-										สถานะผู้เสียหาย (Victim Status)
-									</label>
+									<label className={labelClass}>สถานะผู้เสียหาย (Victim Status)</label>
 									<select
 										name="is_victim"
 										value={formData.is_victim || "PENDING"}
@@ -799,8 +775,7 @@ export default function ImmigrantEditForm({
 							disabled={isSaving}
 							className="text-background flex cursor-pointer items-center gap-1.5 rounded-lg bg-(--header) px-4 py-2 text-sm font-bold transition hover:opacity-90 disabled:opacity-50"
 						>
-							<Save size={16} />{" "}
-							{isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
+							<Save size={16} /> {isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
 						</button>
 					</div>
 				</form>

@@ -1,22 +1,45 @@
 "use client";
 
-import { ImageIcon, Plus, X } from "lucide-react";
-import Image from "next/image";
+import { ImageIcon, X } from "lucide-react";
+import Image, { ImageProps } from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
+type SingleImageFieldProps = {
+	file: File | undefined | null;
+	setFile: React.Dispatch<React.SetStateAction<File | null>>;
+	previewUrl: string;
+	onChange?: React.ChangeEventHandler<HTMLInputElement>;
+	onRemove?: () => void;
+	uploadLabel: string;
+	editLabel: string;
+	removeLabel: string;
+	uploadIcon?: React.ReactElement;
+	editIcon?: React.ReactElement;
+	removeIcon?: React.ReactElement;
+	props?: Partial<ImageProps>;
+};
+
 export default function SingleImageField({
 	file,
+	setFile,
 	previewUrl,
-	onChange,
-	onRemove,
-}: {
-	file: File | undefined | null;
-	previewUrl: string;
-	onChange: React.ChangeEventHandler;
-	onRemove: () => void;
-}) {
+	onChange = (e) => {
+		const file = e.target.files?.[0];
+		if (file) setFile(file);
+	},
+	onRemove = () => {
+		setFile(null);
+	},
+	uploadLabel,
+	editLabel,
+	removeLabel,
+	uploadIcon = <ImageIcon size={16} />,
+	editIcon = <ImageIcon size={16} />,
+	removeIcon = <X size={16} />,
+	props,
+}: SingleImageFieldProps) {
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [dragover, setDragover] = useState(false);
 
@@ -31,7 +54,7 @@ export default function SingleImageField({
 	}, [file]);
 
 	return (
-		<div className="relative flex flex-wrap justify-center gap-4">
+		<div className="relative flex flex-col items-start gap-4">
 			<label
 				htmlFor="image-file-input"
 				className="group relative size-40"
@@ -54,10 +77,11 @@ export default function SingleImageField({
 				<div className="pointer-events-none relative size-40 select-none">
 					{/* Image */}
 					<Image
+						{...props}
 						src={file ? URL.createObjectURL(file) : previewUrl}
-						alt="Preview"
+						alt={props?.alt ?? "Image Preview"}
 						className={cn(
-							"size-40 rounded-xl border border-(--wrapper) object-cover shadow-sm",
+							"size-40 rounded-xl border border-gray-200 bg-white object-cover p-1 shadow-sm",
 							dragover ? "opacity-40" : "opacity-100"
 						)}
 						width={160}
@@ -75,37 +99,27 @@ export default function SingleImageField({
 				</div>
 			</label>
 			<div className="flex flex-col gap-2">
-				<div>{file ? file.name : "ไม่ระบุรูปภาพ"}</div>
-				{file ?
-					<div className="flex gap-4">
-						<label htmlFor="image-file-input">
-							<div
-								role="button"
-								className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-stone-200 px-4 py-2 text-sm font-bold text-slate-800 transition hover:opacity-90 active:scale-[0.98] dark:bg-stone-800 dark:text-slate-200"
-							>
-								<ImageIcon size={16} />
-								<span>เปลี่ยนรูป</span>
-							</div>
-						</label>
-						<button
-							type="button"
-							className="flex cursor-pointer items-center gap-1.5 rounded-lg border-(--redBorder) bg-(--redBG) px-4 py-2 text-sm font-bold text-(--redText) transition hover:opacity-90 active:scale-[0.98]"
-							onClick={onRemove}
-						>
-							<X size={16} />
-							<span>ลบรูป</span>
-						</button>
-					</div>
-				:	<label htmlFor="image-file-input">
+				<div className="flex flex-col gap-3">
+					<label htmlFor="image-file-input">
 						<div
 							role="button"
-							className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+							className="flex cursor-pointer items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm text-white hover:opacity-90"
 						>
-							<Plus size={16} />
-							<span>เพิ่มรูป</span>
+							{file ? editIcon : uploadIcon}
+							<span>{file ? editLabel : uploadLabel}</span>
 						</div>
 					</label>
-				}
+					{file && (
+						<button
+							type="button"
+							className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
+							onClick={onRemove}
+						>
+							{removeIcon}
+							<span>{removeLabel}</span>
+						</button>
+					)}
+				</div>
 			</div>
 		</div>
 	);
