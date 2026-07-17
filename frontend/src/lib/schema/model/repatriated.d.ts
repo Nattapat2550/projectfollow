@@ -31,13 +31,14 @@ interface RepatriatedData {
 
 	number_of_case: number;
 	number_of_warrant: number;
-	victim_indicator: string;
+	is_victim: string;
 	responsible_agency: string | undefined | null;
 
 	return_date: string | undefined | null;
 	channel: string | undefined | null;
 	note: string | undefined | null;
 	result: string;
+	screening_details: string;
 
 	created_at: string;
 	updated_at: string;
