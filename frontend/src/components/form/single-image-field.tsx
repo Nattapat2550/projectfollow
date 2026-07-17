@@ -39,7 +39,7 @@ export default function SingleImageField({
 	uploadIcon = <ImageIcon size={16} />,
 	editIcon = <ImageIcon size={16} />,
 	removeIcon = <X size={16} />,
-	deletable,
+	deletable = true,
 	props,
 }: SingleImageFieldProps) {
 	const inputRef = useRef<HTMLInputElement>(null);

@@ -6,28 +6,28 @@ import CreateForm, { FieldsLayout } from "@/components/form/create-form";
 import { AutocompleteOption } from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
-import { CreateRepatriatedRequest } from "@/lib/schema/repatriated";
+import { CreateIllegalRequest } from "@/lib/schema/illegal";
 
-export default function CreateRepatriatedPageForm({
+export default function CreateIllegalPageForm({
 	formData,
 	setFormData,
 	handleInputChange,
 }: {
-	formData: CreateRepatriatedRequest;
-	setFormData: React.Dispatch<React.SetStateAction<CreateRepatriatedRequest>>;
+	formData: CreateIllegalRequest;
+	setFormData: React.Dispatch<React.SetStateAction<CreateIllegalRequest>>;
 	handleInputChange: React.ChangeEventHandler;
 }) {
 	const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(
-		formData.province,
-		formData.district
+		formData.detected_location_province,
+		formData.detected_location_district
 	);
 
 	const handleSelectDistrict = (opt: AutocompleteOption) => {
 		const { district, province } = opt.extra;
 		setFormData((prev) => ({
 			...prev,
-			district,
-			province,
+			detected_location_district: district,
+			detected_location_province: province,
 		}));
 	};
 
@@ -35,13 +35,13 @@ export default function CreateRepatriatedPageForm({
 		const { subDistrict, district, province } = opt.extra;
 		setFormData((prev) => ({
 			...prev,
-			sub_district: subDistrict,
-			district,
-			province,
+			detected_location_sub_district: subDistrict,
+			detected_location_district: district,
+			detected_location_province: province,
 		}));
 	};
 
-	const layout: FieldsLayout<CreateRepatriatedRequest> = [
+	const layout: FieldsLayout<CreateIllegalRequest> = [
 		{
 			heading: "ข้อมูลส่วนบุคคลและชื่อ-นามสกุล",
 			inputs: [
@@ -74,20 +74,19 @@ export default function CreateRepatriatedPageForm({
 						],
 					},
 				],
-				[
-					{ label: "วันเดือนปีเกิด", name: "date_of_birth", type: "date" },
-					{ label: "อายุปัจจุบัน (ปี)", name: "age", type: "number" },
-					{ label: "เลขประจำตัวประชาชน *", name: "national_id", required: true },
-				],
 			],
 		},
 		{
-			heading: " รายละเอียดที่อยู่และการทำงาน ",
+			heading: "รายละเอียดจุดตรวจเจอและการคัดกรอง",
 			inputs: [
+				[
+					{ label: "วันที่ตรวจพบ", name: "detected_date", type: "date" },
+					{ label: "สถานที่ทำงานปลายทาง", name: "workplace" },
+				],
 				[
 					{
 						label: "รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *",
-						name: "address_details",
+						name: "detected_location_details",
 						component: "textarea",
 						required: true,
 						rows: 2,
@@ -96,53 +95,29 @@ export default function CreateRepatriatedPageForm({
 				[
 					{
 						label: "จังหวัด",
-						name: "province",
+						name: "detected_location_province",
 						component: "autocomplete",
 						options: provinces,
 					},
 					{
 						label: "เขต/อำเภอ",
-						name: "district",
+						name: "detected_location_district",
 						component: "autocomplete",
 						options: districtOptions,
 						onSelectOption: handleSelectDistrict,
 					},
 					{
 						label: "แขวง/ตำบล",
-						name: "sub_district",
+						name: "detected_location_sub_district",
 						component: "autocomplete",
 						options: subDistrictOptions,
 						onSelectOption: handleSelectSubDistrict,
 					},
 				],
-				[
-					{ label: "อาคาร (Building)", name: "building" },
-					{ label: "ชั้น (Floor)", name: "floor" },
-					{ label: "ห้อง (Room)", name: "room" },
-				],
-				[
-					{ label: "ประเภทงาน (Job Type)", name: "job_type" },
-					{ label: "หน้าที่ (Role)", name: "role" },
-				],
-				[
-					{ label: "เงินเดือน (Salary)", name: "salary", type: "number" },
-					{ label: "จ่ายโดย (Paid By)", name: "paid_by" },
-					{ label: "วิธีชำระเงิน (Payment Method)", name: "payment_method" },
-				],
-			],
-		},
-		{
-			heading: "รายละเอียดการส่งตัวและคดีความ",
-			inputs: [
-				[
-					{ label: "วันที่ส่งกลับประเทศ", name: "return_date", type: "date" },
-					{ label: "จำนวนเคสคดี", name: "number_of_case", type: "number" },
-					{ label: "จำนวนหมายจับ", name: "number_of_warrant", type: "number" },
-				],
-				[{ label: "หน่วยงานที่รับผิดชอบ", name: "responsible_agency" }],
+				[{ label: "สถานที่ทำงานปลายทาง", name: "workplace" }],
 				[
 					{
-						label: "สถานะผู้เสียหาย (Victim Status)",
+						label: "เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์",
 						name: "is_victim",
 						component: "select",
 						options: [
@@ -154,20 +129,13 @@ export default function CreateRepatriatedPageForm({
 				],
 				[
 					{
-						label: "รายละเอียดการคัดกรอง (Screening Details)",
+						label: "บันทึกรายละเอียดผลการคัดกรอง",
 						name: "screening_details",
 						component: "textarea",
-						rows: 3,
+						rows: 4,
 					},
 				],
-				[
-					{
-						label: "หมายเหตุเพิ่มเติม (Note)",
-						name: "note",
-						component: "textarea",
-						rows: 3,
-					},
-				],
+				[{ label: "หมายเหตุเพิ่มเติม (Note)", name: "note", component: "textarea", rows: 3 }],
 			],
 		},
 	];
