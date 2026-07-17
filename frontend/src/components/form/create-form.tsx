@@ -60,11 +60,14 @@ export default function CreateForm<T extends Record<string, string>>({
 				>
 					{g.map((i, idx) => (
 						<div key={idx}>
-							<label className={labelClass}>{i.label}</label>
+							<label className={labelClass} htmlFor={i.input ? undefined : String(i.name)}>
+								{i.label}
+							</label>
 							{i.input ?? (
 								<PrebuiltField
 									{...{
 										...i,
+										id: String(i.name),
 										value: formData[i.name] ?? "",
 										onChange: handleInputChange,
 										className: inputClass,

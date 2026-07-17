@@ -1,7 +1,7 @@
 "use client";
 
+import { ChevronDown, ChevronsUpDown, ChevronUp } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 
 export type SortField =
 	| "name"
@@ -117,7 +117,7 @@ export default function IllegalTable({
 										if (isExportMode) {
 											onToggleSelect?.(person.id);
 										} else {
-											router.push(`/immigrants/${person.id}`);
+											router.push(`/immigrants/illegal/${person.id}`);
 										}
 									}}
 									className="cursor-pointer transition-colors"

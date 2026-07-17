@@ -3,11 +3,11 @@
 import { Save, X } from "lucide-react";
 
 import SingleImageField from "@/components/form/single-image-field";
-import { RepatriatedDetail } from "@/hooks/useRepatriatedDetail";
+import { IllegalDetail } from "@/hooks/useIllegalDetail";
 
-import CreateRepatriatedPageForm from "../create/form";
+import CreateIllegalPageForm from "../create/form";
 
-export default function RepatriatedIDPageEditForm({ detail }: { detail: RepatriatedDetail }) {
+export default function IllegalIDPageEditForm({ detail }: { detail: IllegalDetail }) {
 	const { states, actions, handlers } = detail;
 
 	return (
@@ -45,7 +45,7 @@ export default function RepatriatedIDPageEditForm({ detail }: { detail: Repatria
 					</div>
 				</div>
 
-				<CreateRepatriatedPageForm
+				<CreateIllegalPageForm
 					formData={states.formData}
 					setFormData={actions.setFormData}
 					handleInputChange={handlers.handleInputChange}

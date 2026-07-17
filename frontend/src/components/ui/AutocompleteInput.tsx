@@ -9,6 +9,7 @@ export interface AutocompleteOption {
 }
 
 export interface AutocompleteInputProps {
+	id?: string;
 	name: string;
 	value: string;
 	options: (string | AutocompleteOption)[];
@@ -21,6 +22,7 @@ export interface AutocompleteInputProps {
 }
 
 export default function AutocompleteInput({
+	id,
 	name,
 	value,
 	options,
@@ -85,6 +87,7 @@ export default function AutocompleteInput({
 	return (
 		<div ref={wrapperRef} className="relative w-full">
 			<input
+				id={id}
 				type="text"
 				name={name}
 				value={search}

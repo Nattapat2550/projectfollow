@@ -25,7 +25,7 @@ export async function createIllegal(
 
 export async function updateIllegal(
 	id: string,
-	req: schema.UpdateIllegalRequest
+	req: schema.UpdateIllegalRequest & schema.UpdateIllegalRequestFile
 ): Promise<schema.UpdateIllegalResponse | ErrorResponse> {
 	const { token } = getClientAuthData();
 	if (!token) return { success: false, message: "token missing" };

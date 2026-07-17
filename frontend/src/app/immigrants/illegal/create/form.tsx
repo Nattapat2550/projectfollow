@@ -80,10 +80,6 @@ export default function CreateIllegalPageForm({
 			heading: "รายละเอียดจุดตรวจเจอและการคัดกรอง",
 			inputs: [
 				[
-					{ label: "วันที่ตรวจพบ", name: "detected_date", type: "date" },
-					{ label: "สถานที่ทำงานปลายทาง", name: "workplace" },
-				],
-				[
 					{
 						label: "รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *",
 						name: "detected_location_details",
@@ -114,7 +110,10 @@ export default function CreateIllegalPageForm({
 						onSelectOption: handleSelectSubDistrict,
 					},
 				],
-				[{ label: "สถานที่ทำงานปลายทาง", name: "workplace" }],
+				[
+					{ label: "วันที่ตรวจพบ", name: "detected_date", type: "date" },
+					{ label: "สถานที่ทำงานปลายทาง", name: "workplace" },
+				],
 				[
 					{
 						label: "เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์",

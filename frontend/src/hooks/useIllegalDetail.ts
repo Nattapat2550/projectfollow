@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import Swal from "sweetalert2";
 
 import { getValidImageUrl } from "@/lib/imageUrl";
-import { RepatriatedRequestData, UpdateRepatriatedRequest } from "@/lib/schema/repatriated";
-import { getRepatriatedById, updateRepatriated } from "@/lib/service/repatriated";
+import { IllegalRequestData, UpdateIllegalRequest } from "@/lib/schema/illegal";
+import { getIllegalById, updateIllegal } from "@/lib/service/illegal";
 
-function parseToFormValues(data: RepatriatedData | null): UpdateRepatriatedRequest {
+function parseToFormValues(data: Partial<IllegalData> | null): UpdateIllegalRequest {
 	return {
 		first_name_th: data?.first_name_th ?? "",
 		middle_name_th: data?.middle_name_th ?? "",
@@ -15,38 +15,28 @@ function parseToFormValues(data: RepatriatedData | null): UpdateRepatriatedReque
 		last_name_en: data?.last_name_en ?? "",
 		gender: data?.gender ?? "",
 		date_of_birth: data?.date_of_birth?.split("T")[0] ?? "",
-		national_id: data?.national_id ?? "",
 		passport_id: data?.passport_id ?? "",
 		nationality: data?.nationality ?? "",
 		photo_url: data?.photo_url ?? "",
 
-		address_details: data?.address_details ?? "",
-		sub_district: data?.sub_district ?? "",
-		district: data?.district ?? "",
-		province: data?.province ?? "",
-		building: data?.building ?? "",
-		floor: data?.floor ?? "",
-		room: data?.room ?? "",
-		job_type: data?.job_type ?? "",
-		role: data?.role ?? "",
+		detected_location_details: data?.detected_location_details ?? "",
+		detected_location_province: data?.detected_location_province ?? "",
+		detected_location_district: data?.detected_location_district ?? "",
+		detected_location_sub_district: data?.detected_location_sub_district ?? "",
 
-		salary: data?.salary ?? "",
-		paid_by: data?.paid_by ?? "",
-		payment_method: data?.payment_method ?? "",
+		detected_date: data?.detected_date?.split("T")[0] || "",
+		is_victim: data?.is_victim ?? "",
+		screening_details: data?.screening_details ?? "",
+		workplace: data?.workplace ?? "",
 
-		number_of_case: String(data?.number_of_case || 0),
-		number_of_warrant: String(data?.number_of_warrant || 0),
-		responsible_agency: data?.responsible_agency ?? "",
-
-		return_date: data?.return_date?.split("T")[0] ?? "",
 		note: data?.note ?? "",
 	};
 }
 
-export type RepatriatedDetail = {
+export type IllegalDetail = {
 	states: {
-		initData: RepatriatedData | null;
-		formData: RepatriatedRequestData;
+		initData: IllegalData | null;
+		formData: IllegalRequestData;
 		imagePreview: string | null;
 		passportImagePreview: string | null;
 		imageFile: File | null;
@@ -57,8 +47,8 @@ export type RepatriatedDetail = {
 		isSaving: boolean;
 	};
 	actions: {
-		fetchData: () => ReturnType<typeof getRepatriatedById>;
-		setFormData: React.Dispatch<React.SetStateAction<UpdateRepatriatedRequest>>;
+		fetchData: () => ReturnType<typeof getIllegalById>;
+		setFormData: React.Dispatch<React.SetStateAction<UpdateIllegalRequest>>;
 		setNote: React.Dispatch<React.SetStateAction<string>>;
 		setIsEditing: React.Dispatch<React.SetStateAction<boolean>>;
 		setImageFile: React.Dispatch<React.SetStateAction<File | null>>;
@@ -71,9 +61,9 @@ export type RepatriatedDetail = {
 	};
 };
 
-export function useRepatriatedDetail(id: string): RepatriatedDetail {
-	const [initData, setInitData] = useState<RepatriatedData | null>(null);
-	const [formData, setFormData] = useState<UpdateRepatriatedRequest>(parseToFormValues(initData));
+export function useIllegalDetail(id: string): IllegalDetail {
+	const [initData, setInitData] = useState<IllegalData | null>(null);
+	const [formData, setFormData] = useState<UpdateIllegalRequest>(parseToFormValues(initData));
 	const [note, setNote] = useState<string>("");
 	const [imagePreview, setImagePreview] = useState<string>("");
 	const [passportImagePreview, setPassportImagePreview] = useState<string>("");
@@ -84,7 +74,7 @@ export function useRepatriatedDetail(id: string): RepatriatedDetail {
 	const [isSaving, setIsSaving] = useState(false);
 
 	const fetchData = async () => {
-		const response = await getRepatriatedById(id);
+		const response = await getIllegalById(id);
 
 		const initData = response.success ? response.data : null;
 
@@ -111,7 +101,7 @@ export function useRepatriatedDetail(id: string): RepatriatedDetail {
 	const handleSave: React.SubmitEventHandler = async (e) => {
 		e.preventDefault();
 		setIsSaving(true);
-		const response = await updateRepatriated(id, {
+		const response = await updateIllegal(id, {
 			...formData,
 			photo: imageFile,
 			passport_photo: passportFile,
