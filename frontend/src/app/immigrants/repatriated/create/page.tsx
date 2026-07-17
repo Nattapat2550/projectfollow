@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import Swal from "sweetalert2";
 
 import SingleImageField from "@/components/form/single-image-field";
+import { initRepatriatedRequest } from "@/lib/initRequest";
 import { CreateRepatriatedRequest } from "@/lib/schema/repatriated";
 import { createRepatriated } from "@/lib/service/repatriated";
 
@@ -17,40 +18,9 @@ export default function CreateRepatriatedImmigrant() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
-	const [formData, setFormData] = useState<CreateRepatriatedRequest>({
-		first_name_th: "",
-		middle_name_th: "",
-		last_name_th: "",
-		first_name_en: "",
-		middle_name_en: "",
-		last_name_en: "",
-		passport_id: "",
-		nationality: "",
-		national_id: "",
-		gender: "",
-		date_of_birth: "",
-		age: "",
-		return_date: "",
-		number_of_case: "",
-		number_of_warrant: "",
-		address_details: "",
-		sub_district: "",
-		district: "",
-		province: "",
-		building: "",
-		floor: "",
-		room: "",
-		job_type: "",
-		role: "",
-		salary: "",
-		paid_by: "",
-		payment_method: "",
-		is_victim: "PENDING",
-		responsible_agency: "",
-		screening_details: "",
-		note: "",
-		photo_url: "",
-	});
+	const [formData, setFormData] = useState<CreateRepatriatedRequest>(
+		initRepatriatedRequest({ is_victim: "PENDING" })
+	);
 
 	const [selectedImage, setSelectedImage] = useState<File | null>(null);
 	const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);

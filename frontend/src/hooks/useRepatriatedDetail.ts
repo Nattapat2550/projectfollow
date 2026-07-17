@@ -2,46 +2,9 @@ import React, { useState } from "react";
 import Swal from "sweetalert2";
 
 import { getValidImageUrl } from "@/lib/imageUrl";
+import { parseRepatriatedToRequest } from "@/lib/initParse";
 import { RepatriatedRequestData, UpdateRepatriatedRequest } from "@/lib/schema/repatriated";
 import { getRepatriatedById, updateRepatriated } from "@/lib/service/repatriated";
-
-function parseToFormValues(data: RepatriatedData | null): UpdateRepatriatedRequest {
-	return {
-		first_name_th: data?.first_name_th ?? "",
-		middle_name_th: data?.middle_name_th ?? "",
-		last_name_th: data?.last_name_th ?? "",
-		first_name_en: data?.first_name_en ?? "",
-		middle_name_en: data?.middle_name_en ?? "",
-		last_name_en: data?.last_name_en ?? "",
-		gender: data?.gender ?? "",
-		date_of_birth: data?.date_of_birth?.split("T")[0] ?? "",
-		national_id: data?.national_id ?? "",
-		passport_id: data?.passport_id ?? "",
-		nationality: data?.nationality ?? "",
-		photo_url: data?.photo_url ?? "",
-
-		address_details: data?.address_details ?? "",
-		sub_district: data?.sub_district ?? "",
-		district: data?.district ?? "",
-		province: data?.province ?? "",
-		building: data?.building ?? "",
-		floor: data?.floor ?? "",
-		room: data?.room ?? "",
-		job_type: data?.job_type ?? "",
-		role: data?.role ?? "",
-
-		salary: data?.salary ?? "",
-		paid_by: data?.paid_by ?? "",
-		payment_method: data?.payment_method ?? "",
-
-		number_of_case: String(data?.number_of_case || 0),
-		number_of_warrant: String(data?.number_of_warrant || 0),
-		responsible_agency: data?.responsible_agency ?? "",
-
-		return_date: data?.return_date?.split("T")[0] ?? "",
-		note: data?.note ?? "",
-	};
-}
 
 export type RepatriatedDetail = {
 	states: {
@@ -73,7 +36,9 @@ export type RepatriatedDetail = {
 
 export function useRepatriatedDetail(id: string): RepatriatedDetail {
 	const [initData, setInitData] = useState<RepatriatedData | null>(null);
-	const [formData, setFormData] = useState<UpdateRepatriatedRequest>(parseToFormValues(initData));
+	const [formData, setFormData] = useState<UpdateRepatriatedRequest>(
+		parseRepatriatedToRequest(initData)
+	);
 	const [note, setNote] = useState<string>("");
 	const [imagePreview, setImagePreview] = useState<string>("");
 	const [passportImagePreview, setPassportImagePreview] = useState<string>("");
@@ -90,7 +55,7 @@ export function useRepatriatedDetail(id: string): RepatriatedDetail {
 
 		setIsFound(response.success);
 		setInitData(initData);
-		setFormData(parseToFormValues(initData));
+		setFormData(parseRepatriatedToRequest(initData));
 		setNote(initData?.note ?? "");
 		setImagePreview(getValidImageUrl(initData?.photo_url || "") ?? "");
 		setPassportImagePreview(getValidImageUrl(initData?.passport_photo_url || "") ?? "");

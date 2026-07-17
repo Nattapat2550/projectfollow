@@ -2,37 +2,9 @@ import React, { useState } from "react";
 import Swal from "sweetalert2";
 
 import { getValidImageUrl } from "@/lib/imageUrl";
+import { parseIllegalToRequest } from "@/lib/initParse";
 import { IllegalRequestData, UpdateIllegalRequest } from "@/lib/schema/illegal";
 import { getIllegalById, updateIllegal } from "@/lib/service/illegal";
-
-function parseToFormValues(data: Partial<IllegalData> | null): UpdateIllegalRequest {
-	return {
-		first_name_th: data?.first_name_th ?? "",
-		middle_name_th: data?.middle_name_th ?? "",
-		last_name_th: data?.last_name_th ?? "",
-		first_name_en: data?.first_name_en ?? "",
-		middle_name_en: data?.middle_name_en ?? "",
-		last_name_en: data?.last_name_en ?? "",
-		gender: data?.gender ?? "",
-		date_of_birth: data?.date_of_birth?.split("T")[0] ?? "",
-		passport_id: data?.passport_id ?? "",
-		nationality: data?.nationality ?? "",
-		photo_url: data?.photo_url ?? "",
-
-		detected_location_details: data?.detected_location_details ?? "",
-		detected_location_province: data?.detected_location_province ?? "",
-		detected_location_district: data?.detected_location_district ?? "",
-		detected_location_sub_district: data?.detected_location_sub_district ?? "",
-
-		detected_date: data?.detected_date?.split("T")[0] || "",
-		is_victim: data?.is_victim ?? "",
-		screening_details: data?.screening_details ?? "",
-		workplace: data?.workplace ?? "",
-
-		note: data?.note ?? "",
-	};
-}
-
 export type IllegalDetail = {
 	states: {
 		initData: IllegalData | null;
@@ -63,7 +35,7 @@ export type IllegalDetail = {
 
 export function useIllegalDetail(id: string): IllegalDetail {
 	const [initData, setInitData] = useState<IllegalData | null>(null);
-	const [formData, setFormData] = useState<UpdateIllegalRequest>(parseToFormValues(initData));
+	const [formData, setFormData] = useState<UpdateIllegalRequest>(parseIllegalToRequest(initData));
 	const [note, setNote] = useState<string>("");
 	const [imagePreview, setImagePreview] = useState<string>("");
 	const [passportImagePreview, setPassportImagePreview] = useState<string>("");
@@ -80,7 +52,7 @@ export function useIllegalDetail(id: string): IllegalDetail {
 
 		setIsFound(response.success);
 		setInitData(initData);
-		setFormData(parseToFormValues(initData));
+		setFormData(parseIllegalToRequest(initData));
 		setNote(initData?.note ?? "");
 		setImagePreview(getValidImageUrl(initData?.photo_url || "") ?? "");
 		setPassportImagePreview(getValidImageUrl(initData?.passport_photo_url || "") ?? "");

@@ -7,6 +7,7 @@ import { SubmitEventHandler, useState } from "react";
 import Swal from "sweetalert2";
 
 import SingleImageField from "@/components/form/single-image-field";
+import { initIllegalRequest } from "@/lib/initRequest";
 import { createIllegal } from "@/lib/service/illegal";
 
 import CreateIllegalPageForm from "./form";
@@ -16,28 +17,7 @@ export default function CreateIllegalImmigrant() {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
-	const [formData, setFormData] = useState({
-		first_name_th: "",
-		middle_name_th: "",
-		last_name_th: "",
-		first_name_en: "",
-		middle_name_en: "",
-		last_name_en: "",
-		passport_id: "",
-		date_of_birth: "",
-		gender: "",
-		nationality: "",
-		detected_date: "",
-		detected_location_details: "",
-		detected_location_sub_district: "",
-		detected_location_district: "",
-		detected_location_province: "",
-		is_victim: "PENDING",
-		workplace: "",
-		screening_details: "",
-		note: "",
-		photo_url: "",
-	});
+	const [formData, setFormData] = useState(initIllegalRequest({ is_victim: "PENDING" }));
 
 	const [selectedImage, setSelectedImage] = useState<File | null>(null);
 	const [selectedPassportImage, setSelectedPassportImage] = useState<File | null>(null);
