@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { Eye } from "lucide-react";
+import Link from "next/link";
 
 export const helperFormatDOBAndAge = (dob: string | null, age: number | string | null): string => {
-	let ageStr = age ? `${age} ปี` : "";
+	const ageStr = age ? `${age} ปี` : "";
 	if (dob) {
 		const d = new Date(dob);
 		if (!isNaN(d.getTime())) {

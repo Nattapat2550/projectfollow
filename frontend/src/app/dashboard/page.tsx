@@ -1,14 +1,15 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
+import { Suspense, useEffect, useState } from "react";
+
+// เปลี่ยนจาก DonutChart เป็น BarChart (ต้องสร้างไฟล์ BarChart ไว้ในตำแหน่งเดียวกัน)
+import BarChart from "@/components/dashboard/BarChart";
+import LineChart from "@/components/dashboard/LineChart";
 import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
 import RepatriatedTable, {
 	SortField as RepatriatedSortField,
 } from "@/components/immigrants/RepatriatedTable";
-// เปลี่ยนจาก DonutChart เป็น BarChart (ต้องสร้างไฟล์ BarChart ไว้ในตำแหน่งเดียวกัน)
-import BarChart from "@/components/dashboard/BarChart";
-import LineChart from "@/components/dashboard/LineChart";
 import { useDashboard } from "@/hooks/useDashboard";
 
 function DashboardContent() {

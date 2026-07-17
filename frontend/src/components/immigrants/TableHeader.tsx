@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export type SortField =
 	| "name"

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import { Loader2, ServerCrash } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 export default function ServerAwaker({ children }: { children: React.ReactNode }) {
 	const [isServerAlive, setIsServerAlive] = useState<boolean | null>(null);

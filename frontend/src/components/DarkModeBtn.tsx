@@ -1,7 +1,7 @@
 "use client";
 
+import { Moon, Sun } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Sun, Moon } from "lucide-react";
 
 const DarkModeBtn = () => {
 	const [theme, setTheme] = useState("light");

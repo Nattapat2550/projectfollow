@@ -1,8 +1,9 @@
 "use client";
 
+import { useTableSort } from "@/hooks/useTableSort"; // 🟢 ดึง hook ใหม่มาใช้ (แก้ไข path ตามจริง)
+
 import TableHeader from "./TableHeader";
 import TableRow from "./TableRow";
-import { useTableSort } from "@/hooks/useTableSort"; // 🟢 ดึง hook ใหม่มาใช้ (แก้ไข path ตามจริง)
 
 interface ImmigrantsTableProps {
 	data: any[];

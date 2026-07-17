@@ -1,7 +1,5 @@
 "use client";
 
-import RepatriatedPage from "./immigrants/repatriated/page";
-import IllegalPage from "./immigrants/illegal/page";
 import Link from "next/link";
 
 export default function Home() {

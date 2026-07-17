@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+
 import { Sarabun } from "next/font/google";
+
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { cn } from "@/lib/utils";
-import TopBar from "@/components/TopBar";
 import ServerAwaker from "@/components/ServerAwaker"; // ✨ นำเข้า ServerAwaker
+import { ThemeProvider } from "@/components/theme-provider";
+import TopBar from "@/components/TopBar";
+import { cn } from "@/lib/utils";
 
 const sarabun = Sarabun({
 	variable: "--font-sarabun",

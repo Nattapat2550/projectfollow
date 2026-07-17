@@ -1,4 +1,5 @@
 import React from "react";
+
 import { ChartItem } from "@/hooks/useDashboard";
 
 export default function LineChart({ data, title }: { data: ChartItem[]; title: string }) {

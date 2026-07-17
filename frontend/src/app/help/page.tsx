@@ -1,9 +1,11 @@
-import React from "react";
 import fs from "fs";
-import path from "path";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import styles from "./help.module.css"; // 1. Import your CSS module!
+import path from "path";
+import React from "react";
+
 import { MdxComponents } from "@/components/help/Mdx";
+
+import styles from "./help.module.css"; // 1. Import your CSS module!
 
 function getHelpMdxContent() {
 	const filePath = path.join(process.cwd(), "public", "helpMD", "mainpage.mdx");
