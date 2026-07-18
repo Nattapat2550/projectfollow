@@ -138,7 +138,7 @@ export function useImmigrantDetail(id: string) {
 			setSelectedImage(null);
 			setSelectedPassportImage(null);
 			fetchData();
-		} catch (error) {
+		} catch (error: any) {
 			Swal.fire({
 				icon: "error",
 				title: "เกิดข้อผิดพลาด",
