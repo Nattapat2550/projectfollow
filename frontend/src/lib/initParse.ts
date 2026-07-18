@@ -68,6 +68,6 @@ export function parseRepatriatedToRequest(
 		return_date: data?.return_date?.split("T")[0],
 		note: data?.note ?? "",
 		screening_details: data?.screening_details ?? "",
-		is_victim: data?.is_victim ?? "",
+		is_victim: data?.is_victim ?? "PENDING",
 	});
 }

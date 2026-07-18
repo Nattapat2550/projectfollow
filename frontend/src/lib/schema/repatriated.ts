@@ -10,7 +10,10 @@ type RepatriatedOmited = Omit<
 	| "passport_photo_url"
 >;
 
-export type RepatriatedRequestData = Record<keyof RepatriatedOmited, string> & {
+export type RepatriatedRequestData = {
+	[key in keyof RepatriatedOmited]: RepatriatedOmited[key] extends string ? RepatriatedOmited[key]
+	:	string;
+} & {
 	age?: string;
 	is_victim?: string;
 	screening_details?: string;

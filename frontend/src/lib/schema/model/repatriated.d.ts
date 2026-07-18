@@ -31,7 +31,7 @@ interface RepatriatedData {
 
 	number_of_case: number;
 	number_of_warrant: number;
-	is_victim: string;
+	is_victim: "YES" | "NO" | "PENDING";
 	responsible_agency: string | undefined | null;
 
 	return_date: string | undefined | null;

@@ -19,7 +19,7 @@ interface IllegalData {
 	detected_location_sub_district: string;
 	detected_location_district: string;
 	detected_location_province: string;
-	is_victim: string;
+	is_victim: "YES" | "NO" | "PENDING";
 	detected_date: string;
 	workplace: string;
 	screening_details: string;

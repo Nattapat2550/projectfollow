@@ -2,7 +2,9 @@ import { IllegalRequestData } from "./schema/illegal";
 import { RepatriatedRequestData } from "./schema/repatriated";
 
 export function initIllegalRequest(
-	data: Partial<Record<keyof IllegalRequestData, string | null | undefined>> | null
+	data: Partial<{
+		[key in keyof IllegalRequestData]: IllegalRequestData[key] | null | undefined;
+	}> | null
 ): IllegalRequestData {
 	return {
 		first_name_th: data?.first_name_th ?? "",
@@ -23,7 +25,7 @@ export function initIllegalRequest(
 		detected_location_sub_district: data?.detected_location_sub_district ?? "",
 
 		detected_date: data?.detected_date ?? "",
-		is_victim: data?.is_victim ?? "",
+		is_victim: data?.is_victim ?? "PENDING",
 		screening_details: data?.screening_details ?? "",
 		workplace: data?.workplace ?? "",
 
@@ -33,7 +35,9 @@ export function initIllegalRequest(
 }
 
 export function initRepatriatedRequest(
-	data: Partial<Record<keyof RepatriatedRequestData, string | null | undefined>> | null
+	data: Partial<{
+		[key in keyof RepatriatedRequestData]: RepatriatedRequestData[key] | null | undefined;
+	}> | null
 ): RepatriatedRequestData {
 	return {
 		first_name_th: data?.first_name_th ?? "",
@@ -70,7 +74,7 @@ export function initRepatriatedRequest(
 		return_date: data?.return_date ?? "",
 		note: data?.note ?? "",
 		age: data?.age ?? "",
-		is_victim: data?.is_victim ?? "",
+		is_victim: data?.is_victim ?? "PENDING",
 		screening_details: data?.screening_details ?? "",
 	};
 }

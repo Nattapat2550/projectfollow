@@ -12,7 +12,9 @@ type IllegalOmited = Omit<
 	| "passport_photo_url"
 >;
 
-export type IllegalRequestData = Record<keyof IllegalOmited, string> & {
+export type IllegalRequestData = {
+	[key in keyof IllegalOmited]: IllegalOmited[key] extends string ? IllegalOmited[key] : string;
+} & {
 	age?: string;
 };
 
