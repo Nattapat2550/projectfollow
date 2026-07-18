@@ -55,7 +55,15 @@ export default function CreateForm<T extends Record<string, string>>({
 			<h3 className="mt-8 mb-4 text-xl font-bold text-(--header)">{e.heading}</h3>
 			{e.inputs.map((g, idx) => (
 				<div
-					className={cn("mb-5", g.length > 1 && `grid grid-cols-1 gap-5 md:grid-cols-${g.length}`)}
+					className={cn(
+						"mb-5 grid grid-cols-1 gap-5",
+						g.length > 1 ?
+							g.length == 2 ? `md:grid-cols-2`
+							: g.length == 3 ? `md:grid-cols-3`
+							: g.length == 4 ? `md:grid-cols-4`
+							: `md:grid-cols-5`
+						:	""
+					)}
 					key={idx}
 				>
 					{g.map((i, idx) => (
