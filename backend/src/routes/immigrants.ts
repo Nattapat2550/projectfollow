@@ -24,8 +24,8 @@ router.get("/dashboard", immigrantController.getDashboardData);
 // ----------------------------------------------------
 // Illegal (แอบเข้าเมือง)
 // ----------------------------------------------------
-router.get("/illegal/:id", illegal.getIllegalById);
-// 🟢 ใส่ protect เข้าไปก่อนหน้าฟังก์ชัน controller
+router.get("/illegal", protect, illegal.getAllIllegal);
+router.get("/illegal/:id", protect, illegal.getIllegalById);
 router.post(
   "/illegal",
   protect,
@@ -59,7 +59,8 @@ router.get("/upload-progress/:jobId", illegalController.getUploadProgress);
 // ----------------------------------------------------
 // Repatriated (ส่งกลับ)
 // ----------------------------------------------------
-router.get("/repatriated/:id", repatriated.getRepatriatedById);
+router.get("/repatriated", protect, repatriated.getAllRepatriated);
+router.get("/repatriated/:id", protect, repatriated.getRepatriatedById);
 router.post(
   "/repatriated",
   protect,

@@ -3,10 +3,10 @@
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
-import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCard";
 import { RepatriatedDetail } from "@/hooks/useRepatriatedDetail";
 import { cn } from "@/lib/utils";
 
+import RepatriatedIDPageCard from "./card";
 import RepatriatedIDPageEditForm from "./form";
 
 export default function RepatriatedIDPageDetail({ detail }: { detail: RepatriatedDetail }) {
@@ -37,7 +37,7 @@ export default function RepatriatedIDPageDetail({ detail }: { detail: Repatriate
 				<RepatriatedIDPageEditForm detail={detail} />
 			:	<div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-8 lg:grid-cols-12">
 					<div className="w-full lg:col-span-7 xl:col-span-8">
-						<UniversalImmigrantCard data={states.initData} type={"repatriated"} />
+						<RepatriatedIDPageCard data={states.initData} />
 					</div>
 					<div className="w-full lg:col-span-5 xl:col-span-4">
 						<RightPanel detail={detail} />

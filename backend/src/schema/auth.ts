@@ -1,23 +1,23 @@
 export type RegisterRequest = {
-  name: string;
-  password: string;
-  role: string;
-  color: string;
+	name: string;
+	password: string;
+	role: string;
+	color: string;
 };
 export type RegisterResponse = {
-  success: true;
-  token: string;
-  user: User;
+	success: true;
+	token: string;
+	user: User;
 };
 
 export type LoginRequest = {
-  name: string;
-  password: string;
+	name: string;
+	password: string;
 };
 export type LoginResponse = {
-  success: true;
-  token: string;
-  user: User;
+	success: true;
+	token: string;
+	user: User;
 };
 
 export type LogoutResponse = { success: true };

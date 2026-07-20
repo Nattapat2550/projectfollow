@@ -10,13 +10,17 @@ export const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localho
 export async function fetchWrapper<T>(
 	input: string | URL | Request,
 	init?: RequestInit,
-	searchParams?: Record<string, string>
+	searchParams?: Record<string, string | undefined | null>
 ): Promise<T | ErrorResponse> {
 	try {
 		let url = `${backendUrl}${input}`;
 
 		if (searchParams) {
-			url = `${url}?${new URLSearchParams(searchParams).toString()}`;
+			const params = new URLSearchParams();
+			for (const [key, value] of Object.entries(searchParams)) {
+				if (value) params.append(key, value);
+			}
+			url = `${url}?${params.toString()}`;
 		}
 
 		const response = await fetch(url, init);

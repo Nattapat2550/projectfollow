@@ -3,10 +3,10 @@
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
-import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCard";
 import { IllegalDetail } from "@/hooks/useIllegalDetail";
 import { cn } from "@/lib/utils";
 
+import IllegalIDPageCard from "./card";
 import IllegalIDPageEditForm from "./form";
 
 export default function IllegalIDPageDetail({ detail }: { detail: IllegalDetail }) {
@@ -37,7 +37,7 @@ export default function IllegalIDPageDetail({ detail }: { detail: IllegalDetail 
 				<IllegalIDPageEditForm detail={detail} />
 			:	<div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-8 lg:grid-cols-12">
 					<div className="w-full lg:col-span-7 xl:col-span-8">
-						<UniversalImmigrantCard data={states.initData} type={"illegal"} />
+						<IllegalIDPageCard data={detail.states.initData} />
 					</div>
 					<div className="w-full lg:col-span-5 xl:col-span-4">
 						<RightPanel detail={detail} />

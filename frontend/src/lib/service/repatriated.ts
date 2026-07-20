@@ -2,6 +2,15 @@ import { getClientAuthData } from "../client/auth";
 import * as schema from "../schema/repatriated";
 import { fetchWrapper, withAuthHeader, withFormDataBody } from "../utils";
 
+export async function getAllRepatriated(
+	query: schema.GetAllRepatriatedRequestQuery
+): Promise<schema.GetAllRepatriatedResponse | ErrorResponse> {
+	const { token } = getClientAuthData();
+	if (!token) return { success: false, message: "token missing" };
+
+	return fetchWrapper(`/api/v1/immigrants/repatriated`, withAuthHeader(token), query);
+}
+
 export async function getRepatriatedById(
 	id: string
 ): Promise<schema.GetRepatriatedByIdResponse | ErrorResponse> {

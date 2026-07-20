@@ -45,7 +45,7 @@ export type SortField =
 	| "is_victim";
 
 interface RepatriatedTableProps {
-	data: any[];
+	data: RepatriatedData[];
 	sortField: SortField | null;
 	sortDirection: "asc" | "desc";
 	onSort: (field: SortField) => void;

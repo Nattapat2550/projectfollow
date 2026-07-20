@@ -3,13 +3,14 @@
 import { toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 
 import RepatriatedTable, { SortField } from "@/components/immigrants/RepatriatedTable";
 import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCard";
+import { GetAllRepatriatedResponse } from "@/lib/schema/repatriated";
+import { getAllRepatriated } from "@/lib/service/repatriated";
 const repatriatedTranslationMap: { [key: string]: string } = {
 	id: "รหัสอ้างอิงระบบ",
 	first_name_th: "ชื่อจริง (ภาษาไทย)",
@@ -53,20 +54,17 @@ const repatriatedTranslationMap: { [key: string]: string } = {
 	creator_color: "สีประจำตัวผู้บันทึก",
 };
 
-const formatValue = (key: string, val: any) => {
+const formatValue = (key: string, val: RepatriatedData[keyof RepatriatedData]): string => {
 	if (val === null || val === undefined) return "-";
 	if (key.includes("date") && typeof val === "string" && !isNaN(Date.parse(val))) {
 		return new Date(val).toLocaleDateString("th-TH");
 	}
-	if (val === true || val === "true") return "ใช่";
-	if (val === false || val === "false") return "ไม่ใช่";
-	return val;
+
+	return String(val);
 };
 
 function RepatriatedPageContent() {
-	const router = useRouter();
-	const searchParams = useSearchParams();
-	const [data, setData] = useState<any>(null);
+	const [data, setData] = useState<GetAllRepatriatedResponse | null>(null);
 
 	const [loading, setLoading] = useState(true);
 	const [isUpdating, setIsUpdating] = useState(false);
@@ -81,69 +79,41 @@ function RepatriatedPageContent() {
 	const [debouncedSearch, setDebouncedSearch] = useState("");
 
 	const [isExportMode, setIsExportMode] = useState(false);
-	const [selectedRows, setSelectedRows] = useState<any[]>([]);
+	const [selectedRows, setSelectedRows] = useState<RepatriatedData[]>([]);
 	const [isExporting, setIsExporting] = useState(false);
-	const [isLoggedIn, setIsLoggedIn] = useState(false);
 
 	const selectedIds = selectedRows.map((r) => r.id);
 
 	useEffect(() => {
-		const token = document.cookie
-			.split("; ")
-			.find((row) => row.startsWith("token="))
-			?.split("=")[1];
-		setIsLoggedIn(!!token && token !== "null");
-	}, []);
-
-	useEffect(() => {
 		const timer = setTimeout(() => {
 			setDebouncedSearch(searchTerm);
+			setCurrentPage(1);
 		}, 500);
 		return () => clearTimeout(timer);
 	}, [searchTerm]);
 
 	useEffect(() => {
-		setCurrentPage(1);
-	}, [debouncedSearch]);
-
-	useEffect(() => {
 		const fetchData = async () => {
-			try {
-				setError(null);
-				if (!data) setLoading(true);
-				else setIsUpdating(true);
+			setError(null);
+			if (!data) setLoading(true);
+			else setIsUpdating(true);
 
-				const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+			const response = await getAllRepatriated({
+				page: currentPage.toString(),
+				limit: "50",
+				sortBy: sortField ?? undefined,
+				sortOrder: sortDirection,
+				search: debouncedSearch.trim(),
+			});
 
-				const params = new URLSearchParams({
-					type: "repatriated",
-					page: currentPage.toString(),
-					limit: "50",
-				});
-
-				if (sortField) {
-					params.append("sortBy", sortField);
-					params.append("sortOrder", sortDirection);
-				}
-
-				if (debouncedSearch.trim()) {
-					params.append("search", debouncedSearch.trim());
-				}
-
-				const res = await fetch(`${backendUrl}/api/v1/immigrants/dashboard?${params.toString()}`, {
-					cache: "no-store",
-				});
-				if (!res.ok) throw new Error("ไม่สามารถโหลดข้อมูลจากเซิร์ฟเวอร์ได้");
-
-				const json = await res.json();
-				setData(json);
-			} catch (err: any) {
-				console.error("Fetch Error:", err);
-				setError(err.message);
-			} finally {
-				setLoading(false);
-				setIsUpdating(false);
+			if (response.success) {
+				setData(response);
+			} else {
+				console.error("Fetch Error:", response.message);
+				setError(response.message);
 			}
+			setLoading(false);
+			setIsUpdating(false);
 		};
 
 		fetchData();
@@ -162,8 +132,6 @@ function RepatriatedPageContent() {
 
 	const handlePageChange = (newPage: number) => {
 		setCurrentPage(newPage);
-		// setIsExportMode(false);
-		// setSelectedRows([]);
 	};
 
 	const handleCancelExport = () => {
@@ -176,7 +144,7 @@ function RepatriatedPageContent() {
 		if (isSelected) {
 			setSelectedRows((prev) => prev.filter((r) => r.id !== id));
 		} else {
-			const person = tableRows.find((r: any) => r.id === id);
+			const person = tableRows.find((r) => r.id === id);
 			if (person) setSelectedRows((prev) => [...prev, person]);
 		}
 	};
@@ -184,12 +152,12 @@ function RepatriatedPageContent() {
 	const handleSelectAll = (selectAll: boolean) => {
 		if (selectAll) {
 			const newRows = [...selectedRows];
-			tableRows.forEach((r: any) => {
+			tableRows.forEach((r) => {
 				if (!newRows.some((nr) => nr.id === r.id)) newRows.push(r);
 			});
 			setSelectedRows(newRows);
 		} else {
-			const currentViewIds = tableRows.map((r: any) => r.id);
+			const currentViewIds = tableRows.map((r) => r.id);
 			setSelectedRows((prev) => prev.filter((r) => !currentViewIds.includes(r.id)));
 		}
 	};
@@ -225,8 +193,8 @@ function RepatriatedPageContent() {
 			});
 			setTimeout(() => {
 				try {
-					const selectedData = selectedRows.map((person: any) => {
-						const row: any = {};
+					const selectedData = selectedRows.map((person) => {
+						const row: Record<string, string> = {};
 						const formattedKeys = [
 							"first_name_th",
 							"middle_name_th",
@@ -258,24 +226,14 @@ function RepatriatedPageContent() {
 						row["วันที่ส่งกลับ"] =
 							person.return_date ? new Date(person.return_date).toLocaleDateString("th-TH") : "-";
 						row["สถานะผู้เสียหาย"] =
-							(
-								person.is_victim === "YES"
-								|| person.is_victim === true
-								|| person.is_victim === "true"
-							) ?
-								"เป็นผู้เสียหาย"
-							: (
-								person.is_victim === "NO"
-								|| person.is_victim === false
-								|| person.is_victim === "false"
-							) ?
-								"ไม่เป็นผู้เสียหาย"
-							:	"ไม่คัดกรองสถานะ";
+							person.is_victim === "YES" ? "เป็นผู้เสียหาย"
+							: person.is_victim === "NO" ? "ไม่เป็นผู้เสียหาย"
+							: "ไม่คัดกรองสถานะ";
 
 						Object.keys(person).forEach((key) => {
 							if (!formattedKeys.includes(key)) {
 								const thaiKey = repatriatedTranslationMap[key] || key;
-								row[thaiKey] = formatValue(key, person[key]);
+								row[thaiKey] = formatValue(key, person[key as keyof RepatriatedData]);
 							}
 						});
 						return row;
@@ -302,7 +260,7 @@ function RepatriatedPageContent() {
 				didOpen: () => Swal.showLoading(),
 			});
 			try {
-				let pdf: any = null;
+				let pdf: jsPDF | null = null;
 				for (let i = 0; i < selectedRows.length; i++) {
 					const id = selectedRows[i].id;
 					const element = document.getElementById(`pdf-card-${id}`);
@@ -345,7 +303,7 @@ function RepatriatedPageContent() {
 		}
 	};
 
-	const tableRows = (data?.tableData || []).map((item: any) => {
+	const tableRows = (data?.tableData || []).map((item) => {
 		const firstName =
 			!item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ" ?
 				item.first_name_en || "ไม่ระบุ"
@@ -367,7 +325,6 @@ function RepatriatedPageContent() {
 	const totalPages = data?.meta?.totalPages || 1;
 
 	return (
-		// ปรับให้กว้างเต็มจอ และลบ max-w-7xl ออก พร้อมใส่สีพื้นหลัง Wrapper
 		<div
 			className="text-foreground w-full p-4 sm:p-6"
 			style={{
@@ -416,10 +373,6 @@ function RepatriatedPageContent() {
 							:	<>
 									<button
 										onClick={() => {
-											if (!isLoggedIn) {
-												router.push("/login");
-												return;
-											}
 											setIsExportMode(true);
 										}}
 										className="cursor-pointer rounded-sm bg-zinc-800 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 dark:bg-zinc-200 dark:text-zinc-900"
@@ -606,7 +559,7 @@ function RepatriatedPageContent() {
 						fontFamily: "'Sarabun', sans-serif",
 					}}
 				>
-					{selectedRows.map((person: any) => (
+					{selectedRows.map((person) => (
 						<div
 							key={person.id}
 							id={`pdf-card-${person.id}`}

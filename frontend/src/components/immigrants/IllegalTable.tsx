@@ -11,7 +11,7 @@ export type SortField =
 	| "is_victim";
 
 interface IllegalTableProps {
-	data: any[];
+	data: IllegalData[];
 	sortField: SortField | null;
 	sortDirection: "asc" | "desc";
 	onSort: (field: SortField) => void;
@@ -75,7 +75,7 @@ export default function IllegalTable({
 					<tr style={{ borderBottom: "1px solid var(--wrapper)" }}>
 						{isExportMode && (
 							<th
-								className="w-[50px] shrink-0 border-r px-4 py-3 text-center"
+								className="w-12.5 shrink-0 border-r px-4 py-3 text-center"
 								style={{
 									backgroundColor: "var(--container)",
 									borderColor: "var(--wrapper)",

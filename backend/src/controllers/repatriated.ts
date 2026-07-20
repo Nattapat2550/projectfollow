@@ -1,5 +1,6 @@
 import pool from "../config/db";
 import { v4 as uuidv4 } from "uuid";
+import * as dashboardService from "../services/dashboardService";
 import {
   uploadToDrive,
   deleteFromDrive,
@@ -15,6 +16,60 @@ import * as cache from "../utils/cache";
 
 import * as schema from "../schema/repatriated";
 import { error } from "../utils/errors";
+
+export async function getAllRepatriated(
+  query: Partial<schema.GetAllRepatriatedRequestQuery>,
+): Promise<schema.GetAllRepatriatedResponse> {
+  const page = parseInt(query.page) || 1;
+  const limit = parseInt(query.limit) || 50;
+  const offset = (page - 1) * limit;
+
+  const cacheKey = `getAllRepatriated_page_${page}_limit_${limit}_${JSON.stringify(query)}`;
+  const cachedData = cache.get(cacheKey);
+  if (cachedData) return cachedData;
+
+  // 🟢 สร้าง SQL Query จาก Service
+  const { whereClause, params, orderClause } =
+    dashboardService.buildDashboardQuerySQL(query, "repatriated");
+  const paramCount = params.length;
+
+  // ปรับ Query หลักให้ทำการ LEFT JOIN ดึงข้อมูลรายละเอียดบัญชีผู้ใช้ (ชื่อและสี) ของผู้อัพโหลดข้อมูลรายการนั้นๆ
+  const dataQuery = `
+      SELECT t.*, u.name AS creator_name, u.color AS creator_color 
+      FROM repatriated_persons t 
+      LEFT JOIN users u ON t.created_by = u.id 
+      ${whereClause} ${orderClause} 
+      LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}
+    `;
+
+  const countQuery = `
+      SELECT COUNT(t.id) 
+      FROM repatriated_persons  t 
+      LEFT JOIN users u ON t.created_by = u.id
+      ${whereClause}
+    `;
+
+  const [dataRes, countRes] = await Promise.all([
+    pool.query(dataQuery, [...params, limit, offset]),
+    pool.query(countQuery, params),
+  ]);
+
+  const totalItems = parseInt(countRes.rows[0].count);
+
+  const responsePayload: schema.GetAllRepatriatedResponse = {
+    success: true,
+    tableData: dataRes.rows,
+    meta: {
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit) || 1,
+      currentPage: page,
+      limit: limit,
+    },
+  };
+
+  cache.set(cacheKey, responsePayload);
+  return responsePayload;
+}
 
 export async function getRepatriatedById(
   id: string,

@@ -18,6 +18,26 @@ export type IllegalRequestData = {
 	age?: string;
 };
 
+export type GetAllIllegalRequestQuery = {
+	page: string;
+	limit: string;
+} & Partial<
+	Record<
+		"search" | "sortBy" | "sortOrder" | "startDate" | "endDate" | "dobStart" | "dobEnd" | "creator",
+		string
+	>
+>;
+export type GetAllIllegalResponse = {
+	success: true;
+	tableData: IllegalData[];
+	meta: {
+		totalItems: number;
+		totalPages: number;
+		currentPage: number;
+		limit: number;
+	};
+};
+
 export type GetIllegalByIdResponse = {
 	success: true;
 	data: IllegalData;

@@ -62,8 +62,10 @@ export function useIllegalDetail(id: string): IllegalDetail {
 		setInitData(initData);
 		setFormData(parseIllegalToRequest(initData));
 		setNote(initData?.note ?? "");
-		setImagePreview(getValidImageUrl(initData?.photo_url || "") ?? "");
-		setPassportImagePreview(getValidImageUrl(initData?.passport_photo_url || "") ?? "");
+		setImagePreview(initData?.photo_url ? getValidImageUrl(initData?.photo_url) : "");
+		setPassportImagePreview(
+			initData?.passport_photo_url ? getValidImageUrl(initData?.passport_photo_url) : ""
+		);
 
 		return response;
 	};

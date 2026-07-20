@@ -1,5 +1,4 @@
-export const getValidImageUrl = (url: string | null) => {
-	if (!url) return null;
+export function getValidImageUrl(url: string) {
 	if (url.startsWith("blob:")) return url;
 	if (url.includes("drive.google.com/file/d/")) {
 		const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
@@ -13,4 +12,4 @@ export const getValidImageUrl = (url: string | null) => {
 		return `${backendUrl}${url}`;
 	}
 	return url;
-};
+}

@@ -10,14 +10,32 @@ type RepatriatedOmited = Omit<
 	| "passport_photo_url"
 >;
 
-export type RepatriatedRequestData = {
-	[key in keyof RepatriatedOmited]: RepatriatedOmited[key] extends string ? RepatriatedOmited[key]
-	:	string;
-} & {
+export type RepatriatedRequestData = Record<keyof RepatriatedOmited, string> & {
 	age?: string;
 	is_victim?: string;
 	screening_details?: string;
 };
+
+export type GetAllRepatriatedRequestQuery = {
+	page: string;
+	limit: string;
+} & Partial<
+	Record<
+		"search" | "sortBy" | "sortOrder" | "startDate" | "endDate" | "dobStart" | "dobEnd" | "creator",
+		string
+	>
+>;
+export type GetAllRepatriatedResponse = {
+	success: true;
+	tableData: RepatriatedData[];
+	meta: {
+		totalItems: number;
+		totalPages: number;
+		currentPage: number;
+		limit: number;
+	};
+};
+
 export type GetRepatriatedByIdResponse = {
 	success: true;
 	data: RepatriatedData;

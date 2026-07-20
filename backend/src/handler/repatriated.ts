@@ -12,6 +12,15 @@ type test = Parameters<typeof controller.getRepatriatedById>;
 type testr = ReturnType<typeof controller.getRepatriatedById>;
 type func = (...args: test) => testr;
 
+export const getAllRepatriated: RequestHandler = async (req, res) => {
+  const { status, response } = await handlerWrapper(
+    controller.getAllRepatriated,
+    undefined,
+    req.query,
+  );
+  res.status(status).json(response);
+};
+
 export const getRepatriatedById: RequestHandler<{ id: string }> = async (
   req,
   res,

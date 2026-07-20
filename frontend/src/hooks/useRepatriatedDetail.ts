@@ -69,8 +69,10 @@ export function useRepatriatedDetail(id: string): RepatriatedDetail {
 		setInitData(initData);
 		setFormData(parseRepatriatedToRequest(initData));
 		setNote(initData?.note ?? "");
-		setImagePreview(getValidImageUrl(initData?.photo_url || "") ?? "");
-		setPassportImagePreview(getValidImageUrl(initData?.passport_photo_url || "") ?? "");
+		setImagePreview(initData?.photo_url ? getValidImageUrl(initData.photo_url) : "");
+		setPassportImagePreview(
+			initData?.passport_photo_url ? getValidImageUrl(initData.passport_photo_url) : ""
+		);
 
 		return response;
 	};
