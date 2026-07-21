@@ -57,13 +57,12 @@ export default function TableHeader<T extends string>({
 						const info = _info as Info;
 						return (
 							<TableHeaderCell
-								{...info.headerProps}
 								key={name}
 								name={name as T}
 								onSort={onSort}
 								sortDirection={sortDirection}
 								sortField={sortField}
-								props={info.headerProps}
+								props={{ ...info.headerProps, title: info.label }}
 							>
 								{info.label}
 							</TableHeaderCell>

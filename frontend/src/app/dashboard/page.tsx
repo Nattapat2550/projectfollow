@@ -10,6 +10,7 @@ import RepatriatedTable, {
 // เปลี่ยนจาก DonutChart เป็น BarChart (ต้องสร้างไฟล์ BarChart ไว้ในตำแหน่งเดียวกัน)
 import BarChart from "@/components/dashboard/BarChart";
 import LineChart from "@/components/dashboard/LineChart";
+import TablePagination from "@/components/table/table-pagination";
 import { useDashboard } from "@/hooks/useDashboard";
 
 function DashboardContent() {
@@ -627,106 +628,28 @@ function DashboardContent() {
 								<div className="overflow-hidden rounded-[0.2rem] border border-(--wrapper) bg-(--container) shadow-[4px_4px_0px_rgba(0,0,0,0.25)]">
 									{states.filterType === "illegal" ?
 										<IllegalTable
+											totalItems={derived.totalItems}
 											data={derived.tableRows}
 											sortField={states.sortField as IllegalSortField}
 											sortDirection={states.sortDirection}
 											onSort={actions.handleSort}
+											isUpdating={states.isUpdating}
 										/>
 									:	<RepatriatedTable
+											totalItems={derived.totalItems}
 											data={derived.tableRows}
 											sortField={states.sortField as RepatriatedSortField}
 											sortDirection={states.sortDirection}
 											onSort={actions.handleSort}
+											isUpdating={states.isUpdating}
 										/>
 									}
 								</div>
-								{/* แถบควบคุมเปลี่ยนหน้าเพจ (Pagination) ฉบับเต็ม */}
-								{derived.totalPages > 1
-									&& (() => {
-										const totalPages = derived.totalPages;
-
-										let startPage = Math.max(1, states.currentPage - 5);
-										let endPage = Math.min(totalPages, states.currentPage + 5);
-
-										if (endPage - startPage < 10) {
-											if (startPage === 1) {
-												endPage = Math.min(totalPages, startPage + 10);
-											} else if (endPage === totalPages) {
-												startPage = Math.max(1, endPage - 10);
-											}
-										}
-
-										const pageNumbers = [];
-										for (let i = startPage; i <= endPage; i++) {
-											pageNumbers.push(i);
-										}
-
-										return (
-											<div className="mt-6 flex flex-col items-center justify-between gap-4 rounded-[0.2rem] border border-(--wrapper) bg-(--container) p-4 shadow-[4px_4px_0px_rgba(0,0,0,0.25)] md:flex-row">
-												<span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-													หน้า {states.currentPage} จาก {totalPages}
-												</span>
-
-												<div className="flex items-center gap-1 sm:gap-2">
-													<button
-														disabled={states.currentPage === 1}
-														onClick={() => actions.setCurrentPage(1)}
-														className="cursor-pointer rounded-sm border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-														title="หน้าแรกสุด"
-													>
-														&laquo;
-													</button>
-
-													<button
-														disabled={states.currentPage === 1}
-														onClick={() =>
-															actions.setCurrentPage(Math.max(states.currentPage - 1, 1))
-														}
-														className="cursor-pointer rounded-sm border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-														title="ก่อนหน้า"
-													>
-														&lsaquo;
-													</button>
-
-													<div className="hidden items-center gap-1 sm:flex">
-														{pageNumbers.map((page) => (
-															<button
-																key={page}
-																onClick={() => actions.setCurrentPage(page)}
-																className={`cursor-pointer rounded-sm border px-3 py-2 text-sm font-medium transition ${
-																	page === states.currentPage ?
-																		"pointer-events-none border-zinc-800 bg-zinc-800 text-white dark:border-zinc-200 dark:bg-zinc-200 dark:text-zinc-900"
-																	:	"border-zinc-200 bg-zinc-100 text-zinc-800 hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-																}`}
-															>
-																{page}
-															</button>
-														))}
-													</div>
-
-													<button
-														disabled={states.currentPage === totalPages}
-														onClick={() =>
-															actions.setCurrentPage(Math.min(states.currentPage + 1, totalPages))
-														}
-														className="cursor-pointer rounded-sm border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-														title="ถัดไป"
-													>
-														&rsaquo;
-													</button>
-
-													<button
-														disabled={states.currentPage === totalPages}
-														onClick={() => actions.setCurrentPage(totalPages)}
-														className="cursor-pointer rounded-sm border border-zinc-200 bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-														title="หน้าท้ายสุด"
-													>
-														&raquo;
-													</button>
-												</div>
-											</div>
-										);
-									})()}
+								<TablePagination
+									currentPage={states.currentPage}
+									totalPages={derived.totalPages}
+									handlePageChange={actions.setCurrentPage}
+								/>
 							</div>
 						</div>
 					}

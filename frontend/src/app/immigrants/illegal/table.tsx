@@ -50,7 +50,7 @@ export default function IllegalTable({
 	const router = useRouter();
 
 	const [fieldInfo, setfieldInfo] = useState<FieldInfo<SortField>>({
-		name: { label: "ชื่อ - นามสกุล", visible: true },
+		name: { label: "ชื่อ-สกุล", visible: true },
 		nationality: { label: "สัญชาติ", visible: true },
 		detected_date: { label: "วันที่ตรวจพบ", visible: true },
 		detected_location: { label: "สถานที่ตรวจพบ", visible: true },
@@ -72,9 +72,10 @@ export default function IllegalTable({
 				])
 			) as FieldInfo<SortField>)
 		:	fieldInfo;
+
 	return (
 		<div>
-			<div className="text-muted-foreground mb-4 flex items-center justify-between text-sm font-medium">
+			<div className="text-muted-foreground flex items-center justify-between p-4 text-sm font-medium">
 				<span>ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)</span>
 				<TableToggle
 					fieldInfo={fieldInfo}
