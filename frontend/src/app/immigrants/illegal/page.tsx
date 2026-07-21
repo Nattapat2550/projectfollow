@@ -7,10 +7,11 @@ import { Suspense, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 
-import IllegalTable, { SortField } from "@/components/immigrants/IllegalTable";
+import IllegalTable, { SortField } from "@/app/immigrants/illegal/table";
 import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCard";
 import { GetAllIllegalResponse } from "@/lib/schema/illegal";
 import { getAllIllegal } from "@/lib/service/illegal";
+
 const illegalTranslationMap: { [key: string]: string } = {
 	id: "รหัสอ้างอิงระบบ",
 	first_name_th: "ชื่อจริง (ภาษาไทย)",
@@ -431,14 +432,8 @@ function IllegalPageContent() {
 					:	<div
 							className={`mb-10 bg-transparent transition-opacity duration-300 ${isUpdating ? "pointer-events-none opacity-50" : "opacity-100"}`}
 						>
-							<div className="text-muted-foreground mb-4 flex items-center justify-between text-sm font-medium">
-								<span>ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)</span>
-								{isUpdating && (
-									<span className="animate-pulse text-xs text-(--header)">กำลังอัปเดต...</span>
-								)}
-							</div>
-
 							<IllegalTable
+								totalItems={totalItems}
 								data={tableRows}
 								sortField={sortField}
 								sortDirection={sortDirection}
@@ -447,6 +442,7 @@ function IllegalPageContent() {
 								selectedIds={selectedIds}
 								onToggleSelect={handleToggleSelect}
 								onSelectAll={handleSelectAll}
+								isUpdating={isUpdating}
 							/>
 
 							{totalPages > 0
@@ -553,7 +549,7 @@ function IllegalPageContent() {
 								backgroundColor: "white",
 							}}
 						>
-							<UniversalImmigrantCard data={person} type="illegal" isExporting={true} />
+							<UniversalImmigrantCard data={person} type="illegal" />
 						</div>
 					))}
 				</div>

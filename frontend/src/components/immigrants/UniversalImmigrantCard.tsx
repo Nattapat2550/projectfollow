@@ -1,16 +1,18 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+/* eslint-disable @next/next/no-img-element */
+import { useEffect, useState } from "react";
 
-interface UniversalImmigrantCardProps {
-	data: any;
-	type: "illegal" | "repatriated"; // อิงตามประเภทข้อมูลจาก API / Backend
-	isExporting?: boolean;
-}
+import { COUNTRY_MAP } from "@/constants/country";
 
-const ExportContext = createContext<boolean>(false);
+type UniversalImmigrantCardProps =
+	| {
+			type: "illegal";
+			data: IllegalData;
+	  }
+	| {
+			type: "repatriated";
+			data: RepatriatedData;
+	  };
 
-// ----------------------------------------------------------------------
-// ฟังก์ชันจัดการข้อมูลและรูปภาพ
-// ----------------------------------------------------------------------
 const getDirectImageUrl = (url: string, uniqueId?: string) => {
 	if (!url) return "";
 	let driveId = "";
@@ -63,72 +65,6 @@ const formatDate = (dateString: string | null | undefined): string => {
 	}
 };
 
-// ----------------------------------------------------------------------
-// ฐานข้อมูลสัญชาติ - รหัสประเทศ
-// ----------------------------------------------------------------------
-const COUNTRY_MAP: { [key: string]: string } = {
-	ไทย: "th",
-	thai: "th",
-	thailand: "th",
-	พม่า: "mm",
-	เมียนมา: "mm",
-	myanmar: "mm",
-	burma: "mm",
-	ลาว: "la",
-	laos: "la",
-	lao: "la",
-	กัมพูชา: "kh",
-	เขมร: "kh",
-	cambodia: "kh",
-	เวียดนาม: "vn",
-	vietnam: "vn",
-	มาเลเซีย: "my",
-	malaysia: "my",
-	สิงคโปร์: "sg",
-	singapore: "sg",
-	อินโดนีเซีย: "id",
-	indonesia: "id",
-	ฟิลิปปินส์: "ph",
-	philippines: "ph",
-	บรูไน: "bn",
-	brunei: "bn",
-	ติมอร์: "tl",
-	timor: "tl",
-	จีน: "cn",
-	china: "cn",
-	ไต้หวัน: "tw",
-	taiwan: "tw",
-	ญี่ปุ่น: "jp",
-	japan: "jp",
-	เกาหลีใต้: "kr",
-	"south korea": "kr",
-	korea: "kr",
-	เกาหลีเหนือ: "kp",
-	"north korea": "kp",
-	ฮ่องกง: "hk",
-	"hong kong": "hk",
-	มาเก๊า: "mo",
-	macau: "mo",
-	อินเดีย: "in",
-	india: "in",
-	บังกลาเทศ: "bd",
-	bangladesh: "bd",
-	ปากีสถาน: "pk",
-	pakistan: "pk",
-	ศรีลังกา: "lk",
-	"sri lanka": "lk",
-	เนปาล: "np",
-	nepal: "np",
-	อัฟกานิสถาน: "af",
-	afghanistan: "af",
-	อังกฤษ: "gb",
-	สหราชอาณาจักร: "gb",
-	uk: "gb",
-	สหรัฐอเมริกา: "us",
-	อเมริกา: "us",
-	usa: "us",
-};
-
 const SORTED_COUNTRY_KEYS = Object.keys(COUNTRY_MAP).sort((a, b) => b.length - a.length);
 
 const getFlagUrl = (nationality: string) => {
@@ -138,10 +74,11 @@ const getFlagUrl = (nationality: string) => {
 	return foundKey ? `https://flagcdn.com/w40/${COUNTRY_MAP[foundKey]}.png` : null;
 };
 
-// ----------------------------------------------------------------------
-// Component หลัก
-// ----------------------------------------------------------------------
-const Base64Image = ({ src, alt, className, crossOrigin, referrerPolicy }: any) => {
+const Base64Image = (
+	props: Omit<React.ComponentPropsWithoutRef<"img">, "src"> & { src: string }
+) => {
+	const { src } = props;
+
 	const [base64, setBase64] = useState<string>(src);
 
 	useEffect(() => {
@@ -170,26 +107,14 @@ const Base64Image = ({ src, alt, className, crossOrigin, referrerPolicy }: any) 
 		};
 	}, [src]);
 
-	return (
-		<img
-			src={base64}
-			alt={alt}
-			className={className}
-			crossOrigin={crossOrigin}
-			referrerPolicy={referrerPolicy}
-		/>
-	);
+	return <img {...props} alt={props.alt ?? "profile photo"} src={base64} />;
 };
 
-export default function UniversalImmigrantCard({
-	data,
-	type,
-	isExporting = false,
-}: UniversalImmigrantCardProps) {
+export default function UniversalImmigrantCard({ data, type }: UniversalImmigrantCardProps) {
 	if (!data) return null;
 
 	const isIllegal = type === "illegal";
-	const flagUrl = getFlagUrl(data.nationality);
+	const flagUrl = data.nationality ? getFlagUrl(data.nationality) : undefined;
 
 	// แยกชื่อ ไทย-อังกฤษ
 	const fullNameTh =
@@ -206,24 +131,6 @@ export default function UniversalImmigrantCard({
 	const getDobText = () => {
 		if (data.date_of_birth) {
 			return formatDate(data.date_of_birth);
-		}
-		if (data.birth_day && data.birth_month && data.birth_year) {
-			const thMonths = [
-				"ม.ค.",
-				"ก.พ.",
-				"มี.ค.",
-				"เม.ย.",
-				"พ.ค.",
-				"มิ.ย.",
-				"ก.ค.",
-				"ส.ค.",
-				"ก.ย.",
-				"ต.ค.",
-				"พ.ย.",
-				"ธ.ค.",
-			];
-			const m = thMonths[data.birth_month - 1] || data.birth_month;
-			return `${data.birth_day} ${m} ${data.birth_year}`;
 		}
 		return "-";
 	};
@@ -269,426 +176,202 @@ export default function UniversalImmigrantCard({
 	let victimStatusStr = "ไม่คัดกรองสถานะ";
 	let victimColorClass = "text-[#a16207] bg-[#fef9c3] border-[#facc15]";
 
-	if (data.is_victim === "YES" || data.is_victim === true || data.is_victim === "true") {
+	if (data.is_victim === "YES") {
 		victimStatusStr = "เป็นผู้เสียหาย";
 		victimColorClass = "text-[#b91c1c] bg-[#fee2e2] border-[#f87171]";
-	} else if (data.is_victim === "NO" || data.is_victim === false || data.is_victim === "false") {
+	} else if (data.is_victim === "NO") {
 		victimStatusStr = "ไม่เป็นผู้เสียหาย";
 		victimColorClass = "text-[#15803d] bg-[#dcfce7] border-[#4ade80]";
 	}
 
-	if (isExporting) {
-		return (
-			<ExportContext.Provider value={isExporting}>
-				<div
-					className="relative mb-6 flex w-full flex-col overflow-hidden rounded-xl font-sans text-[#002f6c] shadow-sm"
-					style={{
-						minHeight: "520px",
-						backgroundColor: "#eef2f5",
-						border: "1px solid #d1d5db",
-						maxWidth: "800px",
-						margin: "0 auto",
-					}}
-				>
-					<div className="flex w-full shrink-0 items-center bg-[#0047a5] px-[4%] py-[2%] text-white">
-						<div className="flex flex-col">
-							<span className="leading-tight font-bold tracking-wide" style={{ fontSize: "26px" }}>
-								{isIllegal ? "บันทึกข้อมูลผู้ลักลอบเข้าประเทศ" : "บันทึกข้อมูลผู้ถูกส่งตัวกลับ"}
-							</span>
-							<span className="opacity-80" style={{ fontSize: "14px" }}>
-								IMMIGRATION RECORD
-							</span>
-						</div>
-						<div className="ml-auto text-right">
-							<span className="font-bold opacity-90" style={{ fontSize: "20px" }}>
-								{data.national_id ? formatNationalId(data.national_id) : "-"}
-							</span>
-						</div>
-					</div>
-
-					<div className="flex flex-1 bg-[#f3f4f6] p-[4%]">
-						<div className="flex min-w-0 flex-1 flex-col justify-between pr-[3%]">
-							<div className="flex w-full gap-2">
-								<div className="w-1/2">
-									<InfoItem label="ชื่อ-นามสกุล / Name (TH)" value={fullNameTh} />
-								</div>
-								<div className="w-1/2">
-									<InfoItem label="Name (EN)" value={fullNameEn} />
-								</div>
-							</div>
-
-							<div className="mt-2 flex w-full gap-2">
-								<div className="w-[35%]">
-									<InfoItem label="เกิดวันที่ / Date of Birth" value={getDobText()} />
-								</div>
-								<div className="w-[20%]">
-									<InfoItem label="เพศ / Sex" value={data.gender} />
-								</div>
-								<div className="w-[45%]">
-									<InfoItem label="หนังสือเดินทาง / Passport No." value={data.passport_id} />
-								</div>
-							</div>
-
-							<div className="mt-2 flex w-full gap-2">
-								<div className="w-full">
-									<div className="flex min-w-0 flex-col items-start">
-										<span className="font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
-											สัญชาติ / Nationality
-										</span>
-										<div className="mt-0.5 flex items-center gap-1.5">
-											{flagUrl && (
-												<img
-													src={flagUrl}
-													alt="flag"
-													crossOrigin="anonymous"
-													className="h-3.5 w-5 rounded-xs object-cover shadow-sm"
-												/>
-											)}
-											<span
-												className="font-bold break-words whitespace-normal text-[#002f6c]"
-												style={{ fontSize: "16px" }}
-											>
-												{data.nationality || "-"}
-											</span>
-										</div>
-									</div>
-								</div>
-							</div>
-
-							<div className="mt-2 flex w-full gap-2">
-								<div className="w-full">
-									<InfoItem
-										label={isIllegal ? "สถานที่ / Location" : "ที่อยู่ / Address"}
-										value={getLocationText()}
-									/>
-								</div>
-							</div>
-
-							<div className="mt-2 flex w-full gap-2">
-								<div className="flex w-full min-w-0 flex-col items-start">
-									<span className="mb-0.5 font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
-										สถานะผู้เสียหาย / Victim Status
-									</span>
-									<span
-										className={`rounded border px-2 py-0.5 text-center font-bold ${victimColorClass}`}
-										style={{ fontSize: "15px" }}
-									>
-										{victimStatusStr}
-									</span>
-								</div>
-							</div>
-
-							{/* ข้อมูลเพิ่มเติม (Additional Info) */}
-							<div className="mt-2 flex w-full shrink-0 gap-2 pb-1">
-								<div className="flex w-full min-w-0 flex-col items-start">
-									<span className="mb-0.5 font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
-										ข้อมูลเพิ่มเติม / Additional Info
-									</span>
-									<div
-										className="w-full text-[#002f6c]"
-										style={{ fontSize: "14px", lineHeight: "1.4" }}
-									>
-										{isIllegal ?
-											<div className="flex w-full flex-col gap-y-1">
-												<div className="break-words whitespace-normal">
-													<span className="font-bold">รายละเอียดคัดกรอง:</span>{" "}
-													{data.screening_details || "-"}
-												</div>
-												<div className="break-words whitespace-normal">
-													<span className="font-bold">หมายเหตุ:</span> {data.note || "-"}
-												</div>
-											</div>
-										:	<div className="flex w-full flex-col gap-y-1">
-												<div className="flex w-full gap-2">
-													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">อาชีพ:</span> {data.job_type || "-"}
-														{data.role ? ` (${data.role})` : ""}
-													</div>
-													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">รายได้/เดือน:</span> {data.salary || "-"}
-													</div>
-												</div>
-												<div className="flex w-full gap-2">
-													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}
-														{data.payment_method ? ` (${data.payment_method})` : ""}
-													</div>
-													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">คดี/หมายจับ:</span>{" "}
-														{data.number_of_case || "0"} / {data.number_of_warrant || "0"}
-													</div>
-												</div>
-												<div className="flex w-full gap-2">
-													<div className="min-w-0 flex-1 break-words whitespace-normal">
-														<span className="font-bold">หน่วยงาน:</span>{" "}
-														{data.responsible_agency || "-"}
-													</div>
-												</div>
-											</div>
-										}
-									</div>
-								</div>
-							</div>
-						</div>
-
-						<div className="flex h-full w-[22%] shrink-0 flex-col items-center justify-start">
-							<div
-								className="relative flex w-full items-center justify-center overflow-hidden rounded-md border-2 border-[#e2e8f0] bg-[#f8fafc] shadow-sm"
-								style={{ aspectRatio: "3/4" }}
-							>
-								{data.photo_url || data.image_url ?
-									<Base64Image
-										src={getDirectImageUrl(
-											data.photo_url || data.image_url,
-											data.id || Math.random().toString()
-										)}
-										alt="Profile"
-										className="relative z-10 h-full w-full object-cover"
-										referrerPolicy="no-referrer"
-										crossOrigin="anonymous"
-									/>
-								:	<div className="relative z-10 flex h-full w-full flex-col items-center justify-center bg-[#eef6fc]">
-										<img
-											src={"/passport.png"}
-											className="w-[60%] opacity-40"
-											alt="Placeholder"
-										></img>
-									</div>
-								}
-							</div>
-
-							<div className="mt-auto w-full shrink-0 pt-2 text-center">
-								<div
-									className="leading-tight font-bold text-[#0047a5]"
-									style={{ fontSize: "15px" }}
-								>
-									{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"} / Date
-								</div>
-								<div className="mt-1 font-bold text-[#002f6c]" style={{ fontSize: "18px" }}>
-									{dateValue}
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</ExportContext.Provider>
-		);
-	}
-
-	// NON-EXPORTING LAYOUT:
 	return (
-		<ExportContext.Provider value={isExporting}>
-			<div
-				className="relative w-full overflow-hidden rounded-2xl border border-[#9DD8BE] bg-[#DFF5EC] pt-[6%] font-sans shadow-md"
-				style={{ aspectRatio: "856 / 540" }}
-			>
-				{/* Header ตรงกลางด้านบน */}
-				<div className="absolute top-[3%] left-0 w-full text-center">
-					<p
-						className="font-bold tracking-wide text-[#022c22]"
-						style={{ fontSize: "clamp(12px, 2.8vw, 24px)" }}
-					>
-						{isIllegal ? "ผู้ลักลอบเข้าประเทศ" : "ผู้ถูกส่งตัวกลับ"}
-					</p>
+		<div
+			className="relative mb-6 flex w-full flex-col overflow-hidden rounded-xl font-sans text-[#002f6c] shadow-sm"
+			style={{
+				minHeight: "520px",
+				backgroundColor: "#eef2f5",
+				border: "1px solid #d1d5db",
+				maxWidth: "800px",
+				margin: "0 auto",
+			}}
+		>
+			<div className="flex w-full shrink-0 items-center bg-[#0047a5] px-[4%] py-[2%] text-white">
+				<div className="flex flex-col">
+					<span className="leading-tight font-bold tracking-wide" style={{ fontSize: "26px" }}>
+						{isIllegal ? "บันทึกข้อมูลผู้ลักลอบเข้าประเทศ" : "บันทึกข้อมูลผู้ถูกส่งตัวกลับ"}
+					</span>
+					<span className="opacity-80" style={{ fontSize: "14px" }}>
+						IMMIGRATION RECORD
+					</span>
 				</div>
+				<div className="ml-auto text-right">
+					<span className="font-bold opacity-90" style={{ fontSize: "20px" }}>
+						{data.national_id ? formatNationalId(data.national_id) : "-"}
+					</span>
+				</div>
+			</div>
 
-				<div className="absolute inset-0 top-[11%] flex p-[4%] pt-0">
-					{/* คอลัมน์ซ้าย (รายละเอียดข้อมูล) */}
-					<div className="flex min-w-0 flex-col" style={{ width: "67%", marginRight: "3%" }}>
-						{/* แถว 1: ชื่อ-นามสกุล (แยกกล่อง ไทย - อังกฤษ) */}
-						<div className="flex w-full justify-between" style={{ marginBottom: "2%" }}>
-							<div className="flex flex-col" style={{ width: "48.5%" }}>
-								<ILabel>ชื่อ - นามสกุล</ILabel>
-								<IBox>{fullNameTh || "-"}</IBox>
-							</div>
-							<div className="flex flex-col" style={{ width: "48.5%" }}>
-								<ILabel>Name</ILabel>
-								<IBox>{fullNameEn || "-"}</IBox>
+			<div className="flex flex-1 bg-[#f3f4f6] p-[4%]">
+				<div className="flex min-w-0 flex-1 flex-col justify-between pr-[3%]">
+					<div className="flex w-full gap-2">
+						<div className="w-1/2">
+							<InfoItem label="ชื่อ-นามสกุล / Name (TH)" value={fullNameTh} />
+						</div>
+						<div className="w-1/2">
+							<InfoItem label="Name (EN)" value={fullNameEn} />
+						</div>
+					</div>
+
+					<div className="mt-2 flex w-full gap-2">
+						<div className="w-[35%]">
+							<InfoItem label="เกิดวันที่ / Date of Birth" value={getDobText()} />
+						</div>
+						<div className="w-[20%]">
+							<InfoItem label="เพศ / Sex" value={data.gender} />
+						</div>
+						<div className="w-[45%]">
+							<InfoItem label="หนังสือเดินทาง / Passport No." value={data.passport_id} />
+						</div>
+					</div>
+
+					<div className="mt-2 flex w-full gap-2">
+						<div className="w-full">
+							<div className="flex min-w-0 flex-col items-start">
+								<span className="font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
+									สัญชาติ / Nationality
+								</span>
+								<div className="mt-0.5 flex items-center gap-1.5">
+									{flagUrl && (
+										<Base64Image
+											src={getDirectImageUrl(flagUrl)}
+											alt="flag"
+											crossOrigin="anonymous"
+											className="h-3.5 w-5 rounded-xs object-cover shadow-sm"
+											height={14}
+											width={20}
+										/>
+									)}
+									<span
+										className="font-bold wrap-break-word whitespace-normal text-[#002f6c]"
+										style={{ fontSize: "16px" }}
+									>
+										{data.nationality || "-"}
+									</span>
+								</div>
 							</div>
 						</div>
+					</div>
 
-						{/* แถว 2: เลขที่บัตร */}
-						<div className="flex w-full justify-between" style={{ marginBottom: "2%" }}>
-							<div className="flex flex-col" style={{ width: "48.5%" }}>
-								<ILabel>เลขประจำตัวประชาชน</ILabel>
-								<IBox mono>{formatNationalId(data.national_id) || "-"}</IBox>
-							</div>
-							<div className="flex flex-col" style={{ width: "48.5%" }}>
-								<ILabel>เลขที่หนังสือเดินทาง (Passport ID)</ILabel>
-								<IBox mono>{data.passport_id || "-"}</IBox>
-							</div>
+					<div className="mt-2 flex w-full gap-2">
+						<div className="w-full">
+							<InfoItem
+								label={isIllegal ? "สถานที่ / Location" : "ที่อยู่ / Address"}
+								value={getLocationText()}
+							/>
 						</div>
+					</div>
 
-						{/* แถว 3: วันเกิด / เพศ-อายุ / สัญชาติ */}
-						<div className="flex w-full" style={{ marginBottom: "2%" }}>
-							<div className="flex flex-col" style={{ width: "37.6%", marginRight: "3%" }}>
-								<ILabel>วันเดือนปีเกิด / DOB</ILabel>
-								<IBox>{getDobText()}</IBox>
-							</div>
-							<div className="flex flex-col" style={{ width: "25.1%", marginRight: "3%" }}>
-								<ILabel>เพศ/อายุ</ILabel>
-								<IBox>
-									{data.gender || "-"}
-									{data.age ? ` (${data.age})` : ""}
-								</IBox>
-							</div>
-							<div className="flex flex-col" style={{ width: "31.3%" }}>
-								<ILabel>สัญชาติ</ILabel>
-								<IBox>
-									<div className="flex items-center gap-1.5">
-										{flagUrl && (
-											<img
-												src={flagUrl}
-												alt="flag"
-												crossOrigin="anonymous"
-												className="h-3.25 w-4.5 rounded-xs object-cover shadow-sm"
-											/>
-										)}
-										<span className="truncate">{data.nationality || "-"}</span>
-									</div>
-								</IBox>
-							</div>
+					<div className="mt-2 flex w-full gap-2">
+						<div className="flex w-full min-w-0 flex-col items-start">
+							<span className="mb-0.5 font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
+								สถานะผู้เสียหาย / Victim Status
+							</span>
+							<span
+								className={`rounded border px-2 py-0.5 text-center font-bold ${victimColorClass}`}
+								style={{ fontSize: "15px" }}
+							>
+								{victimStatusStr}
+							</span>
 						</div>
+					</div>
 
-						{/* แถว 4: สถานที่ */}
-						<div className="flex flex-col" style={{ marginBottom: "2%" }}>
-							<ILabel>{isIllegal ? "สถานที่ทำงาน / จุดตรวจพบ" : "ที่อยู่ปัจจุบันตามบันทึก"}</ILabel>
-							<IBox noTruncate className="w-full justify-start! text-left">
-								<div className="w-full truncate">{getLocationText()}</div>
-							</IBox>
-						</div>
-
-						{/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
-						<div className="mb-1 flex flex-1 flex-col">
-							<ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-							<IBox noTruncate className="h-full justify-start! overflow-hidden text-left">
-								{
-									isIllegal ?
-										// เปลี่ยนเป็น flex-col จัดเรียงบรรทัดละหัวข้อ และใช้ break-words เพื่อให้ขึ้นบรรทัดใหม่เมื่อข้อความยาว
-										<div className="flex w-full flex-col gap-y-1.5" style={{ fontSize: "0.95em" }}>
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
-												{data.screening_details || "-"}
-											</div>
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">หมายเหตุ:</span>{" "}
-												{data.note || "-"}
-											</div>
+					{/* ข้อมูลเพิ่มเติม (Additional Info) */}
+					<div className="mt-2 flex w-full shrink-0 gap-2 pb-1">
+						<div className="flex w-full min-w-0 flex-col items-start">
+							<span className="mb-0.5 font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
+								ข้อมูลเพิ่มเติม / Additional Info
+							</span>
+							<div
+								className="w-full text-[#002f6c]"
+								style={{ fontSize: "14px", lineHeight: "1.4" }}
+							>
+								{isIllegal ?
+									<div className="flex w-full flex-col gap-y-1">
+										<div className="wrap-break-word whitespace-normal">
+											<span className="font-bold">รายละเอียดคัดกรอง:</span>{" "}
+											{data.screening_details || "-"}
 										</div>
-										// เปลี่ยนเป็น flex-col เช่นเดียวกัน
-									:	<div className="flex w-full flex-col gap-y-1.5" style={{ fontSize: "0.85em" }}>
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">อาชีพ:</span>{" "}
-												{data.job_type || "-"}
+										<div className="wrap-break-word whitespace-normal">
+											<span className="font-bold">หมายเหตุ:</span> {data.note || "-"}
+										</div>
+									</div>
+								:	<div className="flex w-full flex-col gap-y-1">
+										<div className="flex w-full gap-2">
+											<div className="min-w-0 flex-1 wrap-break-word whitespace-normal">
+												<span className="font-bold">อาชีพ:</span> {data.job_type || "-"}
 												{data.role ? ` (${data.role})` : ""}
 											</div>
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">รายได้/เดือน:</span>{" "}
-												{data.salary || "-"}
-											</div>
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">ผู้จ่ายเงิน:</span>{" "}
-												{data.paid_by || "-"}
-												{data.payment_method ? ` (${data.payment_method})` : ""}
-											</div>
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">คดี/หมายจับ:</span>{" "}
-												{data.number_of_case || "0"} / {data.number_of_warrant || "0"}
-											</div>
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">หน่วยงาน:</span>{" "}
-												{data.responsible_agency || "-"}
-											</div>
-											{(data.is_victim === true
-												|| data.is_victim === false
-												|| data.is_victim === "YES"
-												|| data.is_victim === "NO"
-												|| data.is_victim === "true"
-												|| data.is_victim === "false") && (
-												<div className="wrap-break-word">
-													<span className="font-semibold text-[#022c22]">สถานะผู้เสียหาย:</span>{" "}
-													{(
-														data.is_victim === true
-														|| data.is_victim === "YES"
-														|| data.is_victim === "true"
-													) ?
-														"เป็นผู้เสียหาย"
-													:	"ไม่เป็นผู้เสียหาย"}
-												</div>
-											)}
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
-												{data.screening_details || "-"}
-											</div>
-
-											<div className="wrap-break-word">
-												<span className="font-semibold text-[#022c22]">หมายเหตุ:</span>{" "}
-												{data.note || "-"}
+											<div className="min-w-0 flex-1 wrap-break-word whitespace-normal">
+												<span className="font-bold">รายได้/เดือน:</span> {data.salary || "-"}
 											</div>
 										</div>
-
+										<div className="flex w-full gap-2">
+											<div className="min-w-0 flex-1 wrap-break-word whitespace-normal">
+												<span className="font-bold">ผู้จ่ายเงิน:</span> {data.paid_by || "-"}
+												{data.payment_method ? ` (${data.payment_method})` : ""}
+											</div>
+											<div className="min-w-0 flex-1 wrap-break-word whitespace-normal">
+												<span className="font-bold">คดี/หมายจับ:</span> {data.number_of_case || "0"}{" "}
+												/ {data.number_of_warrant || "0"}
+											</div>
+										</div>
+										<div className="flex w-full gap-2">
+											<div className="min-w-0 flex-1 wrap-break-word whitespace-normal">
+												<span className="font-bold">หน่วยงาน:</span>{" "}
+												{data.responsible_agency || "-"}
+											</div>
+										</div>
+									</div>
 								}
-							</IBox>
+							</div>
 						</div>
 					</div>
+				</div>
 
-					{/* คอลัมน์ขวา (รูปภาพ ไว้ฝั่งขวา) */}
-					<div className="flex shrink-0 flex-col items-center" style={{ width: "30%" }}>
-						<div
-							className="relative mb-[5%] flex w-full items-end justify-center overflow-hidden rounded-xl border border-[#a7f3d0] bg-white shadow-inner"
-							style={{ aspectRatio: "3/4" }}
-						>
-							{data.photo_url || data.image_url ?
-								<Base64Image
-									src={getDirectImageUrl(
-										data.photo_url || data.image_url,
-										data.id || Math.random().toString()
-									)}
-									alt="Profile"
-									className="h-full w-full object-cover"
-									referrerPolicy="no-referrer"
-									crossOrigin="anonymous"
+				<div className="flex h-full w-[22%] shrink-0 flex-col items-center justify-start">
+					<div
+						className="relative flex w-full items-center justify-center overflow-hidden rounded-md border-2 border-[#e2e8f0] bg-[#f8fafc] shadow-sm"
+						style={{ aspectRatio: "3/4" }}
+					>
+						{data.photo_url ?
+							<Base64Image
+								src={getDirectImageUrl(data.photo_url)}
+								alt="Profile"
+								className="relative z-10 h-full w-full object-cover"
+								referrerPolicy="no-referrer"
+								crossOrigin="anonymous"
+							/>
+						:	<div className="relative z-10 flex h-full w-full flex-col items-center justify-center bg-[#eef6fc]">
+								<img
+									src={"/passport.png"}
+									className="w-[60%] object-contain opacity-40"
+									alt="Placeholder"
 								/>
-							:	<div className="flex h-full w-full flex-col items-center justify-end pb-[8%]">
-									<img src={"/enter.png"} className="w-1/2 opacity-40" alt="Placeholder"></img>
-								</div>
-							}
-						</div>
-
-						{/* ป้ายสถานะผู้เสียหาย (ไม่มี Emoji) */}
-						<span
-							className={`w-full text-center ${victimColorClass} mb-[5%] flex items-center justify-center rounded-full border px-2 py-1 font-bold`}
-							style={{ fontSize: "clamp(8px, 1.1vw, 12px)" }}
-						>
-							<span>{victimStatusStr}</span>
-						</span>
-
-						{/* วันที่พบตัว (โชว์เด่นๆ ฝั่งขวาใต้รูป) */}
-						<div className="flex w-full flex-col items-center">
-							<div style={{ marginBottom: "4px" }}>
-								<ILabel>{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"}</ILabel>
 							</div>
-							<IBox className="flex w-full justify-center text-center font-bold">{dateValue}</IBox>
+						}
+					</div>
+
+					<div className="mt-auto w-full shrink-0 pt-2 text-center">
+						<div className="leading-tight font-bold text-[#0047a5]" style={{ fontSize: "15px" }}>
+							{isIllegal ? "วันที่พบตัว" : "วันที่ส่งตัวกลับ"} / Date
+						</div>
+						<div className="mt-1 font-bold text-[#002f6c]" style={{ fontSize: "18px" }}>
+							{dateValue}
 						</div>
 					</div>
 				</div>
 			</div>
-		</ExportContext.Provider>
-	);
-}
-
-// ----------------------------------------------------------------------
-// Styled Components ภายใน
-// ----------------------------------------------------------------------
-function ILabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-	const isExporting = useContext(ExportContext);
-	return (
-		<span
-			className={`mb-0.5 block font-bold text-[#022c22] ${className}`}
-			style={{ fontSize: isExporting ? "14px" : "clamp(5px, 1.2vw, 11px)" }}
-		>
-			{children}
-		</span>
+		</div>
 	);
 }
 
@@ -701,49 +384,21 @@ function InfoItem({
 	value?: string | number | null;
 	colorClass?: string;
 }) {
-	const isExporting = useContext(ExportContext);
 	return (
 		<div className="flex w-full min-w-0 flex-col items-start">
-			<span
-				className="font-bold text-[#0047a5]"
-				style={{ fontSize: isExporting ? "14px" : "14px" }}
-			>
+			<span className="font-bold text-[#0047a5]" style={{ fontSize: "14px" }}>
 				{label}
 			</span>
 			<span
-				className={`mt-0.5 leading-normal font-bold ${colorClass ? colorClass + " rounded border px-2 py-0.5 text-center" : "w-full break-words whitespace-normal text-[#002f6c]"}`}
+				className={`mt-0.5 leading-normal font-bold ${colorClass ? colorClass + " rounded border px-2 py-0.5 text-center" : "w-full wrap-break-word whitespace-normal text-[#002f6c]"}`}
 				style={{
-					fontSize: isExporting ? "16px" : "16px",
+					fontSize: "16px",
 					display: colorClass ? "inline-block" : "block",
 					wordBreak: "break-word",
 				}}
 			>
 				{value || "-"}
 			</span>
-		</div>
-	);
-}
-function IBox({
-	children,
-	mono = false,
-	noTruncate = false,
-	className = "",
-}: {
-	children: React.ReactNode;
-	mono?: boolean;
-	noTruncate?: boolean;
-	className?: string;
-}) {
-	const isExporting = useContext(ExportContext);
-	return (
-		<div
-			className={`rounded-md bg-[#B8E8D4] font-medium text-[#064e3b] ${mono ? "font-mono tracking-tight" : ""} ${noTruncate ? "flex flex-col justify-center" : "truncate"} ${className}`}
-			style={{
-				fontSize: isExporting ? "16px" : "clamp(6px, 1.3vw, 12px)",
-				padding: isExporting ? "6px 10px" : "0.5em 0.8em",
-			}}
-		>
-			{children}
 		</div>
 	);
 }

@@ -7,7 +7,7 @@ import { Suspense, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
 
-import RepatriatedTable, { SortField } from "@/components/immigrants/RepatriatedTable";
+import RepatriatedTable, { SortField } from "@/app/immigrants/repatriated/table";
 import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCard";
 import { GetAllRepatriatedResponse } from "@/lib/schema/repatriated";
 import { getAllRepatriated } from "@/lib/service/repatriated";
@@ -570,7 +570,7 @@ function RepatriatedPageContent() {
 								backgroundColor: "white",
 							}}
 						>
-							<UniversalImmigrantCard data={person} type="repatriated" isExporting={true} />
+							<UniversalImmigrantCard data={person} type="repatriated" />
 						</div>
 					))}
 				</div>

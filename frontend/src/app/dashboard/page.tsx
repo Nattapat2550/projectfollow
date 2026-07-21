@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 
+import IllegalTable, { SortField as IllegalSortField } from "@/app/immigrants/illegal/table";
+import RepatriatedTable, {
+	SortField as RepatriatedSortField,
+} from "@/app/immigrants/repatriated/table";
 // เปลี่ยนจาก DonutChart เป็น BarChart (ต้องสร้างไฟล์ BarChart ไว้ในตำแหน่งเดียวกัน)
 import BarChart from "@/components/dashboard/BarChart";
 import LineChart from "@/components/dashboard/LineChart";
-import IllegalTable, { SortField as IllegalSortField } from "@/components/immigrants/IllegalTable";
-import RepatriatedTable, {
-	SortField as RepatriatedSortField,
-} from "@/components/immigrants/RepatriatedTable";
 import { useDashboard } from "@/hooks/useDashboard";
 
 function DashboardContent() {

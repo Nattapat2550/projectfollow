@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
 			"perfectionist/sort-array-includes": "error",
 			"perfectionist/sort-imports": "error",
 			"perfectionist/sort-named-imports": "error",
+			"no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
 		},
 	},
 	// Override default ignores of eslint-config-next.

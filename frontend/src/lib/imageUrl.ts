@@ -11,5 +11,7 @@ export function getValidImageUrl(url: string) {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 		return `${backendUrl}${url}`;
 	}
+	console.log(url);
+
 	return url;
 }
