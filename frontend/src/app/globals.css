@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -45,42 +47,31 @@
 	--chart-6: #a77b58; /* น้ำตาลทอง/บรอนซ์ */
 	--chart-other: #7f8c8d; /* เทากลางสำหรับหมวดหมู่อื่นๆ */
 	color-scheme: light;
-}
 
-@theme inline {
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
-	--font-sans: var(--font-sarabun);
-	--font-mono: var(--font-sarabun);
-}
-
-body {
-	background-color: var(--background);
-	color: var(--foreground);
-	font-family: Sarabun, Arial, Helvetica, sans-serif;
-	font-size: 1.25rem;
-}
-
-.TaskItem_DateMonth__m6uGV {
-	color: inherit;
-}
-
-#main-topbar,
-#main-topbar strong,
-#main-topbar span {
-	color: #ffffff;
-}
-
-*::-webkit-scrollbar {
-	width: 5px;
-}
-
-*::-webkit-scrollbar-thumb {
-	background: var(--shadow);
-}
-
-*::-webkit-scrollbar-track {
-	background: var(--wrapper);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.141 0.005 285.823);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.141 0.005 285.823);
+	--primary: oklch(0.491 0.27 292.581);
+	--primary-foreground: oklch(0.969 0.016 293.756);
+	--secondary: oklch(0.967 0.001 286.375);
+	--secondary-foreground: oklch(0.21 0.006 285.885);
+	--muted: oklch(0.967 0.001 286.375);
+	--muted-foreground: oklch(0.552 0.016 285.938);
+	--accent: oklch(0.967 0.001 286.375);
+	--accent-foreground: oklch(0.21 0.006 285.885);
+	--destructive: oklch(0.577 0.245 27.325);
+	--border: oklch(0.92 0.004 286.32);
+	--ring: oklch(0.705 0.015 286.067);
+	--radius: 0.625rem;
+	--sidebar: oklch(0.985 0 0);
+	--sidebar-foreground: oklch(0.141 0.005 285.823);
+	--sidebar-primary: oklch(0.541 0.281 293.009);
+	--sidebar-primary-foreground: oklch(0.969 0.016 293.756);
+	--sidebar-accent: oklch(0.967 0.001 286.375);
+	--sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+	--sidebar-border: oklch(0.92 0.004 286.32);
+	--sidebar-ring: oklch(0.705 0.015 286.067);
 }
 
 [data-theme="dark"] {
@@ -124,6 +115,89 @@ body {
 	--chart-6: #edcfa9; /* ครีมทองหรูหรา */
 	--chart-other: #a4b0be; /* เทาอ่อน */
 	color-scheme: dark;
+
+	--card: oklch(0.21 0.006 285.885);
+	--card-foreground: oklch(0.985 0 0);
+	--popover: oklch(0.21 0.006 285.885);
+	--popover-foreground: oklch(0.985 0 0);
+	--primary: oklch(0.432 0.232 292.759);
+	--primary-foreground: oklch(0.969 0.016 293.756);
+	--secondary: oklch(0.274 0.006 286.033);
+	--secondary-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.274 0.006 286.033);
+	--muted-foreground: oklch(0.705 0.015 286.067);
+	--accent: oklch(0.274 0.006 286.033);
+	--accent-foreground: oklch(0.985 0 0);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(1 0 0 / 10%);
+	--ring: oklch(0.552 0.016 285.938);
+	--sidebar: oklch(0.21 0.006 285.885);
+	--sidebar-foreground: oklch(0.985 0 0);
+	--sidebar-primary: oklch(0.606 0.25 292.717);
+	--sidebar-primary-foreground: oklch(0.969 0.016 293.756);
+	--sidebar-accent: oklch(0.274 0.006 286.033);
+	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--sidebar-border: oklch(1 0 0 / 10%);
+	--sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--font-sans: var(--font-sarabun);
+	--font-mono: var(--font-sarabun);
+	--font-heading: var(--font-sarabun);
+	--color-input: var(--background);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+}
+
+body {
+	background-color: var(--background);
+	color: var(--foreground);
+	font-family: Sarabun, Arial, Helvetica, sans-serif;
+	font-size: 1.25rem;
+}
+
+.TaskItem_DateMonth__m6uGV {
+	color: inherit;
+}
+
+#main-topbar,
+#main-topbar strong,
+#main-topbar span {
+	color: #ffffff;
+}
+
+*::-webkit-scrollbar {
+	width: 5px;
+}
+
+*::-webkit-scrollbar-thumb {
+	background: var(--shadow);
+}
+
+*::-webkit-scrollbar-track {
+	background: var(--wrapper);
 }
 
 [data-theme="dark"] body {
@@ -166,23 +240,10 @@ input[type="time"] {
 	color-scheme: light;
 }
 
-select {
-	appearance: none;
-	background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23171717' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-	background-repeat: no-repeat;
-	background-position: right 0.75rem center;
-	background-size: 1.2em;
-	padding-right: 2.5rem !important;
-}
-
 [data-theme="dark"] select,
 [data-theme="dark"] input[type="date"],
 [data-theme="dark"] input[type="time"] {
 	color-scheme: dark;
-}
-
-[data-theme="dark"] select {
-	background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23AED3DD' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator,

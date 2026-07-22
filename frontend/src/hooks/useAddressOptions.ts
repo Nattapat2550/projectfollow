@@ -1,28 +1,63 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
-import { AutocompleteOption } from "@/components/ui/AutocompleteInput";
+import addresses from "../../public/thai_addresses.json";
 
-export function useAddressOptions(province: string, district: string) {
-	const [addresses, setAddresses] = useState<any[]>([]);
+export interface AutocompleteOption {
+	label: string;
+	value: string;
+	extra?: { province: string; district: string; subDistrict?: string };
+}
 
-	useEffect(() => {
-		fetch("/thai_addresses.json")
-			.then((res) => res.json())
-			.then((data) => setAddresses(data))
-			.catch(console.error);
-	}, []);
+export function useAddressOptions<T extends Record<string, string>>(
+	formData: T,
+	setFormData: React.Dispatch<React.SetStateAction<T>>,
+	provinceKey: keyof T,
+	districtKey: keyof T,
+	subDistrictKey: keyof T
+) {
+	const province = formData[provinceKey] || null;
+	const district = formData[districtKey] || null;
+	const subDistrict = formData[subDistrictKey] || null;
 
-	// 1. Province Options
+	const initDistrict = addresses.find((e) => e.province == province && e.amphoe == district);
+
+	const initSubDistrict = addresses.find(
+		(e) => e.province == province && e.amphoe == district && e.district == subDistrict
+	);
+
+	const [provinceValue, setProvinceValue] = useState<string | null>(province);
+	const [districtOption, setDistrictOption] = useState<AutocompleteOption | null>(
+		initDistrict ?
+			{
+				label: `${initDistrict.amphoe} » ${initDistrict.province}`,
+				value: initDistrict.amphoe,
+				extra: { district: initDistrict.amphoe, province: initDistrict.province },
+			}
+		:	null
+	);
+	const [subDistrictOption, setSubDistrictOption] = useState<AutocompleteOption | null>(
+		initSubDistrict ?
+			{
+				label: `${initSubDistrict.district} » ${initSubDistrict.amphoe} » ${initSubDistrict.province}`,
+				value: initSubDistrict.district,
+				extra: {
+					subDistrict: initSubDistrict.district,
+					district: initSubDistrict.amphoe,
+					province: initSubDistrict.province,
+				},
+			}
+		:	null
+	);
+
 	const provinces = useMemo(() => {
 		const set = new Set<string>();
 		addresses.forEach((a) => {
 			if (a.province) set.add(a.province);
 		});
 		return Array.from(set).sort();
-	}, [addresses]);
+	}, []);
 
-	// 2. District Options: Format as "District » Province"
-	const districtOptions = useMemo(() => {
+	const districts = useMemo(() => {
 		const filtered = province ? addresses.filter((a) => a.province === province) : addresses;
 
 		const seen = new Set<string>();
@@ -43,10 +78,9 @@ export function useAddressOptions(province: string, district: string) {
 		});
 
 		return opts.sort((a, b) => a.label.localeCompare(b.label, "th"));
-	}, [addresses, province]);
+	}, [province]);
 
-	// 3. Sub-district Options: Format as "Sub-district » District » Province"
-	const subDistrictOptions = useMemo(() => {
+	const subDistricts = useMemo(() => {
 		let filtered = addresses;
 		if (province && district) {
 			filtered = addresses.filter((a) => a.province === province && a.amphoe === district);
@@ -78,7 +112,64 @@ export function useAddressOptions(province: string, district: string) {
 		});
 
 		return opts.sort((a, b) => a.label.localeCompare(b.label, "th"));
-	}, [addresses, province, district]);
+	}, [province, district]);
 
-	return { provinces, districtOptions, subDistrictOptions };
+	const handleProvinceChange = (value: string | null) => {
+		setProvinceValue(value);
+		setDistrictOption(null);
+		setSubDistrictOption(null);
+		setFormData((prev) => {
+			return {
+				...prev,
+				[provinceKey]: value ?? "",
+				[districtKey]: "",
+				[subDistrictKey]: "",
+			};
+		});
+	};
+
+	const handleDistrictChange = (option: AutocompleteOption | null) => {
+		if (option) {
+			setProvinceValue((prev) => option?.extra?.province ?? prev);
+		}
+
+		setDistrictOption(option);
+		setSubDistrictOption(null);
+		setFormData((prev) => {
+			return {
+				...prev,
+				[provinceKey]: option?.extra?.province ?? prev[provinceKey],
+				[districtKey]: option?.value ?? "",
+			};
+		});
+	};
+
+	const handleSubDistrictChange = (option: AutocompleteOption | null) => {
+		if (option) {
+			const districtOption = districts.find(
+				(e) =>
+					e.extra?.district == option?.extra?.district
+					&& e.extra?.province == option?.extra?.province
+			);
+
+			setProvinceValue((prev) => option?.extra?.province ?? prev);
+			setDistrictOption((prev) => districtOption ?? prev);
+		}
+
+		setSubDistrictOption(option);
+		setFormData((prev) => {
+			return {
+				...prev,
+				[provinceKey]: option?.extra?.province ?? prev[provinceKey],
+				[districtKey]: option?.extra?.district ?? prev[districtKey],
+				[subDistrictKey]: option?.value ?? "",
+			};
+		});
+	};
+
+	return {
+		actions: { handleProvinceChange, handleDistrictChange, handleSubDistrictChange },
+		states: { provinceOption: provinceValue, districtOption, subDistrictOption },
+		options: { provinces, districts, subDistricts },
+	};
 }

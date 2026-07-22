@@ -20,6 +20,7 @@ export default function IllegalIDPageEditForm({ detail }: { detail: IllegalDetai
 					<div>
 						<h3 className="mb-4 text-lg font-bold">รูปภาพประจำตัว</h3>
 						<SingleImageField
+							id="Person Image"
 							previewUrl={states.imagePreview || "/return.png"}
 							props={{ alt: "Person Preview" }}
 							uploadLabel="แก้ไขรูปประจำตัว"
@@ -33,6 +34,7 @@ export default function IllegalIDPageEditForm({ detail }: { detail: IllegalDetai
 					<div>
 						<h3 className="mb-4 text-lg font-bold">รูปถ่ายพาสปอร์ต</h3>
 						<SingleImageField
+							id="Passport Image"
 							previewUrl={states.passportImagePreview || "/passport.png"}
 							props={{ alt: "Passport Preview" }}
 							uploadLabel="แก้ไขรูปพาสปอร์ต"

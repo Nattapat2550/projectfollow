@@ -1,13 +1,22 @@
 "use client";
+import { Combobox as ComboboxPrimitive } from "@base-ui/react";
+import React from "react";
 
-import React, { ChangeEventHandler } from "react";
-
-import AutocompleteInput, { AutocompleteInputProps } from "@/components/ui/AutocompleteInput";
+import { AutocompleteOption } from "@/hooks/useAddressOptions";
 import { cn } from "@/lib/utils";
 
-const inputClass =
-	"w-full border px-3 py-1.5 text-sm rounded-sm bg-background !text-black dark:!text-white border-(--wrapper) focus:outline-none transition-all dark:[color-scheme:dark]";
-const labelClass = "block text-xs font-semibold mb-1.5 !text-black dark:!text-white opacity-80";
+import {
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+} from "../ui/combobox";
+import { Field, FieldGroup, FieldLabel, FieldSet } from "../ui/field";
+import { Input } from "../ui/input";
+import { NativeSelect, NativeSelectOption } from "../ui/native-select";
+import { Textarea } from "../ui/textarea";
 
 export type FieldsLayout<T extends Record<string, string>> = {
 	heading: string;
@@ -26,20 +35,30 @@ type PreBuiltField<T extends Record<string, string>> = {
 
 type InputField = {
 	component?: undefined;
-} & Omit<React.ComponentProps<"input">, "name">;
+	props?: React.ComponentProps<"input">;
+};
 
 type TextAreaField = {
 	component: "textarea";
-} & Omit<React.ComponentProps<"textarea">, "name">;
+	props?: React.ComponentProps<"textarea">;
+};
 
 type SelectField = {
 	component: "select";
 	options: ({ label: string } & React.ComponentProps<"option">)[];
-} & Omit<React.ComponentProps<"select">, "name">;
+	props?: Omit<React.ComponentProps<"select">, "size"> & {
+		size?: "sm" | "default";
+	};
+};
 
-type AutocompleteField = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AutocompleteField<Value extends string | AutocompleteOption = any> = {
 	component: "autocomplete";
-} & Omit<AutocompleteInputProps, "value" | "onChange">;
+	options: Value[];
+	value: Value;
+	onChange: (_value: Value | null) => void;
+	props?: ComboboxPrimitive.Root.Props<Value>;
+};
 
 export default function CreateForm<T extends Record<string, string>>({
 	formData,
@@ -50,65 +69,121 @@ export default function CreateForm<T extends Record<string, string>>({
 	layout: FieldsLayout<T>;
 	handleInputChange: React.ChangeEventHandler;
 }) {
-	return layout.map((e) => (
-		<React.Fragment key={e.heading}>
-			<h3 className="mt-8 mb-4 text-xl font-bold text-(--header)">{e.heading}</h3>
-			{e.inputs.map((g, idx) => (
-				<div
-					className={cn(
-						"mb-5 grid grid-cols-1 gap-5",
-						g.length > 1 ?
-							g.length == 2 ? `md:grid-cols-2`
-							: g.length == 3 ? `md:grid-cols-3`
-							: g.length == 4 ? `md:grid-cols-4`
-							: `md:grid-cols-5`
-						:	""
-					)}
-					key={idx}
-				>
-					{g.map((i, idx) => (
-						<div key={idx}>
-							<label className={labelClass} htmlFor={i.input ? undefined : String(i.name)}>
-								{i.label}
-							</label>
-							{i.input ?? (
-								<PrebuiltField
-									{...{
-										...i,
-										id: String(i.name),
-										value: formData[i.name] ?? "",
-										onChange: handleInputChange,
-										className: inputClass,
-									}}
-								/>
+	return (
+		<FieldSet>
+			{layout.map((e) => (
+				<React.Fragment key={e.heading}>
+					<FieldLabel className="mt-8 mb-4 text-xl font-bold text-(--header)">
+						{e.heading}
+					</FieldLabel>
+					{e.inputs.map((group, idx) => (
+						<FieldGroup
+							className={cn(
+								"mb-5 grid grid-cols-1 gap-5",
+								group.length > 1 ?
+									group.length == 2 ? `md:grid-cols-2`
+									: group.length == 3 ? `md:grid-cols-3`
+									: group.length == 4 ? `md:grid-cols-4`
+									: `md:grid-cols-5`
+								:	""
 							)}
-						</div>
+							key={idx}
+						>
+							{group.map((i, idx) => (
+								<Field key={idx}>
+									<FieldLabel htmlFor={i.input ? undefined : String(i.name)}>{i.label}</FieldLabel>
+									{i.input ?? (
+										<PrebuiltField
+											field={i}
+											formData={formData}
+											handleInputChange={handleInputChange}
+										/>
+									)}
+									{/* <FieldError>Validation message.</FieldError> */}
+								</Field>
+							))}
+						</FieldGroup>
 					))}
-				</div>
+				</React.Fragment>
 			))}
-		</React.Fragment>
-	));
+		</FieldSet>
+	);
 }
 
-function PrebuiltField<T extends Record<string, string>>(
-	props: PreBuiltField<T> & { value: string; onChange: ChangeEventHandler }
-) {
-	switch (props.component) {
+function PrebuiltField<T extends Record<string, string>>({
+	formData,
+	handleInputChange,
+	field,
+}: {
+	formData: T;
+	handleInputChange: React.ChangeEventHandler;
+	field: PreBuiltField<T>;
+}) {
+	switch (field.component) {
 		default:
-			return <input {...props} name={String(props.name)} type={props.type ?? "text"} />;
+			return (
+				<Input
+					{...field.props}
+					id={String(field.name)}
+					name={String(field.name)}
+					value={formData[field.name]}
+					onChange={handleInputChange}
+					type={field.props?.type ?? "text"}
+					className={cn("bg-background", field.props?.className)}
+				/>
+			);
 		case "textarea":
-			return <textarea {...props} name={String(props.name)} />;
+			return (
+				<Textarea
+					{...field.props}
+					id={String(field.name)}
+					name={String(field.name)}
+					value={formData[field.name]}
+					onChange={handleInputChange}
+					className={cn("bg-background", field.props?.className)}
+				/>
+			);
 		case "select":
 			return (
-				<select {...props} name={String(props.name)}>
-					{props.options.map((o, idx) => (
-						<option {...o} key={idx}>
+				<NativeSelect
+					{...field.props}
+					id={String(field.name)}
+					name={String(field.name)}
+					value={formData[field.name]}
+					onChange={handleInputChange}
+					className={cn("bg-background", field.props?.className)}
+				>
+					{field.options.map((o, idx) => (
+						<NativeSelectOption {...o} key={idx}>
 							{o.label}
-						</option>
+						</NativeSelectOption>
 					))}
-				</select>
+				</NativeSelect>
 			);
 		case "autocomplete":
-			return <AutocompleteInput {...props} />;
+			return (
+				<Combobox
+					items={field.options}
+					itemToStringLabel={(o) => (typeof o == "string" ? o : o.value)}
+					id={String(field.name)}
+					name={String(field.name)}
+					value={field.value || null}
+					onValueChange={(value) => field.onChange(value)}
+					autoHighlight
+					limit={25}
+				>
+					<ComboboxInput placeholder={field.label} className="bg-background" showClear />
+					<ComboboxContent>
+						<ComboboxEmpty>No items found.</ComboboxEmpty>
+						<ComboboxList>
+							{(o, idx) => (
+								<ComboboxItem key={idx} value={o}>
+									{typeof o == "string" ? o : o.label}
+								</ComboboxItem>
+							)}
+						</ComboboxList>
+					</ComboboxContent>
+				</Combobox>
+			);
 	}
 }

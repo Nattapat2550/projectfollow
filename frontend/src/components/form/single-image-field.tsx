@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type SingleImageFieldProps = {
+	id: string;
 	file: File | undefined | null;
 	setFile: React.Dispatch<React.SetStateAction<File | null>>;
 	previewUrl: string;
@@ -23,6 +24,7 @@ type SingleImageFieldProps = {
 };
 
 export default function SingleImageField({
+	id,
 	file,
 	setFile,
 	previewUrl,
@@ -58,7 +60,7 @@ export default function SingleImageField({
 	return (
 		<div className="relative flex flex-col items-start gap-4">
 			<label
-				htmlFor="image-file-input"
+				htmlFor={id}
 				className="group relative size-40"
 				onDragEnter={() => setDragover(true)}
 				onDragLeave={() => setDragover(false)}
@@ -68,7 +70,7 @@ export default function SingleImageField({
 			>
 				{/* File Receptor */}
 				<input
-					id="image-file-input"
+					id={id}
 					type="file"
 					accept="image/*"
 					ref={inputRef}
@@ -102,7 +104,7 @@ export default function SingleImageField({
 			</label>
 			<div className="flex flex-col gap-2">
 				<div className="flex flex-col gap-3">
-					<label htmlFor="image-file-input">
+					<label htmlFor={id}>
 						<div
 							role="button"
 							className="flex cursor-pointer items-center gap-2 rounded-md bg-slate-800 px-4 py-2 text-sm text-white hover:opacity-90"
@@ -111,10 +113,13 @@ export default function SingleImageField({
 							<span>{file ? editLabel : uploadLabel}</span>
 						</div>
 					</label>
-					{file && deletable && (
+					{deletable && (
 						<button
 							type="button"
-							className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
+							className={cn(
+								"flex cursor-pointer items-center gap-1.5 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition",
+								file ? "opacity-100 hover:opacity-90" : "hidden opacity-0"
+							)}
 							onClick={onRemove}
 						>
 							{removeIcon}

@@ -3,7 +3,6 @@
 import React from "react";
 
 import CreateForm, { FieldsLayout } from "@/components/form/create-form";
-import { AutocompleteOption } from "@/components/ui/AutocompleteInput";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
 import { CreateIllegalRequest } from "@/lib/schema/illegal";
@@ -17,38 +16,22 @@ export default function CreateIllegalPageForm({
 	setFormData: React.Dispatch<React.SetStateAction<CreateIllegalRequest>>;
 	handleInputChange: React.ChangeEventHandler;
 }) {
-	const { provinces, districtOptions, subDistrictOptions } = useAddressOptions(
-		formData.detected_location_province,
-		formData.detected_location_district
+	const { options, states, actions } = useAddressOptions(
+		formData,
+		setFormData,
+		"detected_location_province",
+		"detected_location_district",
+		"detected_location_sub_district"
 	);
-
-	const handleSelectDistrict = (opt: AutocompleteOption) => {
-		const { district, province } = opt.extra;
-		setFormData((prev) => ({
-			...prev,
-			detected_location_district: district,
-			detected_location_province: province,
-		}));
-	};
-
-	const handleSelectSubDistrict = (opt: AutocompleteOption) => {
-		const { subDistrict, district, province } = opt.extra;
-		setFormData((prev) => ({
-			...prev,
-			detected_location_sub_district: subDistrict,
-			detected_location_district: district,
-			detected_location_province: province,
-		}));
-	};
 
 	const layout: FieldsLayout<CreateIllegalRequest> = [
 		{
 			heading: "ข้อมูลส่วนบุคคลและชื่อ-นามสกุล",
 			inputs: [
 				[
-					{ label: "ชื่อต้นภาษาไทย *", name: "first_name_th", required: true },
+					{ label: "ชื่อต้นภาษาไทย *", name: "first_name_th", props: { required: true } },
 					{ label: "ชื่อกลางภาษาไทย", name: "middle_name_th" },
-					{ label: "นามสกุลภาษาไทย *", name: "last_name_th", required: true },
+					{ label: "นามสกุลภาษาไทย *", name: "last_name_th", props: { required: true } },
 				],
 				[
 					{ label: "ชื่อต้นภาษาอังกฤษ", name: "first_name_en" },
@@ -62,6 +45,8 @@ export default function CreateIllegalPageForm({
 						name: "nationality",
 						component: "autocomplete",
 						options: ALL_NATIONALITIES,
+						value: formData["nationality"],
+						onChange: (v: string) => setFormData((prev) => ({ ...prev, nationality: v ?? "" })),
 					},
 					{
 						label: "เพศ",
@@ -84,8 +69,7 @@ export default function CreateIllegalPageForm({
 						label: "รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *",
 						name: "detected_location_details",
 						component: "textarea",
-						required: true,
-						rows: 2,
+						props: { required: true, rows: 2 },
 					},
 				],
 				[
@@ -93,25 +77,31 @@ export default function CreateIllegalPageForm({
 						label: "จังหวัด",
 						name: "detected_location_province",
 						component: "autocomplete",
-						options: provinces,
+						options: options.provinces,
+						value: states.provinceOption,
+						onChange: actions.handleProvinceChange,
 					},
 					{
 						label: "เขต/อำเภอ",
 						name: "detected_location_district",
 						component: "autocomplete",
-						options: districtOptions,
-						onSelectOption: handleSelectDistrict,
+						options: options.districts,
+						value: states.districtOption,
+						onChange: actions.handleDistrictChange,
+						// props: { disabled: formData["detected_location_province"] == "" },
 					},
 					{
 						label: "แขวง/ตำบล",
 						name: "detected_location_sub_district",
 						component: "autocomplete",
-						options: subDistrictOptions,
-						onSelectOption: handleSelectSubDistrict,
+						options: options.subDistricts,
+						value: states.subDistrictOption,
+						onChange: actions.handleSubDistrictChange,
+						props: { disabled: formData["detected_location_district"] == "" },
 					},
 				],
 				[
-					{ label: "วันที่ตรวจพบ", name: "detected_date", type: "date" },
+					{ label: "วันที่ตรวจพบ", name: "detected_date", props: { type: "date" } },
 					{ label: "สถานที่ทำงานปลายทาง", name: "workplace" },
 				],
 				[
@@ -131,10 +121,19 @@ export default function CreateIllegalPageForm({
 						label: "บันทึกรายละเอียดผลการคัดกรอง",
 						name: "screening_details",
 						component: "textarea",
-						rows: 4,
+						props: {
+							rows: 4,
+						},
 					},
 				],
-				[{ label: "หมายเหตุเพิ่มเติม (Note)", name: "note", component: "textarea", rows: 3 }],
+				[
+					{
+						label: "หมายเหตุเพิ่มเติม (Note)",
+						name: "note",
+						component: "textarea",
+						props: { rows: 3 },
+					},
+				],
 			],
 		},
 	];

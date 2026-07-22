@@ -91,6 +91,7 @@ export default function CreateIllegalImmigrant() {
 					<div>
 						<h3 className="mb-4 text-lg font-bold">รูปภาพประจำตัว</h3>
 						<SingleImageField
+							id="Person Image"
 							previewUrl="/enter.png"
 							props={{ alt: "Person Preview" }}
 							uploadLabel="อัปโหลดรูปประจำตัว"
@@ -103,6 +104,7 @@ export default function CreateIllegalImmigrant() {
 					<div>
 						<h3 className="mb-4 text-lg font-bold">รูปถ่ายพาสปอร์ต</h3>
 						<SingleImageField
+							id="Passport Image"
 							previewUrl="/passport.png"
 							props={{ alt: "Passport Preview" }}
 							uploadLabel="อัปโหลดรูปพาสปอร์ต"
