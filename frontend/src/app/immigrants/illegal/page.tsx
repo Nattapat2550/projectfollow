@@ -13,6 +13,8 @@ import TablePagination from "@/components/table/table-pagination";
 import { GetAllIllegalResponse } from "@/lib/schema/illegal";
 import { getAllIllegal } from "@/lib/service/illegal";
 
+import { FilterOptions } from "./filter";
+
 const illegalTranslationMap: { [key: string]: string } = {
 	id: "รหัสอ้างอิงระบบ",
 	first_name_th: "ชื่อจริง (ภาษาไทย)",
@@ -54,6 +56,7 @@ const formatValue = (key: string, val: IllegalData[keyof IllegalData]) => {
 function IllegalPageContent() {
 	const [data, setData] = useState<GetAllIllegalResponse | null>(null);
 
+	const [filter, setFilter] = useState<FilterOptions>({});
 	const [loading, setLoading] = useState(true);
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -92,6 +95,7 @@ function IllegalPageContent() {
 				sortBy: sortField ?? undefined,
 				sortOrder: sortDirection,
 				search: debouncedSearch.trim(),
+				...filter,
 			});
 
 			if (response.success) {
@@ -106,7 +110,7 @@ function IllegalPageContent() {
 
 		fetchData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentPage, sortField, sortDirection, debouncedSearch]);
+	}, [currentPage, sortField, sortDirection, debouncedSearch, filter]);
 
 	const handleSort = (field: SortField) => {
 		if (sortField === field) {
@@ -334,9 +338,7 @@ function IllegalPageContent() {
 					}}
 				>
 					<div className="mb-6 flex items-center justify-between">
-						<h1 className="text-2xl font-bold text-(--header)">
-							ข้อมูลผู้ลักลอบเข้าเมือง (Illegal)
-						</h1>
+						<h1 className="text-header text-2xl font-bold">ข้อมูลผู้ลักลอบเข้าเมือง (Illegal)</h1>
 						<div className="flex gap-2">
 							{isExportMode ?
 								<>
@@ -365,7 +367,7 @@ function IllegalPageContent() {
 									</button>
 									<Link
 										href="/immigrants/illegal/create"
-										className="text-background rounded-sm bg-(--header) px-4 py-2 text-sm font-bold transition hover:opacity-90"
+										className="text-background bg-header rounded-sm px-4 py-2 text-sm font-bold transition hover:opacity-90"
 									>
 										+ เพิ่มข้อมูล
 									</Link>
@@ -374,7 +376,7 @@ function IllegalPageContent() {
 						</div>
 					</div>
 
-					<div className="text-foreground mb-6 flex items-center rounded-sm border border-(--wrapper) bg-(--container) px-4 py-2 shadow-[0_1px_2px_var(--shadow)] transition-all focus-within:ring-2 focus-within:ring-(--header)">
+					<div className="text-foreground focus-within:ring-header mb-6 flex items-center rounded-sm border border-(--wrapper) bg-(--container) px-4 py-2 shadow-[0_1px_2px_var(--shadow)] transition-all focus-within:ring-2">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							className="mr-2 h-5 w-5 shrink-0 opacity-70"
@@ -427,13 +429,15 @@ function IllegalPageContent() {
 
 					{loading && !data ?
 						<div className="flex h-64 flex-col items-center justify-center">
-							<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-(--wrapper) border-t-(--header)"></div>
+							<div className="border-t-header mb-4 h-10 w-10 animate-spin rounded-full border-4 border-(--wrapper)"></div>
 							<span className="text-muted-foreground text-sm font-medium">กำลังโหลดข้อมูล...</span>
 						</div>
 					:	<div
 							className={`mb-10 bg-transparent transition-opacity duration-300 ${isUpdating ? "pointer-events-none opacity-50" : "opacity-100"}`}
 						>
 							<IllegalTable
+								filter={filter}
+								setFilter={setFilter}
 								totalItems={totalItems}
 								data={tableRows}
 								sortField={sortField}

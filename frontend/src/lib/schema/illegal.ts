@@ -23,9 +23,22 @@ export type GetAllIllegalRequestQuery = {
 	limit: string;
 } & Partial<
 	Record<
-		"search" | "sortBy" | "sortOrder" | "startDate" | "endDate" | "dobStart" | "dobEnd" | "creator",
+		| "startDate"
+		| "endDate"
+		| "dobStart"
+		| "dobEnd"
+		| "search"
+		| "nationality"
+		| "province"
+		| "region"
+		| "gender"
+		| "ageGroup"
+		| "isVictim"
+		| "hasPassport"
+		| "creator"
+		| "sortBy",
 		string
-	>
+	> & { sortOrder: "asc" | "desc" }
 >;
 export type GetAllIllegalResponse = {
 	success: true;

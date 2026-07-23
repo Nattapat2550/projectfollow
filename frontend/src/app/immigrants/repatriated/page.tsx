@@ -12,6 +12,8 @@ import UniversalImmigrantCard from "@/components/immigrants/UniversalImmigrantCa
 import TablePagination from "@/components/table/table-pagination";
 import { GetAllRepatriatedResponse } from "@/lib/schema/repatriated";
 import { getAllRepatriated } from "@/lib/service/repatriated";
+
+import { FilterOptions as RepatriatedTableFilterOptions } from "./filter";
 const repatriatedTranslationMap: { [key: string]: string } = {
 	id: "รหัสอ้างอิงระบบ",
 	first_name_th: "ชื่อจริง (ภาษาไทย)",
@@ -66,6 +68,7 @@ const formatValue = (key: string, val: RepatriatedData[keyof RepatriatedData]): 
 
 function RepatriatedPageContent() {
 	const [data, setData] = useState<GetAllRepatriatedResponse | null>(null);
+	const [filter, setFilter] = useState<RepatriatedTableFilterOptions>({});
 
 	const [loading, setLoading] = useState(true);
 	const [isUpdating, setIsUpdating] = useState(false);
@@ -105,6 +108,7 @@ function RepatriatedPageContent() {
 				sortBy: sortField ?? undefined,
 				sortOrder: sortDirection,
 				search: debouncedSearch.trim(),
+				...filter,
 			});
 
 			if (response.success) {
@@ -119,7 +123,7 @@ function RepatriatedPageContent() {
 
 		fetchData();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [currentPage, sortField, sortDirection, debouncedSearch]);
+	}, [currentPage, sortField, sortDirection, debouncedSearch, filter]);
 
 	const handleSort = (field: SortField) => {
 		if (sortField === field) {
@@ -351,9 +355,7 @@ function RepatriatedPageContent() {
 					}}
 				>
 					<div className="mb-6 flex items-center justify-between">
-						<h1 className="text-2xl font-bold text-(--header)">
-							ข้อมูลผู้ถูกส่งกลับ (Repatriated)
-						</h1>
+						<h1 className="text-header text-2xl font-bold">ข้อมูลผู้ถูกส่งกลับ (Repatriated)</h1>
 						<div className="flex gap-2">
 							{isExportMode ?
 								<>
@@ -382,7 +384,7 @@ function RepatriatedPageContent() {
 									</button>
 									<Link
 										href="/immigrants/repatriated/create"
-										className="text-background rounded-sm bg-(--header) px-4 py-2 text-sm font-bold transition hover:opacity-90"
+										className="text-background bg-header rounded-sm px-4 py-2 text-sm font-bold transition hover:opacity-90"
 									>
 										+ เพิ่มข้อมูล
 									</Link>
@@ -391,7 +393,7 @@ function RepatriatedPageContent() {
 						</div>
 					</div>
 
-					<div className="text-foreground mb-6 flex items-center rounded-sm border border-(--wrapper) bg-(--container) px-4 py-2 shadow-[0_1px_2px_var(--shadow)] transition-all focus-within:ring-2 focus-within:ring-(--header)">
+					<div className="text-foreground focus-within:ring-header mb-6 flex items-center rounded-sm border border-(--wrapper) bg-(--container) px-4 py-2 shadow-[0_1px_2px_var(--shadow)] transition-all focus-within:ring-2">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							className="mr-2 h-5 w-5 shrink-0 opacity-70"
@@ -444,13 +446,15 @@ function RepatriatedPageContent() {
 
 					{loading && !data ?
 						<div className="flex h-64 flex-col items-center justify-center">
-							<div className="mb-4 h-10 w-10 animate-spin rounded-full border-4 border-(--wrapper) border-t-(--header)"></div>
+							<div className="border-t-header mb-4 h-10 w-10 animate-spin rounded-full border-4 border-(--wrapper)"></div>
 							<span className="text-sm font-medium opacity-70">กำลังโหลดข้อมูล...</span>
 						</div>
 					:	<div
 							className={`mb-10 bg-transparent transition-opacity duration-300 ${isUpdating ? "pointer-events-none opacity-50" : "opacity-100"}`}
 						>
 							<RepatriatedTable
+								filter={filter}
+								setFilter={setFilter}
 								totalItems={totalItems}
 								data={tableRows}
 								sortField={sortField}

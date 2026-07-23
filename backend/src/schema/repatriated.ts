@@ -21,16 +21,22 @@ export type GetAllRepatriatedRequestQuery = {
   limit: string;
 } & Partial<
   Record<
-    | "search"
-    | "sortBy"
-    | "sortOrder"
     | "startDate"
     | "endDate"
     | "dobStart"
     | "dobEnd"
-    | "creator",
+    | "search"
+    | "nationality"
+    | "province"
+    | "region"
+    | "gender"
+    | "ageGroup"
+    | "isVictim"
+    | "hasPassport"
+    | "creator"
+    | "sortBy",
     string
-  >
+  > & { sortOrder: "asc" | "desc" }
 >;
 export type GetAllRepatriatedResponse = {
   success: true;

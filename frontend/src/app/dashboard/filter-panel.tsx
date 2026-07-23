@@ -1,9 +1,7 @@
 "use client";
 
-import { Field, FieldLabel } from "@/components/ui/field";
-import { NativeSelect, NativeSelectOption, NativeSelectProps } from "@/components/ui/native-select";
+import NativeSelectField from "@/components/form/field/native-select";
 import { useDashboard } from "@/hooks/useDashboard";
-import { cn } from "@/lib/utils";
 
 const inputClass =
 	"w-full bg-background border border-[var(--wrapper)] text-foreground rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--header)]/40 dark:[color-scheme:dark]";
@@ -19,7 +17,7 @@ export default function DashboardPageFilterPanel({
 		<div className="flex w-full shrink-0 flex-col gap-5 rounded-md border border-(--wrapper) bg-(--container) p-6 shadow-[4px_4px_0px_rgba(0,0,0,0.25)] lg:w-72">
 			<span className="text-header text-lg font-bold">ฟิลเตอร์ตัวเลือก</span>
 
-			<SelectField
+			<NativeSelectField
 				label="ประเภทข้อมูล"
 				value={states.filterType}
 				onChange={(e) => actions.handleTypeChange(e.target.value as "illegal" | "repatriated")}
@@ -29,7 +27,7 @@ export default function DashboardPageFilterPanel({
 				]}
 			/>
 
-			<SelectField
+			<NativeSelectField
 				label="สัญชาติ"
 				value={states.filterNat}
 				onChange={(e) => actions.handleFilterChange(actions.setFilterNat, e.target.value)}
@@ -39,7 +37,7 @@ export default function DashboardPageFilterPanel({
 				}))}
 			/>
 
-			<SelectField
+			<NativeSelectField
 				label="เพศ"
 				value={states.filterGender}
 				onChange={(e) => actions.handleFilterChange(actions.setFilterGender, e.target.value)}
@@ -49,7 +47,7 @@ export default function DashboardPageFilterPanel({
 				}))}
 			/>
 
-			<SelectField
+			<NativeSelectField
 				label="ภาคที่พบ/ส่งกลับ"
 				value={states.filterRegion}
 				onChange={(e) => actions.handleFilterChange(actions.setFilterRegion, e.target.value)}
@@ -59,7 +57,7 @@ export default function DashboardPageFilterPanel({
 				}))}
 			/>
 
-			<SelectField
+			<NativeSelectField
 				label="จังหวัดที่พบ/ส่งกลับ"
 				value={states.filterProvince}
 				onChange={(e) => actions.handleFilterChange(actions.setFilterProvince, e.target.value)}
@@ -69,7 +67,7 @@ export default function DashboardPageFilterPanel({
 				}))}
 			/>
 
-			<SelectField
+			<NativeSelectField
 				label="ผู้เพิ่มข้อมูล"
 				value={states.filterCreator}
 				onChange={(e) => actions.handleFilterChange(actions.setFilterCreator, e.target.value)}
@@ -79,7 +77,7 @@ export default function DashboardPageFilterPanel({
 				}))}
 			/>
 
-			<SelectField
+			<NativeSelectField
 				label="ช่วงอายุ"
 				value={states.filterAge}
 				onChange={(e) => actions.handleFilterChange(actions.setFilterAge, e.target.value)}
@@ -179,25 +177,5 @@ export default function DashboardPageFilterPanel({
 				รีเซ็ตทั้งหมด
 			</button>
 		</div>
-	);
-}
-
-function SelectField({
-	label,
-	id = label,
-	options,
-	...props
-}: NativeSelectProps & { label: string; options: React.ComponentProps<"option">[] }) {
-	return (
-		<Field>
-			<FieldLabel htmlFor={id} className="text-header text-sm font-bold">
-				{label}
-			</FieldLabel>
-			<NativeSelect {...props} id={id} className={cn("bg-background", props.className)}>
-				{options.map((option, idx) => (
-					<NativeSelectOption {...option} key={idx} />
-				))}
-			</NativeSelect>
-		</Field>
 	);
 }

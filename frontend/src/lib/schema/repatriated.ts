@@ -1,69 +1,82 @@
 type RepatriatedOmited = Omit<
-	RepatriatedData,
-	| "id"
-	| "channel"
-	| "created_by"
-	| "created_at"
-	| "updated_at"
-	| "result"
-	| "victim_indicator"
-	| "passport_photo_url"
+  RepatriatedData,
+  | "id"
+  | "channel"
+  | "created_by"
+  | "created_at"
+  | "updated_at"
+  | "result"
+  | "victim_indicator"
+  | "passport_photo_url"
 >;
 
 export type RepatriatedRequestData = Record<keyof RepatriatedOmited, string> & {
-	age?: string;
-	is_victim?: string;
-	screening_details?: string;
+  age?: string;
+  is_victim?: string;
+  screening_details?: string;
 };
 
 export type GetAllRepatriatedRequestQuery = {
-	page: string;
-	limit: string;
+  page: string;
+  limit: string;
 } & Partial<
-	Record<
-		"search" | "sortBy" | "sortOrder" | "startDate" | "endDate" | "dobStart" | "dobEnd" | "creator",
-		string
-	>
+  Record<
+    | "startDate"
+    | "endDate"
+    | "dobStart"
+    | "dobEnd"
+    | "search"
+    | "nationality"
+    | "province"
+    | "region"
+    | "gender"
+    | "ageGroup"
+    | "isVictim"
+    | "hasPassport"
+    | "creator"
+    | "sortBy",
+    string
+  > & { sortOrder: "asc" | "desc" }
 >;
 export type GetAllRepatriatedResponse = {
-	success: true;
-	tableData: RepatriatedData[];
-	meta: {
-		totalItems: number;
-		totalPages: number;
-		currentPage: number;
-		limit: number;
-	};
+  success: true;
+  tableData: RepatriatedData[];
+  meta: {
+    totalItems: number;
+    totalPages: number;
+    currentPage: number;
+    limit: number;
+  };
 };
 
 export type GetRepatriatedByIdResponse = {
-	success: true;
-	data: RepatriatedData;
+  success: true;
+  data: RepatriatedData;
 };
 
 export type CreateRepatriatedRequest = RepatriatedRequestData;
 export type CreateRepatriatedRequestFile = Record<
-	"photo" | "passport_photo",
-	File | undefined | null
+  "photo" | "passport_photo",
+  File | undefined | null
 >;
 export type CreateRepatriatedResponse = {
-	success: boolean;
-	data?: RepatriatedData;
-	message?: string;
+  success: boolean;
+  data?: RepatriatedData;
+  message?: string;
 };
 
 export type UpdateRepatriatedRequest = RepatriatedRequestData;
 export type UpdateRepatriatedRequestFile = Record<
-	"photo" | "passport_photo",
-	File | undefined | null
+  "photo" | "passport_photo",
+  File | undefined | null
 >;
 export type UpdateRepatriatedResponse = {
-	success: boolean;
-	data?: RepatriatedData;
-	message?: string;
+  success: boolean;
+  data?: RepatriatedData;
+  message?: string;
 };
 
 export type DeleteRepatriatedResponse = {
-	success: true;
-	message: string;
+  success: true;
+  message: string;
 };

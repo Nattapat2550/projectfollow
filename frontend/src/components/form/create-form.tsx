@@ -73,9 +73,7 @@ export default function CreateForm<T extends Record<string, string>>({
 		<FieldSet>
 			{layout.map((e) => (
 				<React.Fragment key={e.heading}>
-					<FieldLabel className="mt-8 mb-4 text-xl font-bold text-(--header)">
-						{e.heading}
-					</FieldLabel>
+					<FieldLabel className="text-header mt-8 mb-4 text-xl font-bold">{e.heading}</FieldLabel>
 					{e.inputs.map((group, idx) => (
 						<FieldGroup
 							className={cn(

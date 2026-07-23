@@ -29,6 +29,13 @@ export async function getAllRepatriated(
     search,
     sortBy,
     sortOrder,
+    ageGroup,
+    gender,
+    hasPassport,
+    isVictim,
+    nationality,
+    province,
+    region,
   } = query;
 
   const page = parseInt(query.page) || 1;
@@ -49,7 +56,14 @@ export async function getAllRepatriated(
       rawEndDate,
       search,
       sortBy,
-      sortOrder: sortOrder == "asc" ? "asc" : "desc",
+      sortOrder,
+      ageGroup,
+      gender,
+      hasPassport,
+      isVictim,
+      nationality,
+      province,
+      region,
     },
     "repatriated",
   );

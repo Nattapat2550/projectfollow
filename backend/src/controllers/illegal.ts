@@ -29,6 +29,13 @@ export async function getAllIllegal(
     search,
     sortBy,
     sortOrder,
+    ageGroup,
+    gender,
+    hasPassport,
+    isVictim,
+    nationality,
+    province,
+    region,
   } = query;
 
   const page = parseInt(query.page) || 1;
@@ -48,7 +55,14 @@ export async function getAllIllegal(
       rawEndDate,
       search,
       sortBy,
-      sortOrder: sortOrder == "asc" ? "asc" : "desc",
+      sortOrder,
+      ageGroup,
+      gender,
+      hasPassport,
+      isVictim,
+      nationality,
+      province,
+      region,
     },
     "illegal",
   );

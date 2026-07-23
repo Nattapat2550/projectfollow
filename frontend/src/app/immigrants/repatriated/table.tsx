@@ -7,6 +7,8 @@ import TableHeader, { FieldInfo } from "@/components/table/table-header";
 import TableToggle from "@/components/table/table-toggle";
 import { Button } from "@/components/ui/button";
 
+import RepatriatedTableFilter, { RepatriatedTableFilterProps } from "./filter";
+
 export const helperFormatDOBAndAge = (
 	dob: string | null | undefined,
 	age: number | string | null
@@ -51,7 +53,7 @@ export type SortField =
 	| "return_date"
 	| "is_victim";
 
-interface RepatriatedTableProps {
+type RepatriatedTableProps = {
 	totalItems: number;
 	data: RepatriatedData[];
 	sortField: SortField | null;
@@ -62,7 +64,7 @@ interface RepatriatedTableProps {
 	selectedIds?: string[];
 	onToggleSelect?: (_id: string) => void;
 	onSelectAll?: (_selectAll: boolean) => void;
-}
+} & Partial<RepatriatedTableFilterProps>;
 
 const defaultHeaderClass: Record<SortField, string> = {
 	name: "w-[20%]",
@@ -74,6 +76,8 @@ const defaultHeaderClass: Record<SortField, string> = {
 };
 
 export default function RepatriatedTable({
+	filter,
+	setFilter,
 	totalItems,
 	data,
 	isExportMode,
@@ -118,29 +122,23 @@ export default function RepatriatedTable({
 				<span className="opacity-70">
 					ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)
 				</span>
-				<TableToggle
-					fieldInfo={fieldInfo}
-					onChange={(name, checked) => {
-						setfieldInfo((prev) => {
-							const newState = { ...prev };
-							newState[name].visible = checked;
-							return newState;
-						});
-					}}
-				>
-					<Button
-						disabled={isUpdating}
-						type="button"
-						className="cursor-pointer pr-4"
-						style={{
-							backgroundColor: "var(--background)",
-							color: "var(--foreground)",
-							borderColor: "var(--wrapper)",
+				<div className="space-x-2">
+					{filter && setFilter && <RepatriatedTableFilter filter={filter} setFilter={setFilter} />}
+					<TableToggle
+						fieldInfo={fieldInfo}
+						onChange={(name, checked) => {
+							setfieldInfo((prev) => {
+								const newState = { ...prev };
+								newState[name].visible = checked;
+								return newState;
+							});
 						}}
 					>
-						Toggle
-					</Button>
-				</TableToggle>
+						<Button disabled={isUpdating} type="button" variant="outline">
+							Toggle
+						</Button>
+					</TableToggle>
+				</div>
 			</div>
 			<div
 				className="w-full overflow-hidden rounded-sm"

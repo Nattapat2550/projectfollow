@@ -65,7 +65,7 @@ export default function CreateIllegalImmigrant() {
 			<div className="mx-auto mb-6 max-w-2xl">
 				<button
 					onClick={() => router.push("/")}
-					className="flex cursor-pointer items-center gap-1 text-2xl font-bold text-(--header) transition hover:opacity-80"
+					className="text-header flex cursor-pointer items-center gap-1 text-2xl font-bold transition hover:opacity-80"
 				>
 					<ChevronLeft size={32} />
 					<span>เพิ่มข้อมูลใหม่ (ผู้ลักลอบเข้าประเทศ)</span>
@@ -134,7 +134,7 @@ export default function CreateIllegalImmigrant() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="text-background flex cursor-pointer items-center gap-1.5 rounded-lg bg-(--header) px-4 py-2 text-sm font-bold transition hover:opacity-90 disabled:opacity-50"
+						className="text-background bg-header flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition hover:opacity-90 disabled:opacity-50"
 					>
 						<Save size={16} /> {loading ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
 					</button>

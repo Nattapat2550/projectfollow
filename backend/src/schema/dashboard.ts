@@ -1,7 +1,6 @@
 export type PersonType = "illegal" | "repatriated";
 
-export type GetDashboardStatsRequestQuery<T extends PersonType> = {
-  type: T;
+export type GetDashboardStatsRequestQuery = {
   nationality?: string;
   province?: string;
   region?: string;

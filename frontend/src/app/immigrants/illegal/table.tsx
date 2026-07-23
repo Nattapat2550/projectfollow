@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import React, { useState } from "react";
 
 import TableHeader, { FieldInfo } from "@/components/table/table-header";
 import TableToggle from "@/components/table/table-toggle";
 import { Button } from "@/components/ui/button";
+
+import IllegalTableFilter, { IllegalTableFilterProps } from "./filter";
 
 export type SortField =
 	| "name"
@@ -14,7 +16,7 @@ export type SortField =
 	| "detected_location"
 	| "is_victim";
 
-interface IllegalTableProps {
+type IllegalTableProps = {
 	totalItems: number;
 	data: IllegalData[];
 	sortField: SortField | null;
@@ -25,7 +27,7 @@ interface IllegalTableProps {
 	selectedIds?: string[];
 	onToggleSelect?: (_id: string) => void;
 	onSelectAll?: (_selectAll: boolean) => void;
-}
+} & Partial<IllegalTableFilterProps>;
 
 const defaultHeaderClass: Record<SortField, string> = {
 	name: "w-[25%]",
@@ -36,6 +38,8 @@ const defaultHeaderClass: Record<SortField, string> = {
 };
 
 export default function IllegalTable({
+	filter,
+	setFilter,
 	totalItems,
 	data,
 	isExportMode,
@@ -75,31 +79,27 @@ export default function IllegalTable({
 
 	return (
 		<div>
-			<div className="text-muted-foreground flex items-center justify-between p-4 text-sm font-medium">
-				<span>ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)</span>
-				<TableToggle
-					fieldInfo={fieldInfo}
-					onChange={(name, checked) => {
-						setfieldInfo((prev) => {
-							const newState = { ...prev };
-							newState[name].visible = checked;
-							return newState;
-						});
-					}}
-				>
-					<Button
-						disabled={isUpdating}
-						type="button"
-						className="cursor-pointer pr-4"
-						style={{
-							backgroundColor: "var(--background)",
-							color: "var(--foreground)",
-							borderColor: "var(--wrapper)",
+			<div className="flex items-center justify-between p-4 text-sm font-medium">
+				<span className="text-muted-foreground">
+					ตารางข้อมูล ({totalItems.toLocaleString("th-TH")} รายการ)
+				</span>
+				<div className="space-x-2">
+					{filter && setFilter && <IllegalTableFilter filter={filter} setFilter={setFilter} />}
+					<TableToggle
+						fieldInfo={fieldInfo}
+						onChange={(name, checked) => {
+							setfieldInfo((prev) => {
+								const newState = { ...prev };
+								newState[name].visible = checked;
+								return newState;
+							});
 						}}
 					>
-						Toggle
-					</Button>
-				</TableToggle>
+						<Button disabled={isUpdating} variant="outline">
+							Toggle
+						</Button>
+					</TableToggle>
+				</div>
 			</div>
 
 			<div

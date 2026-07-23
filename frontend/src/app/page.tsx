@@ -9,7 +9,7 @@ export default function Home() {
         We use xl:w-1/2 so that on very large screens they are side-by-side, 
         and on smaller screens (below 1280px) they stack vertically.
       */}
-			<h1 className="text-center text-2xl font-bold text-(--header)">
+			<h1 className="text-header text-center text-2xl font-bold">
 				โปรดเลือกรายการที่ท่านต้องการดูข้อมูล
 			</h1>
 			<div className="my-4 flex flex-col sm:flex-row">
@@ -29,9 +29,7 @@ export default function Home() {
 								maskRepeat: "no-repeat",
 							}}
 						/>
-						<h1 className="font-bold text-(--header) sm:text-center">
-							ผู้ถูกส่งกลับ (Repatriated)
-						</h1>
+						<h1 className="text-header font-bold sm:text-center">ผู้ถูกส่งกลับ (Repatriated)</h1>
 					</div>
 				</Link>
 				<Link href={"/immigrants/illegal"}>
@@ -50,9 +48,7 @@ export default function Home() {
 								maskRepeat: "no-repeat",
 							}}
 						/>
-						<h1 className="font-bold text-(--header) sm:text-center">
-							ผู้ลักลอบเข้าเมือง (Illegal)
-						</h1>
+						<h1 className="text-header font-bold sm:text-center">ผู้ลักลอบเข้าเมือง (Illegal)</h1>
 					</div>
 				</Link>
 			</div>

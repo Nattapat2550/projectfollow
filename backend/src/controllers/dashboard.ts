@@ -10,7 +10,7 @@ import { buildDashboardQuerySQL } from "../services/dashboard";
 import { buildDataQuerySQL } from "../services/data";
 
 export async function getIllegalDashboardStats(
-  query: Partial<GetDashboardStatsRequestQuery<"illegal">>,
+  query: Partial<GetDashboardStatsRequestQuery>,
 ): Promise<GetDashboardStatsResponse<"illegal">> {
   const {
     nationality = "ทั้งหมด",
@@ -198,7 +198,7 @@ export async function getIllegalDashboardStats(
 }
 
 export async function getRepatriatedDashboardStats(
-  query: Partial<GetDashboardStatsRequestQuery<"repatriated">>,
+  query: Partial<GetDashboardStatsRequestQuery>,
 ): Promise<GetDashboardStatsResponse<"repatriated">> {
   const {
     nationality = "ทั้งหมด",

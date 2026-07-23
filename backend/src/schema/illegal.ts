@@ -12,7 +12,11 @@ type IllegalOmited = Omit<
   | "passport_photo_url"
 >;
 
-export type IllegalRequestData = Record<keyof IllegalOmited, string> & {
+export type IllegalRequestData = {
+  [key in keyof IllegalOmited]: IllegalOmited[key] extends string
+    ? IllegalOmited[key]
+    : string;
+} & {
   age?: string;
 };
 
@@ -21,16 +25,22 @@ export type GetAllIllegalRequestQuery = {
   limit: string;
 } & Partial<
   Record<
-    | "search"
-    | "sortBy"
-    | "sortOrder"
     | "startDate"
     | "endDate"
     | "dobStart"
     | "dobEnd"
-    | "creator",
+    | "search"
+    | "nationality"
+    | "province"
+    | "region"
+    | "gender"
+    | "ageGroup"
+    | "isVictim"
+    | "hasPassport"
+    | "creator"
+    | "sortBy",
     string
-  >
+  > & { sortOrder: "asc" | "desc" }
 >;
 export type GetAllIllegalResponse = {
   success: true;
