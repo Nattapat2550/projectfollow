@@ -1,52 +1,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export interface StatItem {
-	label: string;
-	value: number | string;
-}
-export interface ChartItem {
-	name: string;
-	value: number;
-	color: string;
-}
-export interface DashboardData {
-	stats: {
-		total: number;
-		victims?: number;
-		hasPassport?: number;
-		success?: number;
-	};
-	charts: {
-		nationality?: { name: string; value: number; color?: string }[];
-		province?: { name: string; value: number; color?: string }[];
-		gender?: { name: string; value: number; color?: string }[];
-		victim?: { name: string; value: number; color?: string }[];
-		passport?: { name: string; value: number; color?: string }[];
-
-		creator?: {
-			name: string;
-			value: number;
-			color?: string;
-			profile_color?: string;
-			creator_color?: string;
-		}[];
-		ageGroup?: { name: string; value: number; color?: string }[];
-		dateTrend?: { name: string; value: number; color?: string }[];
-		region?: { name: string; value: number; color?: string }[];
-	};
-	meta: {
-		totalItems: number;
-		totalPages: number;
-		currentPage: number;
-		allNationalities: string[];
-		allGenders: string[];
-		allCreators?: string[];
-		allProvinces?: string[];
-		allRegions?: string[];
-	};
-	tableData: any[];
-}
+import { GetDashboardStatsRequestQuery, GetDashboardStatsResponse } from "@/lib/schema/dashboard";
+import { getIllegalDashboardStats, getRepatriatedDashboardStats } from "@/lib/service/dashboard";
 
 const CHART_COLORS = [
 	"var(--chart-1)",
@@ -56,14 +12,18 @@ const CHART_COLORS = [
 	"var(--chart-5)",
 	"var(--chart-6)",
 ];
-const dashboardFetchCache = new Map<string, DashboardData>();
+
+// FIX
+const dashboardFetchCache = new Map<string, GetDashboardStatsResponse<"illegal" | "repatriated">>();
 
 export function useDashboard() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const typeParam = (searchParams.get("type") as "illegal" | "repatriated") || "repatriated";
 
-	const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+	const [dashboardData, setDashboardData] = useState<GetDashboardStatsResponse<
+		"illegal" | "repatriated"
+	> | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [isUpdating, setIsUpdating] = useState(false);
 
@@ -86,10 +46,8 @@ export function useDashboard() {
 	const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
 	useEffect(() => {
-		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-		const params = new URLSearchParams({
-			type: filterType,
-			nationality: filterType === "illegal" ? filterNat : "ทั้งหมด",
+		const query: GetDashboardStatsRequestQuery = {
+			nationality: filterNat,
 			gender: filterGender,
 			startDate,
 			endDate,
@@ -100,52 +58,40 @@ export function useDashboard() {
 			ageGroup: filterAge,
 			page: currentPage.toString(),
 			limit: "50",
-		});
+			creator: filterCreator,
+			sortOrder: sortDirection,
+			sortBy: sortField,
+		};
 
-		if (filterCreator && filterCreator !== "ทั้งหมด") {
-			params.append("creator", filterCreator);
+		if (filterType == "repatriated") {
+			query.dobStart = dobStart;
+			query.dobEnd = dobEnd;
 		}
 
-		if (filterType === "repatriated") {
-			if (dobStart) params.append("dobStart", dobStart);
-			if (dobEnd) params.append("dobEnd", dobEnd);
-		}
-		if (sortField) {
-			params.append("sortBy", sortField);
-			params.append("sortOrder", sortDirection);
-		}
+		const cacheKey = JSON.stringify(query);
 
-		const url = `${backendUrl}/api/v1/dashboard?${params.toString()}`;
-
-		if (dashboardFetchCache.has(url)) {
-			setDashboardData(dashboardFetchCache.get(url)!);
+		if (dashboardFetchCache.has(cacheKey)) {
+			setDashboardData(dashboardFetchCache.get(cacheKey)!);
 			setLoading(false);
 			setIsUpdating(false);
 		} else {
 			if (!dashboardData) setLoading(true);
 			else setIsUpdating(true);
-		}
 
-		const controller = new AbortController();
-		fetch(url, { cache: "no-store", signal: controller.signal })
-			.then((res) => {
-				if (!res.ok) throw new Error("API error");
-				return res.json();
-			})
-			.then((json) => {
-				dashboardFetchCache.set(url, json);
-				setDashboardData(json);
+			const fetch =
+				filterType == "illegal" ?
+					getIllegalDashboardStats(query)
+				:	getRepatriatedDashboardStats(query);
+
+			fetch.then((response) => {
+				if (response.success) {
+					dashboardFetchCache.set(cacheKey, response);
+					setDashboardData(response);
+				}
 				setLoading(false);
 				setIsUpdating(false);
-			})
-			.catch((err) => {
-				if (err.name !== "AbortError") {
-					console.error("Fetch Error:", err);
-					setLoading(false);
-					setIsUpdating(false);
-				}
 			});
-		return () => controller.abort();
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		filterType,
@@ -235,7 +181,7 @@ export function useDashboard() {
 		return { ...item, first_name_th: fnTh, last_name_th: lnTh };
 	});
 
-	const stats: StatItem[] = (() => {
+	const stats: { label: string; value: number }[] = (() => {
 		if (!dashboardData) return [];
 		return filterType === "illegal" ?
 				[

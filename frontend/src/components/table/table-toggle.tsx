@@ -28,14 +28,7 @@ export default function TableToggle<T extends string>({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-			<DropdownMenuContent
-				align="end"
-				style={{
-					backgroundColor: "var(--background)",
-					color: "var(--foreground)",
-					borderColor: "var(--wrapper)",
-				}}
-			>
+			<DropdownMenuContent align="end">
 				<DropdownMenuGroup>
 					<DropdownMenuLabel>Toggle Visibility</DropdownMenuLabel>
 					{Object.entries<Info>(fieldInfo).map(([name, { label, visible }]) => (

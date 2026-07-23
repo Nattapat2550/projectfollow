@@ -1,7 +1,16 @@
 import { convertBEtoAD } from "../utils/immigrantHelpers";
 
 export const buildDashboardQuerySQL = (
-  query,
+  query: {
+    search?: string;
+    sortBy?: string;
+    sortOrder?: string;
+    startDate?: string;
+    endDate?: string;
+    dobStart?: string;
+    dobEnd?: string;
+    creator?: string;
+  },
   type: "illegal" | "repatriated",
 ) => {
   const {

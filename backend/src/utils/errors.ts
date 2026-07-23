@@ -34,7 +34,7 @@ export function getErrorResponse(err: unknown): {
 }
 
 /**
- * Wraps controller and take care of error handling .
+ * Wraps controller and take care of error handling.
  *
  * @param f controller function
  * @param [thisArg=undefined] The object to be used as the current object.

@@ -2,9 +2,7 @@ import express from "express";
 const router = express.Router();
 import multer from "multer";
 
-// นำเข้า Controller
-import * as immigrantController from "../controllers/immigrantController";
-import * as illegalController from "../controllers/illegalController";
+import * as illegalController from "../controllers/uploadExcelIllegalController";
 import * as illegal from "../handler/illegal";
 import * as repatriated from "../handler/repatriated";
 
@@ -14,12 +12,6 @@ import { protect } from "../middleware/auth";
 
 const memoryStorage = multer.memoryStorage();
 const uploadExcel = multer({ storage: memoryStorage });
-
-// ----------------------------------------------------
-// ข้อมูลรวม & Dashboard
-// ----------------------------------------------------
-router.get("/", immigrantController.getAllData);
-router.get("/dashboard", immigrantController.getDashboardData);
 
 // ----------------------------------------------------
 // Illegal (แอบเข้าเมือง)

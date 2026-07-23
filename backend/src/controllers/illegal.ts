@@ -1,6 +1,5 @@
 import pool from "../config/db";
 import { v4 as uuidv4 } from "uuid";
-import * as dashboardService from "../services/dashboardService";
 import {
   uploadToDrive,
   deleteFromDrive,
@@ -16,10 +15,22 @@ import * as cache from "../utils/cache";
 
 import * as schema from "../schema/illegal";
 import { error } from "../utils/errors";
+import { buildDataQuerySQL } from "../services/data";
 
 export async function getAllIllegal(
   query: Partial<schema.GetAllIllegalRequestQuery>,
 ): Promise<schema.GetAllIllegalResponse> {
+  const {
+    creator,
+    dobEnd: rawDobEnd,
+    dobStart: rawDobStart,
+    startDate: rawStartDate,
+    endDate: rawEndDate,
+    search,
+    sortBy,
+    sortOrder,
+  } = query;
+
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 50;
   const offset = (page - 1) * limit;
@@ -28,8 +39,19 @@ export async function getAllIllegal(
   const cachedData = cache.get(cacheKey);
   if (cachedData) return cachedData;
 
-  const { whereClause, params, orderClause } =
-    dashboardService.buildDashboardQuerySQL(query, "illegal");
+  const { whereClause, params, orderClause } = buildDataQuerySQL(
+    {
+      creator,
+      rawDobStart,
+      rawDobEnd,
+      rawStartDate,
+      rawEndDate,
+      search,
+      sortBy,
+      sortOrder: sortOrder == "asc" ? "asc" : "desc",
+    },
+    "illegal",
+  );
   const paramCount = params.length;
 
   const dataQuery = `

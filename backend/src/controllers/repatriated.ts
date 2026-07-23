@@ -1,6 +1,5 @@
 import pool from "../config/db";
 import { v4 as uuidv4 } from "uuid";
-import * as dashboardService from "../services/dashboardService";
 import {
   uploadToDrive,
   deleteFromDrive,
@@ -16,10 +15,22 @@ import * as cache from "../utils/cache";
 
 import * as schema from "../schema/repatriated";
 import { error } from "../utils/errors";
+import { buildDataQuerySQL } from "../services/data";
 
 export async function getAllRepatriated(
   query: Partial<schema.GetAllRepatriatedRequestQuery>,
 ): Promise<schema.GetAllRepatriatedResponse> {
+  const {
+    creator,
+    dobEnd: rawDobEnd,
+    dobStart: rawDobStart,
+    startDate: rawStartDate,
+    endDate: rawEndDate,
+    search,
+    sortBy,
+    sortOrder,
+  } = query;
+
   const page = parseInt(query.page) || 1;
   const limit = parseInt(query.limit) || 50;
   const offset = (page - 1) * limit;
@@ -29,8 +40,19 @@ export async function getAllRepatriated(
   if (cachedData) return cachedData;
 
   // 🟢 สร้าง SQL Query จาก Service
-  const { whereClause, params, orderClause } =
-    dashboardService.buildDashboardQuerySQL(query, "repatriated");
+  const { whereClause, params, orderClause } = buildDataQuerySQL(
+    {
+      creator,
+      rawDobStart,
+      rawDobEnd,
+      rawStartDate,
+      rawEndDate,
+      search,
+      sortBy,
+      sortOrder: sortOrder == "asc" ? "asc" : "desc",
+    },
+    "repatriated",
+  );
   const paramCount = params.length;
 
   // ปรับ Query หลักให้ทำการ LEFT JOIN ดึงข้อมูลรายละเอียดบัญชีผู้ใช้ (ชื่อและสี) ของผู้อัพโหลดข้อมูลรายการนั้นๆ

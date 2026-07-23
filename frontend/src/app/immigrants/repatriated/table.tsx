@@ -89,7 +89,7 @@ export default function RepatriatedTable({
 
 	const [fieldInfo, setfieldInfo] = useState<FieldInfo<SortField>>({
 		name: { label: "ชื่อ-สกุล", visible: true },
-		date_of_birth: { label: "สัญชาติ", visible: true },
+		date_of_birth: { label: "วันเกิด (อายุ)", visible: true },
 		national_id: { label: "เลขประจำตัว", visible: true },
 		address: { label: "ที่อยู่", visible: true },
 		return_date: { label: "วันที่ส่งกลับ", visible: true },
