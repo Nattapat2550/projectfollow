@@ -4,6 +4,7 @@ import React from "react";
 import UserIcon from "@/components/icons/user";
 import ImageWithDialog from "@/components/immigrants/ImageWithDialog";
 import { COUNTRY_MAP } from "@/constants/country";
+import { getValidImageUrl } from "@/lib/imageUrl";
 
 const formatNationalId = (id: string): string => {
 	if (!id || id.trim().length !== 13) return id || "-";
@@ -223,7 +224,16 @@ export default function RepatriatedIDPageCard({ data }: { data: RepatriatedData 
 						style={{ aspectRatio: "3/4" }}
 					>
 						{data.photo_url ?
-							<ImageWithDialog photo_url={data.photo_url} />
+							<ImageWithDialog title="รูปประจำตัว" photo_url={data.photo_url} orient="vertical">
+								<Image
+									src={getValidImageUrl(data.photo_url)}
+									alt="Profile Image"
+									className="h-full w-full cursor-pointer object-cover"
+									sizes="25vw"
+									fill
+									preload
+								/>
+							</ImageWithDialog>
 						:	<div className="flex h-full w-full flex-col items-center justify-end pb-[8%]">
 								<UserIcon className="w-1/2 object-contain opacity-40" userClassname="fill-black" />
 							</div>

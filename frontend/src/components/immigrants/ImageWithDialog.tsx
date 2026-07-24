@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import React from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,31 +13,40 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { getDownloadImageUrl, getValidImageUrl } from "@/lib/imageUrl";
+import { cn } from "@/lib/utils";
 
-export default function ImageWithDialog({ photo_url }: { photo_url: string }) {
+export default function ImageWithDialog({
+	title,
+	orient,
+	photo_url,
+	children,
+}: {
+	title: string;
+	photo_url: string;
+	orient: "horizontal" | "vertical";
+	children: React.ReactNode;
+}) {
 	return (
 		<Dialog>
-			<DialogTrigger className="relative h-full w-full">
-				<Image
-					src={getValidImageUrl(photo_url)}
-					alt="Profile Image"
-					className="h-full w-full cursor-pointer object-cover"
-					sizes="25vw"
-					fill
-					preload
-				/>
-			</DialogTrigger>
-			<DialogContent>
+			<DialogTrigger className="relative h-full w-full">{children}</DialogTrigger>
+			<DialogContent className="w-max max-w-[90vw]!">
 				<DialogHeader>
-					<DialogTitle>รูปประจำตัว</DialogTitle>
+					<DialogTitle>{title}</DialogTitle>
 				</DialogHeader>
-				<div className="max-h-[75vh] overflow-y-auto">
-					<div className="relative min-h-[75vh]">
+				<div className={cn("max-h-[75vh] max-w-[85vw] overflow-x-auto overflow-y-auto")}>
+					<div
+						className={cn(
+							"relative h-full w-full",
+							orient == "vertical" ?
+								"aspect-3/4 min-h-[50vh] sm:min-h-[70vh]"
+							:	"aspect-4/3 min-w-[80vw] sm:min-w-[50vw]"
+						)}
+					>
 						<Image
 							src={getValidImageUrl(photo_url)}
 							alt="Full Profile Image"
-							className="object-contain"
-							sizes="100vw"
+							className="h-full w-full object-contain object-center"
+							sizes="50vw"
 							fill
 						/>
 					</div>
@@ -47,7 +57,9 @@ export default function ImageWithDialog({ photo_url }: { photo_url: string }) {
 						<Button variant="destructive">ปิด</Button>
 					</DialogClose>
 					<Link href={getDownloadImageUrl(photo_url)} target="_blank">
-						<Button variant="outline">ดาวน์โหลด</Button>
+						<Button className="w-full" variant="outline">
+							ดาวน์โหลด
+						</Button>
 					</Link>
 				</DialogFooter>
 			</DialogContent>

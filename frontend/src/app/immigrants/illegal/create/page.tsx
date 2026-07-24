@@ -92,7 +92,7 @@ export default function CreateIllegalImmigrant() {
 						<h3 className="mb-4 text-lg font-bold">รูปภาพประจำตัว</h3>
 						<SingleImageField
 							id="Person Image"
-							previewUrl="/enter.png"
+							previewUrl="/user.svg"
 							props={{ alt: "Person Preview" }}
 							uploadLabel="อัปโหลดรูปประจำตัว"
 							editLabel="แก้ไขรูปประจำตัว"
@@ -122,7 +122,7 @@ export default function CreateIllegalImmigrant() {
 					handleInputChange={handleInputChange}
 				/>
 
-				<div className="mt-8 flex justify-end gap-3 border-t border-(--wrapper) pt-6">
+				<div className="border-wrapper mt-8 flex justify-end gap-3 border-t pt-6">
 					<Link href="/">
 						<button
 							type="button"
