@@ -4,6 +4,31 @@ import { useEffect, useState } from "react";
 import { GetDashboardStatsRequestQuery, GetDashboardStatsResponse } from "@/lib/schema/dashboard";
 import { getIllegalDashboardStats, getRepatriatedDashboardStats } from "@/lib/service/dashboard";
 
+// --- TYPES ---
+export interface ChartItem {
+	name: string;
+	value: number;
+	color?: string;
+}
+
+export interface Stats {
+	total: number;
+	victims?: number;
+	hasPassport?: number;
+}
+
+export interface Charts {
+	gender?: ChartItem[];
+	victim?: ChartItem[];
+	nationality?: ChartItem[];
+	province?: ChartItem[];
+	region?: ChartItem[];
+	ageGroup?: ChartItem[];
+	dateTrend?: ChartItem[];
+	creator?: ChartItem[];
+	passport?: ChartItem[];
+}
+
 const CHART_COLORS = [
 	"var(--chart-1)",
 	"var(--chart-2)",
@@ -13,7 +38,6 @@ const CHART_COLORS = [
 	"var(--chart-6)",
 ];
 
-// FIX
 const dashboardFetchCache = new Map<string, GetDashboardStatsResponse<"illegal" | "repatriated">>();
 
 export function useDashboard() {
@@ -63,7 +87,7 @@ export function useDashboard() {
 			sortBy: sortField,
 		};
 
-		if (filterType == "repatriated") {
+		if (filterType === "repatriated") {
 			query.dobStart = dobStart;
 			query.dobEnd = dobEnd;
 		}
@@ -79,9 +103,9 @@ export function useDashboard() {
 			else setIsUpdating(true);
 
 			const fetch =
-				filterType == "illegal" ?
-					getIllegalDashboardStats(query)
-				:	getRepatriatedDashboardStats(query);
+				filterType === "illegal"
+					? getIllegalDashboardStats(query)
+					: getRepatriatedDashboardStats(query);
 
 			fetch.then((response) => {
 				if (response.success) {
@@ -121,10 +145,11 @@ export function useDashboard() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [typeParam]);
 
-	const handleFilterChange = (setter: Function, value: any) => {
+	const handleFilterChange = (setter: (val: any) => void, value: any) => {
 		setter(value);
 		setCurrentPage(1);
 	};
+
 	const handleSort = (field: string) => {
 		if (sortField === field) setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
 		else {
@@ -133,6 +158,7 @@ export function useDashboard() {
 		}
 		setCurrentPage(1);
 	};
+
 	const resetFilters = () => {
 		setFilterNat("ทั้งหมด");
 		setFilterGender("ทั้งหมด");
@@ -149,6 +175,7 @@ export function useDashboard() {
 		setSortField("");
 		setCurrentPage(1);
 	};
+
 	const handleTypeChange = (val: "illegal" | "repatriated") => {
 		setFilterType(val);
 		resetFilters();
@@ -156,7 +183,6 @@ export function useDashboard() {
 	};
 
 	const nationalitiesOptions = dashboardData?.meta?.allNationalities || ["ทั้งหมด"];
-	// เพิ่มการรับประกันว่า "ไม่ระบุ" จะถูกรวมใน dropdown เสมอ
 	const gendersOptions = Array.from(
 		new Set(["ทั้งหมด", "ชาย", "หญิง", "ไม่ระบุ", ...(dashboardData?.meta?.allGenders || [])])
 	);
@@ -171,45 +197,45 @@ export function useDashboard() {
 
 	const tableRows = (dashboardData?.tableData || []).map((item: any) => {
 		const fnTh =
-			!item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ" ?
-				item.first_name_en || "ไม่ระบุ"
-			:	item.first_name_th;
+			!item.first_name_th || item.first_name_th.trim() === "" || item.first_name_th === "ไม่ระบุ"
+				? item.first_name_en || "ไม่ระบุ"
+				: item.first_name_th;
 		const lnTh =
-			!item.last_name_th || item.last_name_th.trim() === "" || item.last_name_th === "ไม่ระบุ" ?
-				item.last_name_en || "ไม่ระบุ"
-			:	item.last_name_th;
+			!item.last_name_th || item.last_name_th.trim() === "" || item.last_name_th === "ไม่ระบุ"
+				? item.last_name_en || "ไม่ระบุ"
+				: item.last_name_th;
 		return { ...item, first_name_th: fnTh, last_name_th: lnTh };
 	});
 
 	const stats: { label: string; value: number }[] = (() => {
 		if (!dashboardData) return [];
-		return filterType === "illegal" ?
-				[
+		return filterType === "illegal"
+			? [
 					{
 						label: "จำนวนทั้งหมดที่พบตามตัวกรอง",
 						value: dashboardData.stats.total,
 					},
 					{
 						label: "เป็นผู้เสียหาย (ค้ามนุษย์)",
-						value: dashboardData.stats.victims || 0,
+						value: (dashboardData.stats as any).victims || 0,
 					},
 					{
 						label: "ผู้มีหนังสือเดินทาง",
-						value: dashboardData.stats.hasPassport || 0,
+						value: (dashboardData.stats as any).hasPassport || 0,
 					},
-				]
-			:	[
+			  ]
+			: [
 					{
 						label: "จำนวนทั้งหมดที่พบตามตัวกรอง",
 						value: dashboardData.stats.total,
 					},
-					{ label: "เป็นผู้เสียหาย", value: dashboardData.stats.victims || 0 },
-				];
+					{ label: "เป็นผู้เสียหาย", value: (dashboardData.stats as any).victims || 0 },
+			  ];
 	})();
 
-	const formatStandardChartData = (raw: any[] = [], total: number = 0, colorOffset: number = 0) => {
+	const formatStandardChartData = (raw: any[] = [], total: number = 0, colorOffset: number = 0): ChartItem[] => {
 		const sum = raw.reduce((acc, curr) => acc + curr.value, 0);
-		const mapped = raw.map((d, i) => ({
+		const mapped: ChartItem[] = raw.map((d, i) => ({
 			...d,
 			color: CHART_COLORS[(i + colorOffset) % CHART_COLORS.length],
 		}));
@@ -222,15 +248,15 @@ export function useDashboard() {
 		return mapped;
 	};
 
-	const formatCreatorChartData = (raw: any[] = [], total: number = 0) => {
+	const formatCreatorChartData = (raw: any[] = [], total: number = 0): ChartItem[] => {
 		const sum = raw.reduce((acc, curr) => acc + curr.value, 0);
-		const mapped = raw.map((d, i) => ({
+		const mapped: ChartItem[] = raw.map((d, i) => ({
 			...d,
 			color:
-				d.color
-				|| d.profile_color
-				|| d.creator_color
-				|| CHART_COLORS[(i + 4) % CHART_COLORS.length],
+				d.color ||
+				d.profile_color ||
+				d.creator_color ||
+				CHART_COLORS[(i + 4) % CHART_COLORS.length],
 		}));
 		if (total > sum)
 			mapped.push({
@@ -257,7 +283,6 @@ export function useDashboard() {
 		5
 	);
 
-	// กราฟเพศใหม่
 	const genderChart = formatStandardChartData(
 		dashboardData?.charts?.gender,
 		dashboardData?.stats?.total,
@@ -269,7 +294,7 @@ export function useDashboard() {
 		3
 	);
 
-	const passportChart = (dashboardData?.charts?.passport || []).map((d) => ({
+	const passportChart: ChartItem[] = ((dashboardData?.charts as any)?.passport || []).map((d: ChartItem) => ({
 		...d,
 		color: d.name === "มีหนังสือเดินทาง" ? "var(--chart-2)" : "var(--chart-4)",
 	}));
@@ -283,7 +308,7 @@ export function useDashboard() {
 		dashboardData?.stats?.total,
 		1
 	);
-	const dateTrendChart =
+	const dateTrendChart: ChartItem[] =
 		dashboardData?.charts?.dateTrend?.map((d: any) => ({
 			...d,
 			color: "var(--blueText)",
