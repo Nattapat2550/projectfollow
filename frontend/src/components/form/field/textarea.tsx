@@ -1,28 +1,28 @@
 import React from "react";
 
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-export type InputFieldProps = React.ComponentProps<"input"> & {
+export type TextareaFieldProps = React.ComponentProps<"textarea"> & {
 	label: string;
 	labelProps?: React.ComponentProps<"label">;
 };
 
-export default function InputField({
+export default function TextareaField({
 	label,
 	labelProps,
 	name,
 	id = name || label,
 	className,
 	...props
-}: InputFieldProps) {
+}: TextareaFieldProps) {
 	return (
 		<Field>
 			<FieldLabel {...labelProps} htmlFor={id} className={cn("text-header", labelProps?.className)}>
 				{label}
 			</FieldLabel>
-			<Input {...props} id={id} name={name} className={cn("bg-background", className)} />
+			<Textarea {...props} id={id} name={name} className={cn("bg-background", className)} />
 		</Field>
 	);
 }

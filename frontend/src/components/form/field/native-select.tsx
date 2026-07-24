@@ -13,7 +13,8 @@ export type NativeSelectFieldProps = NativeSelectProps & {
 export default function NativeSelectField({
 	label,
 	labelProps,
-	id = label,
+	name,
+	id = name || label,
 	options,
 	...props
 }: NativeSelectFieldProps) {
@@ -22,7 +23,7 @@ export default function NativeSelectField({
 			<FieldLabel {...labelProps} htmlFor={id} className={cn("text-header", labelProps?.className)}>
 				{label}
 			</FieldLabel>
-			<NativeSelect {...props} id={id} className={cn("bg-background", props.className)}>
+			<NativeSelect {...props} id={id} name={name} className={cn("bg-background", props.className)}>
 				{options.map((option, idx) => (
 					<NativeSelectOption {...option} key={idx} />
 				))}

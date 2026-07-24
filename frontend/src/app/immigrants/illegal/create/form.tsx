@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import CreateForm, { FieldsLayout } from "@/components/form/create-form";
+import CreateForm2, { FormComboboxProps, FormLayout } from "@/components/form/create-form";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
 import { CreateIllegalRequest } from "@/lib/schema/illegal";
@@ -16,7 +16,7 @@ export default function CreateIllegalPageForm({
 	setFormData: React.Dispatch<React.SetStateAction<CreateIllegalRequest>>;
 	handleInputChange: React.ChangeEventHandler;
 }) {
-	const { options, states, actions } = useAddressOptions(
+	const { props } = useAddressOptions(
 		formData,
 		setFormData,
 		"detected_location_province",
@@ -24,34 +24,37 @@ export default function CreateIllegalPageForm({
 		"detected_location_sub_district"
 	);
 
-	const layout: FieldsLayout<CreateIllegalRequest> = [
+	const nationalityProps: FormComboboxProps<string, typeof formData> = {
+		component: "combobox",
+		label: "สัญชาติ",
+		name: "nationality",
+		items: ALL_NATIONALITIES,
+		optionsFunc: (nationality) => ({ label: nationality, value: nationality }),
+		value: formData["nationality"],
+		onValueChange: (v) => setFormData((prev) => ({ ...prev, nationality: v ?? "" })),
+	};
+
+	const layout: FormLayout<CreateIllegalRequest> = [
 		{
 			heading: "ข้อมูลส่วนบุคคลและชื่อ-นามสกุล",
-			inputs: [
+			props: [
 				[
-					{ label: "ชื่อต้นภาษาไทย *", name: "first_name_th", props: { required: true } },
-					{ label: "ชื่อกลางภาษาไทย", name: "middle_name_th" },
-					{ label: "นามสกุลภาษาไทย *", name: "last_name_th", props: { required: true } },
+					{ component: "input", label: "ชื่อต้นภาษาไทย *", name: "first_name_th", required: true },
+					{ component: "input", label: "ชื่อกลางภาษาไทย", name: "middle_name_th" },
+					{ component: "input", label: "นามสกุลภาษาไทย *", name: "last_name_th", required: true },
 				],
 				[
-					{ label: "ชื่อต้นภาษาอังกฤษ", name: "first_name_en" },
-					{ label: "ชื่อกลางภาษาอังกฤษ", name: "middle_name_en" },
-					{ label: "นามสกุลภาษาอังกฤษ", name: "last_name_en" },
+					{ component: "input", label: "ชื่อต้นภาษาอังกฤษ", name: "first_name_en" },
+					{ component: "input", label: "ชื่อกลางภาษาอังกฤษ", name: "middle_name_en" },
+					{ component: "input", label: "นามสกุลภาษาอังกฤษ", name: "last_name_en" },
 				],
 				[
-					{ label: "เลขหนังสือเดินทาง", name: "passport_id" },
+					{ component: "input", label: "เลขหนังสือเดินทาง", name: "passport_id" },
+					nationalityProps,
 					{
-						label: "สัญชาติ",
-						name: "nationality",
-						component: "autocomplete",
-						options: ALL_NATIONALITIES,
-						value: formData["nationality"],
-						onChange: (v: string) => setFormData((prev) => ({ ...prev, nationality: v ?? "" })),
-					},
-					{
+						component: "nativeselect",
 						label: "เพศ",
 						name: "gender",
-						component: "select",
 						options: [
 							{ label: "ไม่ระบุ", value: "" },
 							{ label: "ชาย", value: "ชาย" },
@@ -63,52 +66,26 @@ export default function CreateIllegalPageForm({
 		},
 		{
 			heading: "รายละเอียดจุดตรวจเจอและการคัดกรอง",
-			inputs: [
+			props: [
 				[
 					{
+						component: "textarea",
 						label: "รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *",
 						name: "detected_location_details",
-						component: "textarea",
-						props: { required: true, rows: 2 },
+						required: true,
+						rows: 2,
 					},
+				],
+				[props.provinceProps, props.districtProps, props.subDistrictProps],
+				[
+					{ component: "input", label: "วันที่ตรวจพบ", name: "detected_date", type: "date" },
+					{ component: "input", label: "สถานที่ทำงานปลายทาง", name: "workplace" },
 				],
 				[
 					{
-						label: "จังหวัด",
-						name: "detected_location_province",
-						component: "autocomplete",
-						options: options.provinces,
-						value: states.provinceOption,
-						onChange: actions.handleProvinceChange,
-					},
-					{
-						label: "เขต/อำเภอ",
-						name: "detected_location_district",
-						component: "autocomplete",
-						options: options.districts,
-						value: states.districtOption,
-						onChange: actions.handleDistrictChange,
-						// props: { disabled: formData["detected_location_province"] == "" },
-					},
-					{
-						label: "แขวง/ตำบล",
-						name: "detected_location_sub_district",
-						component: "autocomplete",
-						options: options.subDistricts,
-						value: states.subDistrictOption,
-						onChange: actions.handleSubDistrictChange,
-						props: { disabled: formData["detected_location_district"] == "" },
-					},
-				],
-				[
-					{ label: "วันที่ตรวจพบ", name: "detected_date", props: { type: "date" } },
-					{ label: "สถานที่ทำงานปลายทาง", name: "workplace" },
-				],
-				[
-					{
+						component: "nativeselect",
 						label: "เข้าข่ายเป็นผู้เสียหายตกเป็นเหยื่อจากการค้ามนุษย์",
 						name: "is_victim",
-						component: "select",
 						options: [
 							{ label: "ไม่คัดกรองสถานะ", value: "PENDING" },
 							{ label: "เป็นผู้เสียหาย", value: "YES" },
@@ -118,25 +95,23 @@ export default function CreateIllegalPageForm({
 				],
 				[
 					{
+						component: "textarea",
 						label: "บันทึกรายละเอียดผลการคัดกรอง",
 						name: "screening_details",
-						component: "textarea",
-						props: {
-							rows: 4,
-						},
+						rows: 4,
 					},
 				],
 				[
 					{
+						component: "textarea",
 						label: "หมายเหตุเพิ่มเติม (Note)",
 						name: "note",
-						component: "textarea",
-						props: { rows: 3 },
+						rows: 3,
 					},
 				],
 			],
 		},
 	];
 
-	return <CreateForm formData={formData} layout={layout} handleInputChange={handleInputChange} />;
+	return <CreateForm2 formData={formData} layout={layout} handleInputChange={handleInputChange} />;
 }

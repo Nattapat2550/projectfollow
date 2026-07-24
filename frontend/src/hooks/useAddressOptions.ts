@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
 
+import { FormComboboxProps } from "@/components/form/create-form";
+
 import addresses from "../../public/thai_addresses.json";
 
 export interface AutocompleteOption {
@@ -11,9 +13,9 @@ export interface AutocompleteOption {
 export function useAddressOptions<T extends Record<string, string>>(
 	formData: T,
 	setFormData: React.Dispatch<React.SetStateAction<T>>,
-	provinceKey: keyof T,
-	districtKey: keyof T,
-	subDistrictKey: keyof T
+	provinceKey: Extract<keyof T, string>,
+	districtKey: Extract<keyof T, string>,
+	subDistrictKey: Extract<keyof T, string>
 ) {
 	const province = formData[provinceKey] || null;
 	const district = formData[districtKey] || null;
@@ -167,9 +169,51 @@ export function useAddressOptions<T extends Record<string, string>>(
 		});
 	};
 
+	const provinceProps: FormComboboxProps<string, T> = {
+		label: "จังหวัด",
+		name: provinceKey,
+		component: "combobox",
+		items: provinces,
+		itemToStringLabel: (provice) => provice,
+		optionsFunc: (province) => ({ label: province, value: province }),
+		value: provinceValue || null,
+		onValueChange: handleProvinceChange,
+		autoHighlight: true,
+		inputProps: { showClear: true },
+	};
+
+	const districtProps: FormComboboxProps<AutocompleteOption, T> = {
+		label: "เขต/อำเภอ",
+		name: districtKey,
+		component: "combobox",
+		items: districts,
+		itemToStringLabel: (districtOption) => districtOption.value,
+		optionsFunc: (option) => ({ label: option.label, value: option }),
+		value: districtOption || null,
+		onValueChange: handleDistrictChange,
+		limit: provinceValue ? undefined : 30,
+		autoHighlight: true,
+		inputProps: { showClear: true },
+	};
+
+	const subDistrictProps: FormComboboxProps<AutocompleteOption, T> = {
+		label: "แขวง/ตำบล",
+		name: subDistrictKey,
+		component: "combobox",
+		items: subDistricts,
+		itemToStringLabel: (subDistrictOption) => subDistrictOption.value,
+		optionsFunc: (option) => ({ label: option.label, value: option }),
+		value: subDistrictOption || null,
+		onValueChange: handleSubDistrictChange,
+		limit: districtOption ? undefined : 15,
+		autoHighlight: true,
+		inputProps: { showClear: true },
+	};
+
 	return {
-		actions: { handleProvinceChange, handleDistrictChange, handleSubDistrictChange },
-		states: { provinceOption: provinceValue, districtOption, subDistrictOption },
-		options: { provinces, districts, subDistricts },
+		// actions: { handleProvinceChange, handleDistrictChange, handleSubDistrictChange },
+		// states: { provinceOption: provinceValue, districtOption, subDistrictOption },
+		// options: { provinces, districts, subDistricts },
+		props: { provinceProps, districtProps, subDistrictProps },
 	};
 }

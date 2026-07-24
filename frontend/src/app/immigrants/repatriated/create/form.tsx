@@ -2,7 +2,7 @@
 
 import React from "react";
 
-import CreateForm, { FieldsLayout } from "@/components/form/create-form";
+import CreateForm2, { FormComboboxProps, FormLayout } from "@/components/form/create-form";
 import { ALL_NATIONALITIES } from "@/constants/nationalities";
 import { useAddressOptions } from "@/hooks/useAddressOptions";
 import { CreateRepatriatedRequest } from "@/lib/schema/repatriated";
@@ -16,7 +16,7 @@ export default function CreateRepatriatedPageForm({
 	setFormData: React.Dispatch<React.SetStateAction<CreateRepatriatedRequest>>;
 	handleInputChange: React.ChangeEventHandler;
 }) {
-	const { options, states, actions } = useAddressOptions(
+	const { props } = useAddressOptions(
 		formData,
 		setFormData,
 		"province",
@@ -24,34 +24,37 @@ export default function CreateRepatriatedPageForm({
 		"sub_district"
 	);
 
-	const layout: FieldsLayout<CreateRepatriatedRequest> = [
+	const nationalityProps: FormComboboxProps<string, typeof formData> = {
+		component: "combobox",
+		label: "สัญชาติ",
+		name: "nationality",
+		items: ALL_NATIONALITIES,
+		optionsFunc: (nationality) => ({ label: nationality, value: nationality }),
+		value: formData["nationality"],
+		onValueChange: (v) => setFormData((prev) => ({ ...prev, nationality: v ?? "" })),
+	};
+
+	const layout: FormLayout<CreateRepatriatedRequest> = [
 		{
 			heading: "ข้อมูลส่วนบุคคลและชื่อ-นามสกุล",
-			inputs: [
+			props: [
 				[
-					{ label: "ชื่อต้นภาษาไทย *", name: "first_name_th", props: { required: true } },
-					{ label: "ชื่อกลางภาษาไทย", name: "middle_name_th" },
-					{ label: "นามสกุลภาษาไทย *", name: "last_name_th", props: { required: true } },
+					{ component: "input", label: "ชื่อต้นภาษาไทย *", name: "first_name_th", required: true },
+					{ component: "input", label: "ชื่อกลางภาษาไทย", name: "middle_name_th" },
+					{ component: "input", label: "นามสกุลภาษาไทย *", name: "last_name_th", required: true },
 				],
 				[
-					{ label: "ชื่อต้นภาษาอังกฤษ", name: "first_name_en" },
-					{ label: "ชื่อกลางภาษาอังกฤษ", name: "middle_name_en" },
-					{ label: "นามสกุลภาษาอังกฤษ", name: "last_name_en" },
+					{ component: "input", label: "ชื่อต้นภาษาอังกฤษ", name: "first_name_en" },
+					{ component: "input", label: "ชื่อกลางภาษาอังกฤษ", name: "middle_name_en" },
+					{ component: "input", label: "นามสกุลภาษาอังกฤษ", name: "last_name_en" },
 				],
 				[
-					{ label: "เลขหนังสือเดินทาง", name: "passport_id" },
+					{ component: "input", label: "เลขหนังสือเดินทาง", name: "passport_id" },
+					nationalityProps,
 					{
-						label: "สัญชาติ",
-						name: "nationality",
-						component: "autocomplete",
-						options: ALL_NATIONALITIES,
-						value: formData["nationality"],
-						onChange: (v: string) => setFormData((prev) => ({ ...prev, nationality: v ?? "" })),
-					},
-					{
+						component: "nativeselect",
 						label: "เพศ",
 						name: "gender",
-						component: "select",
 						options: [
 							{ label: "ไม่ระบุ", value: "" },
 							{ label: "ชาย", value: "ชาย" },
@@ -60,82 +63,60 @@ export default function CreateRepatriatedPageForm({
 					},
 				],
 				[
-					{ label: "วันเดือนปีเกิด", name: "date_of_birth", props: { type: "date" } },
-					{ label: "อายุปัจจุบัน (ปี)", name: "age", props: { type: "number" } },
-					{ label: "เลขประจำตัวประชาชน *", name: "national_id", props: { required: true } },
+					{ component: "input", label: "วันเดือนปีเกิด", name: "date_of_birth", type: "date" },
+					{ component: "input", label: "อายุปัจจุบัน (ปี)", name: "age", type: "number" },
+					{
+						component: "input",
+						label: "เลขประจำตัวประชาชน *",
+						name: "national_id",
+						required: true,
+					},
 				],
 			],
 		},
 		{
 			heading: " รายละเอียดที่อยู่และการทำงาน ",
-			inputs: [
+			props: [
 				[
 					{
+						component: "textarea",
 						label: "รายละเอียดที่อยู่ (บ้านเลขที่, ถนน, หมู่ ฯลฯ) *",
 						name: "address_details",
-						component: "textarea",
-						props: {
-							required: true,
-							rows: 2,
-						},
+						required: true,
+						rows: 2,
 					},
 				],
+				[props.provinceProps, props.districtProps, props.subDistrictProps],
 				[
-					{
-						label: "จังหวัด",
-						name: "province",
-						component: "autocomplete",
-						options: options.provinces,
-						value: states.provinceOption,
-						onChange: actions.handleProvinceChange,
-					},
-					{
-						label: "เขต/อำเภอ",
-						name: "district",
-						component: "autocomplete",
-						options: options.districts,
-						value: states.districtOption,
-						onChange: actions.handleDistrictChange,
-					},
-					{
-						label: "แขวง/ตำบล",
-						name: "sub_district",
-						component: "autocomplete",
-						options: options.subDistricts,
-						value: states.subDistrictOption,
-						onChange: actions.handleSubDistrictChange,
-					},
+					{ component: "input", label: "อาคาร (Building)", name: "building" },
+					{ component: "input", label: "ชั้น (Floor)", name: "floor" },
+					{ component: "input", label: "ห้อง (Room)", name: "room" },
 				],
 				[
-					{ label: "อาคาร (Building)", name: "building" },
-					{ label: "ชั้น (Floor)", name: "floor" },
-					{ label: "ห้อง (Room)", name: "room" },
+					{ component: "input", label: "ประเภทงาน (Job Type)", name: "job_type" },
+					{ component: "input", label: "หน้าที่ (Role)", name: "role" },
 				],
 				[
-					{ label: "ประเภทงาน (Job Type)", name: "job_type" },
-					{ label: "หน้าที่ (Role)", name: "role" },
-				],
-				[
-					{ label: "เงินเดือน (Salary)", name: "salary", props: { type: "number" } },
-					{ label: "จ่ายโดย (Paid By)", name: "paid_by" },
-					{ label: "วิธีชำระเงิน (Payment Method)", name: "payment_method" },
+					{ component: "input", label: "เงินเดือน (Salary)", name: "salary", type: "number" },
+					{ component: "input", label: "จ่ายโดย (Paid By)", name: "paid_by" },
+					{ component: "input", label: "วิธีชำระเงิน (Payment Method)", name: "payment_method" },
 				],
 			],
 		},
 		{
 			heading: "รายละเอียดการส่งตัวและคดีความ",
-			inputs: [
+			props: [
 				[
-					{ label: "วันที่ส่งกลับประเทศ", name: "return_date", props: { type: "date" } },
-					{ label: "จำนวนเคสคดี", name: "number_of_case", props: { type: "number" } },
-					{ label: "จำนวนหมายจับ", name: "number_of_warrant", props: { type: "number" } },
+					{ component: "input", label: "วันที่ส่งกลับประเทศ", name: "return_date", type: "date" },
+					{ component: "input", label: "จำนวนเคสคดี", name: "number_of_case", type: "number" },
+					{ component: "input", label: "จำนวนหมายจับ", name: "number_of_warrant", type: "number" },
 				],
-				[{ label: "หน่วยงานที่รับผิดชอบ", name: "responsible_agency" }],
+				[{ component: "input", label: "หน่วยงานที่รับผิดชอบ", name: "responsible_agency" }],
 				[
 					{
+						component: "nativeselect",
 						label: "สถานะผู้เสียหาย (Victim Status)",
 						name: "is_victim",
-						component: "select",
 						options: [
 							{ label: "ไม่คัดกรองสถานะ", value: "PENDING" },
 							{ label: "เป็นผู้เสียหาย", value: "YES" },
@@ -145,27 +126,23 @@ export default function CreateRepatriatedPageForm({
 				],
 				[
 					{
+						component: "textarea",
 						label: "รายละเอียดการคัดกรอง (Screening Details)",
 						name: "screening_details",
-						component: "textarea",
-						props: {
-							rows: 3,
-						},
+						rows: 3,
 					},
 				],
 				[
 					{
+						component: "textarea",
 						label: "หมายเหตุเพิ่มเติม (Note)",
 						name: "note",
-						component: "textarea",
-						props: {
-							rows: 3,
-						},
+						rows: 3,
 					},
 				],
 			],
 		},
 	];
 
-	return <CreateForm formData={formData} layout={layout} handleInputChange={handleInputChange} />;
+	return <CreateForm2 formData={formData} layout={layout} handleInputChange={handleInputChange} />;
 }
