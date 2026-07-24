@@ -21,7 +21,7 @@ export default function IllegalIDPageEditForm({ detail }: { detail: IllegalDetai
 						<h3 className="mb-4 text-lg font-bold">รูปภาพประจำตัว</h3>
 						<SingleImageField
 							id="Person Image"
-							previewUrl={states.imagePreview || "/return.png"}
+							previewUrl={states.imagePreview || "/user.svg"}
 							props={{ alt: "Person Preview" }}
 							uploadLabel="แก้ไขรูปประจำตัว"
 							editLabel="แก้ไขรูปประจำตัว"

@@ -21,7 +21,7 @@ export default function RepatriatedIDPageEditForm({ detail }: { detail: Repatria
 						<h3 className="mb-4 text-lg font-bold">รูปภาพประจำตัว</h3>
 						<SingleImageField
 							id="Person Image"
-							previewUrl={states.imagePreview || "/return.png"}
+							previewUrl={states.imagePreview || "/user.svg"}
 							props={{ alt: "Person Preview" }}
 							uploadLabel="แก้ไขรูปประจำตัว"
 							editLabel="แก้ไขรูปประจำตัว"
@@ -53,7 +53,7 @@ export default function RepatriatedIDPageEditForm({ detail }: { detail: Repatria
 					handleInputChange={handlers.handleInputChange}
 				/>
 
-				<div className="mt-8 flex justify-end gap-3 border-t border-(--wrapper) pt-6">
+				<div className="border-wrapper mt-8 flex justify-end gap-3 border-t pt-6">
 					<button
 						type="button"
 						onClick={() => {
@@ -66,7 +66,7 @@ export default function RepatriatedIDPageEditForm({ detail }: { detail: Repatria
 					<button
 						type="submit"
 						disabled={states.isSaving}
-						className="text-background flex cursor-pointer items-center gap-1.5 rounded-lg bg-(--header) px-4 py-2 text-sm font-bold transition hover:opacity-90 disabled:opacity-50"
+						className="text-background bg-header flex cursor-pointer items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold transition hover:opacity-90 disabled:opacity-50"
 					>
 						<Save size={16} /> {states.isSaving ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
 					</button>

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import React from "react";
 
+import UserIcon from "@/components/icons/user";
 import { COUNTRY_MAP } from "@/constants/country";
 import { getValidImageUrl } from "@/lib/imageUrl";
 
@@ -230,12 +231,7 @@ export default function RepatriatedIDPageCard({ data }: { data: RepatriatedData 
 								preload
 							/>
 						:	<div className="flex h-full w-full flex-col items-center justify-end pb-[8%]">
-								<Image
-									src={"/enter.png"}
-									className="w-1/2 object-contain opacity-40"
-									alt="Placeholder"
-									fill
-								/>
+								<UserIcon className="w-1/2 object-contain opacity-40" userClassname="fill-black" />
 							</div>
 						}
 					</div>

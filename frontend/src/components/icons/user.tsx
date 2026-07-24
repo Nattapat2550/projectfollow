@@ -1,0 +1,24 @@
+export default function UserIcon({
+	className,
+	userClassname,
+}: {
+	className?: string;
+	userClassname?: string;
+}) {
+	return (
+		<svg
+			version="1.2"
+			xmlns="http://www.w3.org/2000/svg"
+			viewBox="0 0 256 256"
+			width="256"
+			height="256"
+			className={className}
+		>
+			<path
+				fillRule="evenodd"
+				className={userClassname ?? "fill-foreground"}
+				d="m128.2 256c-54.7 0-99.2-8.7-99.2-19.3 0-68.3 44.5-123.7 99.2-123.7 54.8 0 99.3 55.4 99.3 123.7 0 10.6-44.5 19.3-99.3 19.3zm0-147.9c-29.9 0-54-24.1-54-54 0-29.9 24.1-54.1 54-54.1 29.9 0 54.1 24.2 54.1 54.1 0 29.9-24.2 54-54.1 54z"
+			/>
+		</svg>
+	);
+}
