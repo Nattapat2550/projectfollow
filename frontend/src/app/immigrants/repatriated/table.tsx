@@ -5,7 +5,6 @@ import { useState } from "react";
 
 import TableHeader, { FieldInfo } from "@/components/table/table-header";
 import TableToggle from "@/components/table/table-toggle";
-import { Button } from "@/components/ui/button";
 
 import RepatriatedTableFilter, { RepatriatedTableFilterProps } from "./filter";
 
@@ -125,6 +124,7 @@ export default function RepatriatedTable({
 				<div className="space-x-2">
 					{filter && setFilter && <RepatriatedTableFilter filter={filter} setFilter={setFilter} />}
 					<TableToggle
+						isUpdating={isUpdating}
 						fieldInfo={fieldInfo}
 						onChange={(name, checked) => {
 							setfieldInfo((prev) => {
@@ -133,11 +133,7 @@ export default function RepatriatedTable({
 								return newState;
 							});
 						}}
-					>
-						<Button disabled={isUpdating} type="button" variant="outline">
-							Toggle
-						</Button>
-					</TableToggle>
+					/>
 				</div>
 			</div>
 			<div

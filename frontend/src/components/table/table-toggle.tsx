@@ -1,5 +1,6 @@
 "use client";
 
+import { EyeIcon } from "lucide-react";
 import * as React from "react";
 
 import { FieldInfo, Info } from "@/components/table/table-header";
@@ -12,12 +13,16 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { Button } from "../ui/button";
+
 export default function TableToggle<T extends string>({
 	children,
+	isUpdating,
 	fieldInfo,
 	onChange: onCheckedChange,
 }: {
-	children: React.ReactNode;
+	isUpdating?: boolean;
+	children?: React.ReactNode;
 	fieldInfo: FieldInfo<T>;
 	onChange: (_name: T, _checked: boolean) => void;
 }) {
@@ -27,7 +32,14 @@ export default function TableToggle<T extends string>({
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+			<DropdownMenuTrigger asChild>
+				{children ?? (
+					<Button disabled={isUpdating} variant="outline">
+						<EyeIcon />
+						Toggle
+					</Button>
+				)}
+			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				<DropdownMenuGroup>
 					<DropdownMenuLabel>Toggle Visibility</DropdownMenuLabel>

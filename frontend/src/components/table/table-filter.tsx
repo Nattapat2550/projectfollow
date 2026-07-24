@@ -1,3 +1,4 @@
+import { FilterIcon } from "lucide-react";
 import React from "react";
 
 import { GenerateField, GenerateFieldProps } from "../form/field/generate-field";
@@ -15,18 +16,27 @@ import { FieldSet } from "../ui/field";
 
 export default function TableFilter({
 	filters,
+	filterCount,
 	handleClear,
 	handleSave,
 	children,
 }: {
 	filters: GenerateFieldProps[];
+	filterCount?: number;
 	handleClear: React.MouseEventHandler;
 	handleSave: React.MouseEventHandler;
-	children: React.ReactNode;
+	children?: React.ReactNode;
 }) {
 	return (
 		<Dialog>
-			<DialogTrigger asChild>{children}</DialogTrigger>
+			<DialogTrigger asChild>
+				{children ?? (
+					<Button variant="outline">
+						<FilterIcon size={16} />
+						Filter {filterCount !== undefined && `(${filterCount})`}
+					</Button>
+				)}
+			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Filter Data</DialogTitle>
