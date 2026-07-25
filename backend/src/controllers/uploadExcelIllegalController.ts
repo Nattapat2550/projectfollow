@@ -191,6 +191,8 @@ export const uploadExcelIllegal = async (req, res) => {
             if (rawAge) dob = calculateDOBFromAge(rawAge);
         }
 
+        const photoUrlRaw = findValue(row, "รูปถ่าย") || findValue(row, "รูปภาพ") || findValue(row, "รูป") || findValue(row, "photo_url") || findValue(row, "photo") || findValue(row, "รูปจาก ทร.14");
+
         preview_data.push({
           ลำดับที่อ่านได้: i + 1,
           first_name_th: (hasName && isThai && fname && fname.trim() !== "") ? fname.trim() : "ไม่ระบุ",
@@ -202,6 +204,7 @@ export const uploadExcelIllegal = async (req, res) => {
           nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
           passport_id: passport,
           date_of_birth: dob ? dob.toISOString().split('T')[0] : null,
+          photo_url: photoUrlRaw ? String(photoUrlRaw) : null,
           detected_location_details: parsedLocation.details,
           detected_location_sub_district: parsedLocation.sub_district,
           detected_location_district: parsedLocation.district,

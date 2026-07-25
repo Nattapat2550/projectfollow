@@ -297,8 +297,9 @@ export const uploadExcel = async (req, res) => {
                     const base64Data = imagesMap[i + 1].buffer.toString('base64');
                     const mimeType = imagesMap[i + 1].extension === 'png' ? 'image/png' : 'image/jpeg';
                     photo_url_preview = `data:${mimeType};base64,${base64Data}`;
-                } else if (row["รูปจาก ทร.14"]) {
-                    photo_url_preview = String(row["รูปจาก ทร.14"]);
+                } else {
+                    const photoRaw = row["รูปจาก ทร.14"] || row["รูป"] || row["รูปถ่าย"] || row["รูปภาพ"] || row["photo"] || row["photo_url"] || row["Photo"] || row["Link"];
+                    if (photoRaw) photo_url_preview = String(photoRaw);
                 }
 
                 const locationRaw = row["ที่อยู่"] ? String(row["ที่อยู่"]) : "";
