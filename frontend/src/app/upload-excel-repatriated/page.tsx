@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Swal from "sweetalert2";
+import * as XLSX from "xlsx";
 
 export default function TestUpload2Page() {
 	const [file, setFile] = useState<File | null>(null);
@@ -12,6 +13,14 @@ export default function TestUpload2Page() {
 	const [progress, setProgress] = useState({ current: 0, total: 0 });
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 50;
+
+	const parseFileOnClient = async (f: File) => {
+		const data = await f.arrayBuffer();
+		const workbook = XLSX.read(data, { type: "array" });
+		const sheetName = workbook.SheetNames[0];
+		const sheetData: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null });
+		return sheetData;
+	};
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
@@ -34,25 +43,38 @@ export default function TestUpload2Page() {
 		setResult(null);
 		setProgress({ current: 0, total: 0 });
 
-		const formData = new FormData();
-		formData.append("file", file);
-
-		// 🟢 ดึง Token จาก LocalStorage
 		const token = localStorage.getItem("token");
+		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		try {
-			const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
-			const response = await fetch(
-				`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
-				{
-					method: "POST",
-					headers: {
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: formData,
-				}
-			);
+			let response;
+			if (file.size > 3 * 1024 * 1024) {
+				const rows = await parseFileOnClient(file);
+				response = await fetch(
+					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: JSON.stringify({ rows }),
+					}
+				);
+			} else {
+				const formData = new FormData();
+				formData.append("file", file);
+				response = await fetch(
+					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
+					}
+				);
+			}
 
 			const data = await response.json();
 
@@ -74,6 +96,7 @@ export default function TestUpload2Page() {
 		setIsUploading(true);
 		const jobId = Date.now().toString();
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+		const token = localStorage.getItem("token");
 
 		const interval = setInterval(async () => {
 			try {
@@ -86,23 +109,35 @@ export default function TestUpload2Page() {
 			} catch (e) {}
 		}, 1000);
 
-		const formData = new FormData();
-		formData.append("file", file);
-
-		// 🟢 ดึง Token จาก LocalStorage
-		const token = localStorage.getItem("token");
-
 		try {
-			const response = await fetch(
-				`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
-				{
-					method: "POST",
-					headers: {
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: formData,
-				}
-			);
+			let response;
+			if (file.size > 3 * 1024 * 1024) {
+				const rows = await parseFileOnClient(file);
+				response = await fetch(
+					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: JSON.stringify({ rows }),
+					}
+				);
+			} else {
+				const formData = new FormData();
+				formData.append("file", file);
+				response = await fetch(
+					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
+					}
+				);
+			}
 
 			const data = await response.json();
 			if (data.success) {
