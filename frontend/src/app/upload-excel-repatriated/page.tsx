@@ -47,21 +47,23 @@ export default function TestUpload2Page() {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		try {
-			const formData = new FormData();
-			formData.append("file", file);
+			let response;
+			try {
+				const formData = new FormData();
+				formData.append("file", file);
 
-			let response = await fetch(
-				`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
-				{
-					method: "POST",
-					headers: {
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: formData,
-				}
-			);
-
-			if (response.status === 413) {
+				response = await fetch(
+					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
+					}
+				);
+				if (response.status === 413) throw new Error("413_PAYLOAD_TOO_LARGE");
+			} catch (uploadErr) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
@@ -110,21 +112,23 @@ export default function TestUpload2Page() {
 		}, 1000);
 
 		try {
-			const formData = new FormData();
-			formData.append("file", file);
+			let response;
+			try {
+				const formData = new FormData();
+				formData.append("file", file);
 
-			let response = await fetch(
-				`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
-				{
-					method: "POST",
-					headers: {
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: formData,
-				}
-			);
-
-			if (response.status === 413) {
+				response = await fetch(
+					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
+					}
+				);
+				if (response.status === 413) throw new Error("413_PAYLOAD_TOO_LARGE");
+			} catch (uploadErr) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,

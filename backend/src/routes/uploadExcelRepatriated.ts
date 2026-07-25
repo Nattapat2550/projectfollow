@@ -14,7 +14,7 @@ const upload = multer({
 // 🟢 สร้างตัวกันสแปม: ให้ยิงได้ไม่เกิน 10 ครั้งต่อ 15 นาที
 const uploadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 นาที
-  max: 10, // จำกัด 10 ครั้งต่อ IP
+  max: 100, // จำกัด 100 ครั้งต่อ 15 นาที
   message: { success: false, message: "อัปโหลดบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่" }
 });
 

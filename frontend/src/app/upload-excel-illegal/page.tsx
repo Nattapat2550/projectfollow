@@ -52,21 +52,23 @@ export default function TestUploadPage() {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		try {
-			const formData = new FormData();
-			formData.append("file", file);
+			let response;
+			try {
+				const formData = new FormData();
+				formData.append("file", file);
 
-			let response = await fetch(
-				`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
-				{
-					method: "POST",
-					headers: {
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: formData,
-				}
-			);
-
-			if (response.status === 413) {
+				response = await fetch(
+					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
+					}
+				);
+				if (response.status === 413) throw new Error("413_PAYLOAD_TOO_LARGE");
+			} catch (uploadErr) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
@@ -114,21 +116,23 @@ export default function TestUploadPage() {
 		}, 1000);
 
 		try {
-			const formData = new FormData();
-			formData.append("file", file);
+			let response;
+			try {
+				const formData = new FormData();
+				formData.append("file", file);
 
-			let response = await fetch(
-				`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
-				{
-					method: "POST",
-					headers: {
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: formData,
-				}
-			);
-
-			if (response.status === 413) {
+				response = await fetch(
+					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
+					}
+				);
+				if (response.status === 413) throw new Error("413_PAYLOAD_TOO_LARGE");
+			} catch (uploadErr) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
