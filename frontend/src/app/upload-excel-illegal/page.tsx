@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
+import JSZip from "jszip";
 
 export default function TestUploadPage() {
 	const [file, setFile] = useState<File | null>(null);
@@ -15,8 +16,8 @@ export default function TestUploadPage() {
 	const itemsPerPage = 50;
 
 	const parseFileOnClient = async (f: File) => {
-		const data = await f.arrayBuffer();
-		const workbook = XLSX.read(data, { type: "array" });
+		const arrayBuffer = await f.arrayBuffer();
+		const workbook = XLSX.read(arrayBuffer, { type: "array" });
 		const allRows: any[] = [];
 		workbook.SheetNames.forEach((sheetName) => {
 			const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null });
@@ -24,6 +25,82 @@ export default function TestUploadPage() {
 				allRows.push(...sheetData.map((row: any) => ({ ...row, _sheetName: sheetName })));
 			}
 		});
+
+		try {
+			const zip = await JSZip.loadAsync(arrayBuffer);
+			const drawingFiles = Object.keys(zip.files).filter((fn) =>
+				fn.startsWith("xl/drawings/drawing") && fn.endsWith(".xml")
+			);
+
+			const imagesMap: { [row: number]: string } = {};
+
+			for (const drawingFile of drawingFiles) {
+				const drawingXml = await zip.files[drawingFile].async("string");
+				const relsFile = drawingFile.replace("xl/drawings/", "xl/drawings/_rels/") + ".rels";
+
+				const relsMap: { [rId: string]: string } = {};
+				if (zip.files[relsFile]) {
+					const relsXml = await zip.files[relsFile].async("string");
+					const parser = new DOMParser();
+					const relsDoc = parser.parseFromString(relsXml, "text/xml");
+					const relationships = relsDoc.getElementsByTagName("Relationship");
+					for (let i = 0; i < relationships.length; i++) {
+						const id = relationships[i].getAttribute("Id");
+						const target = relationships[i].getAttribute("Target");
+						if (id && target) {
+							relsMap[id] = target.replace("../media/", "xl/media/");
+						}
+					}
+				}
+
+				const parser = new DOMParser();
+				const xmlDoc = parser.parseFromString(drawingXml, "text/xml");
+				const anchors = xmlDoc.querySelectorAll("twoCellAnchor, oneCellAnchor");
+
+				for (let i = 0; i < anchors.length; i++) {
+					const anchor = anchors[i];
+					const fromRowEl = anchor.querySelector("from row");
+					const blipEl = anchor.querySelector("blip");
+					if (fromRowEl && blipEl) {
+						const rowIdx = parseInt(fromRowEl.textContent || "0", 10);
+						const rId = blipEl.getAttribute("r:embed");
+						if (rId && relsMap[rId]) {
+							const mediaPath = relsMap[rId];
+							const mediaFile = zip.files[mediaPath] || zip.files[mediaPath.replace("xl/", "")];
+							if (mediaFile) {
+								const base64 = await mediaFile.async("base64");
+								const ext = mediaPath.endsWith(".png") ? "png" : "jpeg";
+								imagesMap[rowIdx] = `data:image/${ext};base64,${base64}`;
+							}
+						}
+					}
+				}
+			}
+
+			if (Object.keys(imagesMap).length === 0) {
+				const mediaFiles = Object.keys(zip.files)
+					.filter((fn) => fn.startsWith("xl/media/"))
+					.sort();
+				for (let idx = 0; idx < mediaFiles.length; idx++) {
+					const mediaPath = mediaFiles[idx];
+					const base64 = await zip.files[mediaPath].async("base64");
+					const ext = mediaPath.endsWith(".png") ? "png" : "jpeg";
+					imagesMap[idx + 1] = `data:image/${ext};base64,${base64}`;
+				}
+			}
+
+			for (let i = 0; i < allRows.length; i++) {
+				const excelRowIndex = i + 1;
+				if (imagesMap[excelRowIndex]) {
+					allRows[i]["รูปถ่าย"] = imagesMap[excelRowIndex];
+					allRows[i]["รูปภาพ"] = imagesMap[excelRowIndex];
+					allRows[i]["photo_url"] = imagesMap[excelRowIndex];
+				}
+			}
+		} catch (e) {
+			console.warn("JSZip image extraction warning:", e);
+		}
+
 		return allRows;
 	};
 
@@ -52,34 +129,18 @@ export default function TestUploadPage() {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		try {
-			let response;
-			if (file.size > 3.5 * 1024 * 1024) {
-				const rows = await parseFileOnClient(file);
-				response = await fetch(
-					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: JSON.stringify({ rows }),
-					}
-				);
-			} else {
-				const formData = new FormData();
-				formData.append("file", file);
-				response = await fetch(
-					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
-					{
-						method: "POST",
-						headers: {
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: formData,
-					}
-				);
-			}
+			const rows = await parseFileOnClient(file);
+			const response = await fetch(
+				`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+					},
+					body: JSON.stringify({ rows }),
+				}
+			);
 
 			const data = await response.json();
 
@@ -114,34 +175,18 @@ export default function TestUploadPage() {
 		}, 1000);
 
 		try {
-			let response;
-			if (file.size > 3.5 * 1024 * 1024) {
-				const rows = await parseFileOnClient(file);
-				response = await fetch(
-					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
-					{
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: JSON.stringify({ rows }),
-					}
-				);
-			} else {
-				const formData = new FormData();
-				formData.append("file", file);
-				response = await fetch(
-					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
-					{
-						method: "POST",
-						headers: {
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: formData,
-					}
-				);
-			}
+			const rows = await parseFileOnClient(file);
+			const response = await fetch(
+				`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+					},
+					body: JSON.stringify({ rows }),
+				}
+			);
 
 			const data = await response.json();
 			if (data.success) {
