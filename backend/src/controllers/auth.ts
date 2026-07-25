@@ -6,8 +6,19 @@ import * as schema from "../schema/auth";
 import { error } from "../utils/errors";
 import { Response } from "express";
 
+const getJwtSecret = () => {
+  return (
+    process.env.JWT_SECRET ||
+    process.env.projectfollow1_SUPABASE_JWT_SECRET ||
+    process.env.SUPABASE_JWT_SECRET ||
+    process.env.projectfollow1_SUPABASE_SECRET_KEY ||
+    process.env.projectfollow1_SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.projectfollow1_SUPABASE_ANON_KEY
+  );
+};
+
 const getSignedJwtToken = (id: string) => {
-  const secret = process.env.JWT_SECRET;
+  const secret = getJwtSecret();
   if (!secret) {
     throw new Error("ระบบขาดการตั้งค่า JWT_SECRET ใน Environment Variables");
   }

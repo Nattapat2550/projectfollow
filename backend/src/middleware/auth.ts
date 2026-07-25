@@ -36,7 +36,13 @@ export const protect: RequestHandlerWithUser = async (req, res, next) => {
   }
 
   try {
-    const secret = process.env.JWT_SECRET;
+    const secret =
+      process.env.JWT_SECRET ||
+      process.env.projectfollow1_SUPABASE_JWT_SECRET ||
+      process.env.SUPABASE_JWT_SECRET ||
+      process.env.projectfollow1_SUPABASE_SECRET_KEY ||
+      process.env.projectfollow1_SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.projectfollow1_SUPABASE_ANON_KEY;
     if (!secret) error(500, "Server misconfiguration: Missing JWT_SECRET");
 
     const decoded = jwt.verify(token, secret);
