@@ -47,8 +47,21 @@ export default function TestUpload2Page() {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		try {
-			let response;
-			if (file.size > 3 * 1024 * 1024) {
+			const formData = new FormData();
+			formData.append("file", file);
+
+			let response = await fetch(
+				`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
+				{
+					method: "POST",
+					headers: {
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+					},
+					body: formData,
+				}
+			);
+
+			if (response.status === 413) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
@@ -59,19 +72,6 @@ export default function TestUpload2Page() {
 							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 						},
 						body: JSON.stringify({ rows }),
-					}
-				);
-			} else {
-				const formData = new FormData();
-				formData.append("file", file);
-				response = await fetch(
-					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=preview`,
-					{
-						method: "POST",
-						headers: {
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: formData,
 					}
 				);
 			}
@@ -110,8 +110,21 @@ export default function TestUpload2Page() {
 		}, 1000);
 
 		try {
-			let response;
-			if (file.size > 3 * 1024 * 1024) {
+			const formData = new FormData();
+			formData.append("file", file);
+
+			let response = await fetch(
+				`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
+				{
+					method: "POST",
+					headers: {
+						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+					},
+					body: formData,
+				}
+			);
+
+			if (response.status === 413) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
@@ -122,19 +135,6 @@ export default function TestUpload2Page() {
 							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 						},
 						body: JSON.stringify({ rows }),
-					}
-				);
-			} else {
-				const formData = new FormData();
-				formData.append("file", file);
-				response = await fetch(
-					`${backendUrl}/api/v1/upload-excel-repatriated/upload-excel?action=upload&jobId=${jobId}`,
-					{
-						method: "POST",
-						headers: {
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: formData,
 					}
 				);
 			}

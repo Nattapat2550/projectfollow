@@ -3,6 +3,7 @@ import { randomUUID as uuidv4 } from "crypto";
 import fs from 'fs';
 import path from 'path';
 import xlsx from "xlsx";
+import ExcelJS from "exceljs";
 import {  safeParseDate, normalizeNationality, processName, processVictimStatus, findValue, determineGender, parseThaiDateToDate, calculateDOBFromAge  } from "../utils/immigrantHelpers";
 import { getRegionFromProvince } from "../utils/regionMapper";
 import * as cache from "../utils/cache";
@@ -162,6 +163,26 @@ export const uploadExcelIllegal = async (req, res) => {
        return res.status(400).json({ success: false, message: "ไม่พบข้อมูลในไฟล์ Excel หรือไม่มีรายชื่อให้บันทึก (ระวังบรรทัดว่าง)" });
     }
 
+    const filename = req.file?.originalname || "";
+    const imagesMap = {};
+    if (req.file && req.file.buffer && !filename.toLowerCase().endsWith(".docx")) {
+      try {
+        const workbookExt = new ExcelJS.Workbook();
+        await workbookExt.xlsx.load(req.file.buffer);
+        const worksheetExt = workbookExt.worksheets[0];
+
+        for (const image of worksheetExt.getImages()) {
+          const rowIdx = image.range.tl.nativeRow; 
+          const imgInfo = workbookExt.getImage(image.imageId as any);
+          if (imgInfo && imgInfo.buffer) {
+            imagesMap[rowIdx] = { buffer: imgInfo.buffer, extension: imgInfo.extension || 'jpeg' };
+          }
+        }
+      } catch (err) {
+        console.error("Error extracting images with exceljs:", err);
+      }
+    }
+
     if (action === "preview") {
       const preview_data = [];
       for (let i = 0; i < allJsonData.length; i++) {
@@ -191,7 +212,15 @@ export const uploadExcelIllegal = async (req, res) => {
             if (rawAge) dob = calculateDOBFromAge(rawAge);
         }
 
-        const photoUrlRaw = findValue(row, "รูปถ่าย") || findValue(row, "รูปภาพ") || findValue(row, "รูป") || findValue(row, "photo_url") || findValue(row, "photo") || findValue(row, "รูปจาก ทร.14");
+        let photo_url_preview = null;
+        if (imagesMap[i + 1]) {
+          const base64Data = imagesMap[i + 1].buffer.toString('base64');
+          const mimeType = imagesMap[i + 1].extension === 'png' ? 'image/png' : 'image/jpeg';
+          photo_url_preview = `data:${mimeType};base64,${base64Data}`;
+        } else {
+          const photoUrlRaw = findValue(row, "รูปถ่าย") || findValue(row, "รูปภาพ") || findValue(row, "รูป") || findValue(row, "photo_url") || findValue(row, "photo") || findValue(row, "รูปจาก ทร.14");
+          if (photoUrlRaw) photo_url_preview = String(photoUrlRaw);
+        }
 
         preview_data.push({
           ลำดับที่อ่านได้: i + 1,
@@ -204,7 +233,7 @@ export const uploadExcelIllegal = async (req, res) => {
           nationality: findValue(row, "สัญชาติ") ? normalizeNationality(findValue(row, "สัญชาติ")) : null, 
           passport_id: passport,
           date_of_birth: dob ? dob.toISOString().split('T')[0] : null,
-          photo_url: photoUrlRaw ? String(photoUrlRaw) : null,
+          photo_url: photo_url_preview,
           detected_location_details: parsedLocation.details,
           detected_location_sub_district: parsedLocation.sub_district,
           detected_location_district: parsedLocation.district,
