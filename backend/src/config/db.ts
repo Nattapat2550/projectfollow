@@ -29,8 +29,30 @@ const database =
   process.env.POSTGRES_DATABASE ||
   process.env.PGDATABASE;
 
-const poolConfig = connectionString
-  ? { connectionString }
+const isLocalhost =
+  !connectionString ||
+  connectionString.includes("localhost") ||
+  connectionString.includes("127.0.0.1");
+
+if (!isLocalhost) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+}
+
+let sanitizedConnectionString = connectionString;
+if (sanitizedConnectionString && !isLocalhost) {
+  if (sanitizedConnectionString.includes("sslmode=")) {
+    sanitizedConnectionString = sanitizedConnectionString.replace(
+      /sslmode=[^&]*/,
+      "sslmode=no-verify"
+    );
+  } else {
+    const separator = sanitizedConnectionString.includes("?") ? "&" : "?";
+    sanitizedConnectionString = `${sanitizedConnectionString}${separator}sslmode=no-verify`;
+  }
+}
+
+const poolConfig = sanitizedConnectionString
+  ? { connectionString: sanitizedConnectionString }
   : host && user
   ? {
       host,
@@ -40,11 +62,6 @@ const poolConfig = connectionString
       port: Number(process.env.POSTGRES_PORT || 5432),
     }
   : { connectionString: process.env.DATABASE_URL };
-
-const isLocalhost =
-  !connectionString ||
-  connectionString.includes("localhost") ||
-  connectionString.includes("127.0.0.1");
 
 const pool = new Pool({
   ...poolConfig,
