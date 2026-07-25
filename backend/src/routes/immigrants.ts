@@ -11,7 +11,10 @@ import uploadMiddleware from "../middleware/upload";
 import { protect } from "../middleware/auth";
 
 const memoryStorage = multer.memoryStorage();
-const uploadExcel = multer({ storage: memoryStorage });
+const uploadExcel = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
 
 // ----------------------------------------------------
 // Illegal (แอบเข้าเมือง)

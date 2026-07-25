@@ -6,7 +6,10 @@ import * as uploadExcelRepatriatedController from "../controllers/uploadExcelRep
 import {  protect  } from "../middleware/auth";
 
 // 🟢 แก้ไขตรงนี้: ใช้ memoryStorage() เพื่อให้ Controller สามารถอ่าน req.file.buffer ได้
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
 
 // 🟢 สร้างตัวกันสแปม: ให้ยิงได้ไม่เกิน 10 ครั้งต่อ 15 นาที
 const uploadLimiter = rateLimit({

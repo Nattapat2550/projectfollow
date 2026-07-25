@@ -13,8 +13,8 @@ import authRoutes from "./routes/auth"; // นำเข้า Auth Route
 const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
-app.use(helmet());
-// Configure CORS with trailing slash normalization and support for Vercel origins
+
+// Configure CORS first so options/error responses always include CORS headers
 const rawFrontendUrls = process.env.FRONTEND_URL || 'http://localhost:3000';
 const allowedOrigins = rawFrontendUrls
   .split(',')
@@ -41,8 +41,10 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.use(helmet());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cookieParser());
 
 let uploadsPath = "./uploads";
@@ -63,11 +65,26 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/upload-excel-repatriated", uploadExcelRepatriatedRoutes);
 
 // ⚠️ ดักจับกรณีเรียก Route ที่ไม่มีอยู่จริง (404 handler)
-// เปลี่ยนจากการส่งหน้า HTML เป็นการส่ง JSON เพื่อไม่ให้ Frontend แครช
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
     message: `ไม่พบเส้นทาง API: ${req.method} ${req.originalUrl}`
+  });
+});
+
+// Global Express Error Handler (Handles 413 Payload Too Large and runtime errors with CORS headers)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error("Global Error Handler:", err);
+  const status = err.status || err.statusCode || 500;
+  if (status === 413 || err.type === 'entity.too.large') {
+    return res.status(413).json({
+      success: false,
+      message: "ขนาดของไฟล์หรือข้อมูลมีขนาดใหญ่เกินไป (Payload Too Large)",
+    });
+  }
+  res.status(status).json({
+    success: false,
+    message: err.message || "Internal Server Error",
   });
 });
 
