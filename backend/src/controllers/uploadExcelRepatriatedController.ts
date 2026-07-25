@@ -1,7 +1,7 @@
 import xlsx from "xlsx";
 import ExcelJS from "exceljs";
 import pool from "../config/db";
-import { v4 as uuidv4 } from "uuid"; 
+import { randomUUID as uuidv4 } from "crypto"; 
 import {  uploadToDrive  } from "../services/googleDriveService"; 
 import fs from 'fs';
 import path from 'path';
