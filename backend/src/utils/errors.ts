@@ -26,9 +26,11 @@ export function getErrorResponse(err: unknown): {
     };
   } else {
     console.error(err);
+    const errorMessage =
+      err instanceof Error ? err.message : "Internal Server Error";
     return {
       status: 500,
-      response: { success: false, message: "Internal Server Error" },
+      response: { success: false, message: errorMessage },
     };
   }
 }
