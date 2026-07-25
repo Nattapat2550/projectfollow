@@ -53,22 +53,7 @@ export default function TestUploadPage() {
 
 		try {
 			let response;
-			try {
-				const formData = new FormData();
-				formData.append("file", file);
-
-				response = await fetch(
-					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
-					{
-						method: "POST",
-						headers: {
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: formData,
-					}
-				);
-				if (response.status === 413) throw new Error("413_PAYLOAD_TOO_LARGE");
-			} catch (uploadErr) {
+			if (file.size > 3.5 * 1024 * 1024) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
@@ -79,6 +64,19 @@ export default function TestUploadPage() {
 							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 						},
 						body: JSON.stringify({ rows }),
+					}
+				);
+			} else {
+				const formData = new FormData();
+				formData.append("file", file);
+				response = await fetch(
+					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
 					}
 				);
 			}
@@ -117,22 +115,7 @@ export default function TestUploadPage() {
 
 		try {
 			let response;
-			try {
-				const formData = new FormData();
-				formData.append("file", file);
-
-				response = await fetch(
-					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
-					{
-						method: "POST",
-						headers: {
-							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-						},
-						body: formData,
-					}
-				);
-				if (response.status === 413) throw new Error("413_PAYLOAD_TOO_LARGE");
-			} catch (uploadErr) {
+			if (file.size > 3.5 * 1024 * 1024) {
 				const rows = await parseFileOnClient(file);
 				response = await fetch(
 					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
@@ -143,6 +126,19 @@ export default function TestUploadPage() {
 							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
 						},
 						body: JSON.stringify({ rows }),
+					}
+				);
+			} else {
+				const formData = new FormData();
+				formData.append("file", file);
+				response = await fetch(
+					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
+					{
+						method: "POST",
+						headers: {
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: formData,
 					}
 				);
 			}
