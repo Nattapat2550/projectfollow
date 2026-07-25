@@ -215,24 +215,29 @@ export const getUploadProgress = (req, res) => {
 
 export const uploadExcel = async (req, res) => {
     try {
-        if (!req.file || !req.file.buffer) return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel" });
-
         const action = req.query.action || "upload";
         const jobId = req.query.jobId;
 
-        // อ่านไฟล์ Excel หรือ Word จาก Buffer ในหน่วยความจำโดยตรง
-        let workbookXlsx;
-        const filename = req.file.originalname || "";
-        if (filename.toLowerCase().endsWith(".docx")) {
-            const mammoth = require("mammoth");
-            const result = await mammoth.convertToHtml({ buffer: req.file.buffer });
-            workbookXlsx = xlsx.read(result.value, { type: "string" });
-        } else {
-            workbookXlsx = xlsx.read(req.file.buffer, { type: "buffer" });
-        }
+        const filename = req.file?.originalname || "";
+        let rawData = [];
 
-        const sheetName = workbookXlsx.SheetNames[0];
-        let rawData = xlsx.utils.sheet_to_json(workbookXlsx.Sheets[sheetName], { defval: null });
+        if (req.file && req.file.buffer) {
+            let workbookXlsx;
+            if (filename.toLowerCase().endsWith(".docx")) {
+                const mammoth = require("mammoth");
+                const result = await mammoth.convertToHtml({ buffer: req.file.buffer });
+                workbookXlsx = xlsx.read(result.value, { type: "string" });
+            } else {
+                workbookXlsx = xlsx.read(req.file.buffer, { type: "buffer" });
+            }
+
+            const sheetName = workbookXlsx.SheetNames[0];
+            rawData = xlsx.utils.sheet_to_json(workbookXlsx.Sheets[sheetName], { defval: null });
+        } else if (req.body && req.body.rows && Array.isArray(req.body.rows)) {
+            rawData = req.body.rows;
+        } else {
+            return res.status(400).json({ success: false, message: "กรุณาแนบไฟล์ Excel หรือส่งข้อมูลแถว" });
+        }
 
         rawData = rawData.filter(row => {
             const thName = row["ชื่อ สกุล (ไทย)"];
@@ -244,7 +249,7 @@ export const uploadExcel = async (req, res) => {
 
         // ใช้ exceljs อ่านภาพจาก Buffer สำหรับไฟล์ excel
         const imagesMap = {};
-        if (!filename.toLowerCase().endsWith(".docx")) {
+        if (req.file && req.file.buffer && !filename.toLowerCase().endsWith(".docx")) {
             try {
                 const workbookExt = new ExcelJS.Workbook();
                 await workbookExt.xlsx.load(req.file.buffer);

@@ -1,3 +1,4 @@
+// @ts-ignore
 import { Combobox as ComboboxPrimitive } from "@base-ui/react";
 import React from "react";
 
@@ -48,7 +49,7 @@ export default function ComboboxField<Value>({
 				<ComboboxContent>
 					<ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
 					<ComboboxList {...comboboxListProps}>
-						{(o, idx) => {
+						{(o: Value, idx: number) => {
 							const { label, ...props } = optionsFunc(o, idx);
 							return (
 								<ComboboxItem {...props} key={idx}>

@@ -31,7 +31,7 @@ export default function CreateRepatriatedPageForm({
 		items: ALL_NATIONALITIES,
 		optionsFunc: (nationality) => ({ label: nationality, value: nationality }),
 		value: formData["nationality"],
-		onValueChange: (v) => setFormData((prev) => ({ ...prev, nationality: v ?? "" })),
+		onValueChange: (v: string | null) => setFormData((prev) => ({ ...prev, nationality: v ?? "" })),
 	};
 
 	const layout: FormLayout<CreateRepatriatedRequest> = [

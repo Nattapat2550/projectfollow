@@ -131,23 +131,25 @@ export const getUploadProgress = (req, res) => {
 
 export const uploadExcelIllegal = async (req, res) => {
   try {
-    if (!req.file) {
-       return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel" });
-    }
-
     const action = req.query.action || "upload";
     const jobId = req.query.jobId;
     const created_by = req.user ? req.user.id : null; 
 
-    const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     let allJsonData = [];
-    
-    workbook.SheetNames.forEach(sheetName => {
-      const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null });
-      if (sheetData.length > 0) {
-        allJsonData.push(...sheetData.map((row: any) => ({ ...row, _sheetName: sheetName })));
-      }
-    });
+
+    if (req.file && req.file.buffer) {
+      const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
+      workbook.SheetNames.forEach(sheetName => {
+        const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: null });
+        if (sheetData.length > 0) {
+          allJsonData.push(...sheetData.map((row: any) => ({ ...row, _sheetName: sheetName })));
+        }
+      });
+    } else if (req.body && req.body.rows && Array.isArray(req.body.rows)) {
+      allJsonData = req.body.rows;
+    } else {
+      return res.status(400).json({ success: false, message: "กรุณาอัปโหลดไฟล์ Excel หรือส่งข้อมูลแถว" });
+    }
 
     allJsonData = allJsonData.filter(row => {
         const rawFullName = findValue(row, "ชื่อสกุล") || findValue(row, "ชื่อ") || "";
