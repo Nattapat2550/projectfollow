@@ -16,9 +16,9 @@ const oauth2Client = new google.auth.OAuth2(
 oauth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 const driveService = google.drive({ version: 'v3', auth: oauth2Client });
 
-const uploadToDrive = async (fileObject, folderId) => {
+const uploadToDrive = async (fileObject: any, folderId?: string) => {
   try {
-    const fileMetadata = {
+    const fileMetadata: { name: string; parents?: string[] } = {
       name: fileObject.originalname,
     };
 
@@ -27,7 +27,7 @@ const uploadToDrive = async (fileObject, folderId) => {
     }
 
     // 🟢 ถ้ามีไฟล์แบบ Buffer (อ่านตรงจาก Excel) ให้แปลงเป็น Stream แบบไม่ผ่าน Harddisk
-    let bodyStream;
+    let bodyStream: Readable;
     if (fileObject.buffer) {
         bodyStream = Readable.from(fileObject.buffer);
     } else {
@@ -40,7 +40,7 @@ const uploadToDrive = async (fileObject, folderId) => {
     };
 
     const response = await driveService.files.create({
-      resource: fileMetadata,
+      requestBody: fileMetadata,
       media: media,
       fields: 'id, webViewLink, webContentLink'
     }, {
@@ -49,28 +49,30 @@ const uploadToDrive = async (fileObject, folderId) => {
 
     const fileId = response.data.id;
 
-    await driveService.permissions.create({
-      fileId: fileId,
-      requestBody: {
-        role: 'reader',
-        type: 'anyone',
-      },
-    });
+    if (fileId) {
+      await driveService.permissions.create({
+        fileId: fileId,
+        requestBody: {
+          role: 'reader',
+          type: 'anyone',
+        },
+      });
+    }
 
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Drive Service Upload Error]:', error.message);
     throw error;
   }
 };
 
-const deleteFromDrive = async (fileId) => {
+const deleteFromDrive = async (fileId?: string) => {
   try {
     if (!fileId) return;
     await driveService.files.delete({ fileId: fileId });
     console.log(`[Drive Service]: Deleted file ${fileId} successfully.`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Drive Service Delete Error]:', error.message);
     throw error;
   }

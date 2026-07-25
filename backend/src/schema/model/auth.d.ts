@@ -4,3 +4,10 @@ interface User {
 	role: string;
 	color: string;
 }
+
+namespace Express {
+	interface Request {
+		user?: User;
+	}
+}
+
