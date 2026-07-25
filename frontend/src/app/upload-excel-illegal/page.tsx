@@ -129,27 +129,55 @@ export default function TestUploadPage() {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 		try {
-			const rows = await parseFileOnClient(file);
-			const response = await fetch(
-				`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: JSON.stringify({ rows }),
-				}
-			);
-
-			const data = await response.json();
-
-			if (data.success) {
-				setResult(data);
-				setCurrentPage(1);
-			} else {
-				setError(data.message || "เกิดข้อผิดพลาดในการอ่านไฟล์");
+			const allParsedRows = await parseFileOnClient(file);
+			const totalRows = allParsedRows.length;
+			if (totalRows === 0) {
+				setError("ไม่พบข้อมูลในไฟล์ Excel");
+				return;
 			}
+
+			setProgress({ current: 0, total: totalRows });
+			const BATCH_SIZE = 25;
+			const combinedPreviewData: any[] = [];
+
+			for (let i = 0; i < totalRows; i += BATCH_SIZE) {
+				const batchRows = allParsedRows.slice(i, i + BATCH_SIZE);
+				const response = await fetch(
+					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=preview`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: JSON.stringify({ rows: batchRows }),
+					}
+				);
+
+				const data = await response.json();
+				if (!data.success) {
+					throw new Error(data.message || `เกิดข้อผิดพลาดในการประมวลผลแถวที่ ${i + 1}`);
+				}
+
+				if (data.preview_data) {
+					const offset = combinedPreviewData.length;
+					const adjustedBatch = data.preview_data.map((item: any, idx: number) => ({
+						...item,
+						ลำดับที่อ่านได้: offset + idx + 1,
+					}));
+					combinedPreviewData.push(...adjustedBatch);
+				}
+
+				setProgress({ current: Math.min(i + BATCH_SIZE, totalRows), total: totalRows });
+			}
+
+			setResult({
+				success: true,
+				message: `ดึงข้อมูลพรีวิวสำเร็จทั้งหมด ${totalRows} รายการ`,
+				total_rows: totalRows,
+				preview_data: combinedPreviewData,
+			});
+			setCurrentPage(1);
 		} catch (err: any) {
 			setError("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ Backend ได้: " + err.message);
 		} finally {
@@ -165,47 +193,47 @@ export default function TestUploadPage() {
 		const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 		const token = localStorage.getItem("token");
 
-		const interval = setInterval(async () => {
-			try {
-				const res = await fetch(`${backendUrl}/api/v1/immigrants/upload-progress/${jobId}`);
-				const data = await res.json();
-				setProgress({ current: data.current, total: data.total });
-				if (data.status === "completed") clearInterval(interval);
-			} catch (e) {}
-		}, 1000);
-
 		try {
-			const rows = await parseFileOnClient(file);
-			const response = await fetch(
-				`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
-					},
-					body: JSON.stringify({ rows }),
-				}
-			);
+			const allParsedRows = await parseFileOnClient(file);
+			const totalRows = allParsedRows.length;
+			setProgress({ current: 0, total: totalRows });
 
-			const data = await response.json();
-			if (data.success) {
-				Swal.fire({
-					icon: "success",
-					title: "สำเร็จ!",
-					text: data.message,
-					timer: 1500,
-					showConfirmButton: false,
-				});
-				setResult(null);
-				setFile(null);
-			} else {
-				setError(data.message || "เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+			const BATCH_SIZE = 25;
+
+			for (let i = 0; i < totalRows; i += BATCH_SIZE) {
+				const batchRows = allParsedRows.slice(i, i + BATCH_SIZE);
+				const response = await fetch(
+					`${backendUrl}/api/v1/immigrants/upload-excel-illegal?action=upload&jobId=${jobId}`,
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+							...(token && token !== "null" ? { Authorization: `Bearer ${token}` } : {}),
+						},
+						body: JSON.stringify({ rows: batchRows }),
+					}
+				);
+
+				const data = await response.json();
+				if (!data.success) {
+					throw new Error(data.message || `บันทึกแถวที่ ${i + 1} ล้มเหลว`);
+				}
+
+				setProgress({ current: Math.min(i + BATCH_SIZE, totalRows), total: totalRows });
 			}
+
+			Swal.fire({
+				icon: "success",
+				title: "สำเร็จ!",
+				text: `นำเข้าและบันทึกข้อมูลเรียบร้อยแล้วทั้งหมด ${totalRows} รายการ`,
+				timer: 2000,
+				showConfirmButton: false,
+			});
+			setResult(null);
+			setFile(null);
 		} catch (err: any) {
 			setError("การอัปโหลดล้มเหลว: " + err.message);
 		} finally {
-			clearInterval(interval);
 			setIsUploading(false);
 			setProgress({ current: 0, total: 0 });
 		}
