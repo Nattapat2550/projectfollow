@@ -419,8 +419,30 @@ export const uploadExcel = async (req, res) => {
                             console.error("Drive Upload Final Error:", e);
                             errors.push(`แถวที่ ${i + 1}: อัปโหลดรูปภาพไม่สำเร็จ (${e.message})`);
                         }
-                    } else if (row["รูปจาก ทร.14"]) {
-                        drivePhotoUrl = String(row["รูปจาก ทร.14"]);
+                    } else {
+                        const photoStr = row["photo_url"] || row["รูปถ่าย"] || row["รูปจาก ทร.14"] || row["รูปภาพ"] || row["รูป"];
+                        if (photoStr && typeof photoStr === "string" && photoStr.startsWith("data:image")) {
+                            const matches = photoStr.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+                            if (matches) {
+                                const ext = matches[1] === "png" ? "png" : "jpeg";
+                                const buffer = Buffer.from(matches[2], 'base64');
+                                const tempFileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.${ext}`;
+                                try {
+                                    const driveResult = await uploadWithRetry({
+                                        originalname: tempFileName,
+                                        mimetype: `image/${ext}`,
+                                        buffer: buffer
+                                    }, process.env.GOOGLE_DRIVE_FOLDER_ID);
+                                    if (driveResult && driveResult.webViewLink) {
+                                        drivePhotoUrl = driveResult.webViewLink;
+                                    }
+                                } catch (e) {
+                                    console.error("Drive upload from Base64 error:", e);
+                                }
+                            }
+                        } else if (photoStr && typeof photoStr === "string") {
+                            drivePhotoUrl = photoStr;
+                        }
                     }
 
                     const raw_id = row["เลขประจำตัวประชาขน"] || row["เลขประจำตัวประชาชน"];
