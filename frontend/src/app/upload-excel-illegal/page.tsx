@@ -15,6 +15,20 @@ export default function TestUploadPage() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 50;
 
+	const formatRawExcelData = (rawData: any) => {
+		if (!rawData || typeof rawData !== "object") return rawData;
+		const cleaned: any = {};
+		for (const key of Object.keys(rawData)) {
+			const val = rawData[key];
+			if (typeof val === "string" && val.startsWith("data:image/") && val.length > 100) {
+				cleaned[key] = `[Base64 Image Data (${Math.round(val.length / 1024)} KB)]`;
+			} else {
+				cleaned[key] = val;
+			}
+		}
+		return cleaned;
+	};
+
 	const parseFileOnClient = async (f: File) => {
 		const arrayBuffer = await f.arrayBuffer();
 		const workbook = XLSX.read(arrayBuffer, { type: "array" });
@@ -362,14 +376,14 @@ export default function TestUploadPage() {
 						)}
 
 						<div className="overflow-x-auto rounded-xl border border-(--wrapper) bg-(--button) shadow-md">
-							<table className="w-full min-w-200 border-collapse text-left text-sm">
+							<table className="w-full min-w-[1100px] border-collapse text-left text-sm">
 								<thead className="border-b border-(--wrapper) bg-(--container) text-xs font-bold text-(--header) uppercase">
 									<tr>
 										<th className="w-16 border-r border-(--wrapper) p-4 text-center">แถวที่</th>
-										<th className="w-3/5 border-r border-(--wrapper) bg-(--container) p-4 text-(--blueText)">
+										<th className="w-7/12 border-r border-(--wrapper) bg-(--container) p-4 text-(--blueText)">
 											ข้อมูลที่จะถูกบันทึกลงฐานข้อมูล (แยกตามชื่อคอลัมน์จริง)
 										</th>
-										<th className="w-2/5 bg-(--container) p-4 text-(--orangeText)">
+										<th className="w-5/12 bg-(--container) p-4 text-(--orangeText)">
 											ข้อมูลดิบจาก Excel (Raw Excel Data)
 										</th>
 									</tr>
@@ -381,167 +395,162 @@ export default function TestUploadPage() {
 												{row.ลำดับที่อ่านได้}
 											</td>
 
-											<td className="border-r border-(--wrapper) bg-(--container) p-4 align-top text-(--header) opacity-95">
-												<div className="mb-3 grid grid-cols-2 gap-4 border-b border-(--wrapper) pb-3">
-													<div>
-														<span className="mb-1 block text-[10px] font-semibold tracking-wider text-(--header) uppercase opacity-50">
-															หมวดหมู่ชื่อ (ภาษาไทย)
-														</span>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: first_name_th]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.first_name_th || renderNull()}
-															</span>
+											<td className="border-r border-(--wrapper) bg-(--container) p-5 align-top text-(--header)">
+												<div className="space-y-4">
+													{/* Card 1: Names */}
+													<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs">
+														<div className="mb-2 text-xs font-bold text-(--blueText) uppercase tracking-wider">
+															👤 ชื่อ-นามสกุล (Thai & English)
 														</div>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: middle_name_th]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.middle_name_th || renderNull()}
-															</span>
+														<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+															<div>
+																<span className="inline-block rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400 mr-1.5">
+																	DB: first_name_th
+																</span>
+																<span className="font-semibold text-(--header)">{row.first_name_th || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400 mr-1.5">
+																	DB: last_name_th
+																</span>
+																<span className="font-semibold text-(--header)">{row.last_name_th || renderNull()}</span>
+															</div>
+															{row.first_name_en && (
+																<div>
+																	<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-400 mr-1.5">
+																		DB: first_name_en
+																	</span>
+																	<span className="font-medium">{row.first_name_en}</span>
+																</div>
+															)}
+															{row.last_name_en && (
+																<div>
+																	<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-400 mr-1.5">
+																		DB: last_name_en
+																	</span>
+																	<span className="font-medium">{row.last_name_en}</span>
+																</div>
+															)}
 														</div>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: last_name_th]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.last_name_th || renderNull()}
-															</span>
-														</div>
-													</div>
-													<div>
-														<span className="mb-1 block text-[10px] font-semibold tracking-wider text-(--header) uppercase opacity-50">
-															หมวดหมู่ชื่อ (ภาษาอังกฤษ)
-														</span>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: first_name_en]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.first_name_en || renderNull()}
-															</span>
-														</div>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: middle_name_en]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.middle_name_en || renderNull()}
-															</span>
-														</div>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: last_name_en]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.last_name_en || renderNull()}
-															</span>
-														</div>
-													</div>
-												</div>
-
-												<div className="mb-3 grid grid-cols-2 gap-4 border-b border-(--wrapper) pb-3">
-													<div>
-														<span className="block text-xs text-(--header) opacity-60">
-															[DB: nationality] สัญชาติ:
-														</span>
-														<span className="font-medium">{row.nationality || renderNull()}</span>
-													</div>
-													<div>
-														<span className="block text-xs text-(--header) opacity-60">
-															[DB: passport_id] พาสปอร์ต:
-														</span>
-														<span className="font-mono font-medium text-(--blueText)">
-															{row.passport_id || renderNull()}
-														</span>
-													</div>
-													<div>
-														<span className="block text-xs text-(--header) opacity-60">
-															[DB: gender] เพศ (อัตโนมัติ):
-														</span>
-														<span className="font-medium">{row.gender || renderNull()}</span>
-													</div>
-													<div>
-														<span className="block text-xs text-zinc-500">
-															[DB: detected_date] วันที่ตรวจพบ:
-														</span>
-														<span className="rounded border border-(--yellowBorder) bg-(--yellowBG) px-1.5 font-medium text-(--yellowText)">
-															{row.detected_date || renderNull()}
-														</span>
-													</div>
-												</div>
-
-												<div className="mb-3 grid grid-cols-1 gap-2 border-b border-(--wrapper) pb-3">
-													<div className="rounded-md border border-(--wrapper) bg-(--container) p-2">
-														<span className="block text-xs font-semibold text-(--blueText)">
-															ที่อยู่ / สถานที่ตรวจพบ:
-														</span>
-														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">[DB: details]</span>{" "}
-															{row.detected_location_details || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: sub_district]
-															</span>{" "}
-															{row.detected_location_sub_district || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">[DB: district]</span>{" "}
-															{row.detected_location_district || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">[DB: province]</span>{" "}
-															{row.detected_location_province || renderNull()}
-														</div>
-													</div>
-													<div className="rounded-md border border-(--wrapper) bg-(--container) p-2">
-														<span className="block text-xs font-semibold text-(--blueText)">
-															[DB: workplace] สถานที่ทำงาน:
-														</span>
-														<span className="font-medium text-(--header)">
-															{row.workplace || renderNull()}
-														</span>
-													</div>
-												</div>
-
-												<div className="bg- (--container)] border- (--wrapper)] rounded-lg border p-3">
-													<span className="text- (--header)] mb-2 block text-[10px] font-semibold tracking-wider uppercase opacity-50">
-														หมวดหมู่ผลการคัดกรอง
-													</span>
-
-													<div className="mb-2">
-														<span className="text- (--header)] mr-2 text-xs opacity-60">
-															[DB: is_victim] Status:
-														</span>
-														{row.is_victim === "YES" ?
-															<span className="inline-flex items-center rounded border border-red-300 bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
-																YES (เป็นผู้เสียหาย)
-															</span>
-														: row.is_victim === "NO" ?
-															<span className="inline-flex items-center rounded border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
-																NO (ไม่เป็นผู้เสียหาย)
-															</span>
-														:	<span className="inline-flex items-center rounded border border-stone-300 bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-700">
-																PENDING (ไม่คัดกรองสถานะ)
-															</span>
-														}
 													</div>
 
-													<div>
-														<span className="text- (--blueText)] mb-1 block text-xs font-semibold">
-															[DB: screening_details] รายละเอียดผลคัดกรอง:
-														</span>
-														<div className="text- (--header)] bg- (--button)] border- (--wrapper)] min-h-10 rounded-md border p-2 text-sm font-medium whitespace-pre-wrap">
-															{row.screening_details || renderNull()}
+													{/* Card 2: Personal Info & Photo */}
+													<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+														<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs space-y-2 text-sm">
+															<div className="text-xs font-bold text-(--blueText) uppercase tracking-wider mb-2">
+																📋 ข้อมูลส่วนตัว & เอกสาร
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: dob
+																</span>
+																<span className="font-medium">{row.date_of_birth || row.dob || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: gender
+																</span>
+																<span className="font-medium text-(--blueText)">{row.gender || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: nationality
+																</span>
+																<span className="font-medium text-blue-600 dark:text-blue-400">{row.nationality || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: passport_id
+																</span>
+																<span className="font-mono text-xs">{row.passport_id || renderNull()}</span>
+															</div>
 														</div>
+
+														<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs flex flex-col items-center justify-center text-center">
+															<div className="text-xs font-bold text-(--blueText) uppercase tracking-wider mb-2 self-start">
+																🖼️ รูปถ่ายโปรไฟล์
+															</div>
+															{row.photo_url && (row.photo_url.startsWith("data:image") || row.photo_url.startsWith("http")) ? (
+																<div className="flex flex-col items-center gap-1.5">
+																	<img
+																		src={row.photo_url}
+																		alt="รูปโปรไฟล์"
+																		className="h-28 w-24 rounded-lg border border-(--wrapper) object-cover shadow-md"
+																	/>
+																	<span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">✓ มีรูปถ่าย</span>
+																</div>
+															) : (
+																<div className="flex h-28 w-24 items-center justify-center rounded-lg border border-dashed border-(--wrapper) bg-(--container) text-xs text-(--header) opacity-50">
+																	ไม่มีรูปภาพ
+																</div>
+															)}
+														</div>
+													</div>
+
+													{/* Card 3: Location / Details */}
+													<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs space-y-2 text-sm">
+														<div className="text-xs font-bold text-(--blueText) uppercase tracking-wider mb-2">
+															📍 ที่อยู่ / สถานที่ตรวจพบ & ทำงาน
+														</div>
+														<div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+															<div>
+																<span className="opacity-60 mr-1">[DB: details]:</span>
+																<span className="font-medium">{row.detected_location_details || renderNull()}</span>
+															</div>
+															<div>
+																<span className="opacity-60 mr-1">[DB: sub_district]:</span>
+																<span className="font-medium">{row.detected_location_sub_district || renderNull()}</span>
+															</div>
+															<div>
+																<span className="opacity-60 mr-1">[DB: district]:</span>
+																<span className="font-medium">{row.detected_location_district || renderNull()}</span>
+															</div>
+															<div>
+																<span className="opacity-60 mr-1">[DB: province]:</span>
+																<span className="font-medium text-blue-600 dark:text-blue-400">{row.detected_location_province || renderNull()}</span>
+															</div>
+															{row.workplace && (
+																<div className="col-span-2">
+																	<span className="opacity-60 mr-1">[DB: workplace]:</span>
+																	<span className="font-medium text-(--header)">{row.workplace}</span>
+																</div>
+															)}
+														</div>
+													</div>
+
+													{/* Card 4: Screening status */}
+													<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs space-y-2 text-xs">
+														<div className="font-bold text-(--blueText) mb-1.5">⚖️ ผลการคัดกรองสถานะ</div>
+														<div className="mb-2">
+															<span className="opacity-60 mr-2">[DB: is_victim]:</span>
+															{row.is_victim === "YES" ?
+																<span className="inline-flex items-center rounded border border-red-300 bg-red-100 px-2 py-0.5 font-bold text-red-700">
+																	YES (เป็นผู้เสียหาย)
+																</span>
+															: row.is_victim === "NO" ?
+																<span className="inline-flex items-center rounded border border-emerald-300 bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">
+																	NO (ไม่เป็นผู้เสียหาย)
+																</span>
+															:	<span className="inline-flex items-center rounded border border-stone-300 bg-stone-100 px-2 py-0.5 font-bold text-stone-700">
+																	PENDING (ไม่คัดกรองสถานะ)
+																</span>
+															}
+														</div>
+														{row.screening_details && (
+															<div>
+																<span className="font-semibold block mb-1">[DB: screening_details]:</span>
+																<div className="rounded border border-(--wrapper) bg-(--container) p-2 text-xs font-medium whitespace-pre-wrap">
+																	{row.screening_details}
+																</div>
+															</div>
+														)}
 													</div>
 												</div>
 											</td>
 
-											<td className="bg- (--button)] p-4 align-top">
-												<pre className="bg- (--container)] text- (--header)] border- (--wrapper)] sticky top-4 max-h-screen overflow-y-auto rounded-lg border p-3 font-mono text-xs whitespace-pre-wrap shadow-inner">
-													{JSON.stringify(row.raw_data_from_excel, null, 2)}
+											<td className="bg-(--button) p-4 align-top">
+												<pre className="sticky top-4 max-h-[550px] overflow-y-auto rounded-lg border border-(--wrapper) bg-(--container) p-3 font-mono text-xs whitespace-pre-wrap text-(--header) shadow-inner">
+													{JSON.stringify(formatRawExcelData(row.raw_data_from_excel), null, 2)}
 												</pre>
 											</td>
 										</tr>

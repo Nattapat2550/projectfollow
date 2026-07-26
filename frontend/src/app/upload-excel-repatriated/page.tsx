@@ -15,6 +15,20 @@ export default function TestUpload2Page() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 50;
 
+	const formatRawExcelData = (rawData: any) => {
+		if (!rawData || typeof rawData !== "object") return rawData;
+		const cleaned: any = {};
+		for (const key of Object.keys(rawData)) {
+			const val = rawData[key];
+			if (typeof val === "string" && val.startsWith("data:image/") && val.length > 100) {
+				cleaned[key] = `[Base64 Image Data (${Math.round(val.length / 1024)} KB)]`;
+			} else {
+				cleaned[key] = val;
+			}
+		}
+		return cleaned;
+	};
+
 	const parseFileOnClient = async (f: File) => {
 		const arrayBuffer = await f.arrayBuffer();
 		const workbook = XLSX.read(arrayBuffer, { type: "array" });
@@ -356,14 +370,14 @@ export default function TestUpload2Page() {
 						)}
 
 						<div className="overflow-x-auto rounded-xl border border-(--wrapper) bg-(--button) shadow-md">
-							<table className="w-full min-w-200 border-collapse text-left text-sm">
+							<table className="w-full min-w-[1100px] border-collapse text-left text-sm">
 								<thead className="border-b border-(--wrapper) bg-(--container) text-xs font-bold text-(--header) uppercase">
 									<tr>
 										<th className="w-16 border-r border-(--wrapper) p-4 text-center">แถวที่</th>
-										<th className="border-wrapper w-3/5 border-r bg-(--container) p-4 text-(--blueText)">
+										<th className="w-7/12 border-r border-(--wrapper) bg-(--container) p-4 text-(--blueText)">
 											ข้อมูลที่จะถูกบันทึกลงฐานข้อมูล (แยกตามชื่อคอลัมน์จริง)
 										</th>
-										<th className="w-2/5 bg-(--container) p-4 text-(--orangeText)">
+										<th className="w-5/12 bg-(--container) p-4 text-(--orangeText)">
 											ข้อมูลดิบจาก Excel (Raw Excel Data)
 										</th>
 									</tr>
@@ -374,234 +388,150 @@ export default function TestUpload2Page() {
 											<td className="border-r border-(--wrapper) p-4 text-center align-top font-bold text-(--header) opacity-60">
 												{row.ลำดับที่อ่านได้}
 											</td>
-											<td className="border-r border-(--wrapper) bg-(--container) p-4 align-top text-(--header) opacity-95">
-												<div className="mb-3 grid grid-cols-2 gap-4 border-b border-(--wrapper) pb-3">
-													<div>
-														<span className="mb-1 block text-[10px] font-semibold tracking-wider text-(--header) uppercase opacity-50">
-															หมวดหมู่ชื่อ (ภาษาไทย)
-														</span>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: first_name_th]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.first_name_th || renderNull()}
-															</span>
+											<td className="border-r border-(--wrapper) bg-(--container) p-5 align-top text-(--header)">
+												<div className="space-y-4">
+													{/* Card 1: Names */}
+													<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs">
+														<div className="mb-2 text-xs font-bold text-(--blueText) uppercase tracking-wider">
+															👤 ชื่อ-นามสกุล (Thai & English)
 														</div>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: last_name_th]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.last_name_th || renderNull()}
-															</span>
-														</div>
-													</div>
-													<div>
-														<span className="mb-1 block text-[10px] font-semibold tracking-wider text-(--header) uppercase opacity-50">
-															หมวดหมู่ชื่อ (ภาษาอังกฤษ)
-														</span>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: first_name_en]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.first_name_en || renderNull()}
-															</span>
-														</div>
-														<div className="text-sm">
-															<span className="mr-2 text-(--header) opacity-50">
-																[DB: last_name_en]
-															</span>
-															<span className="font-medium text-(--blueText)">
-																{row.last_name_en || renderNull()}
-															</span>
-														</div>
-													</div>
-												</div>
-
-												<div className="mb-3 grid grid-cols-2 gap-4 border-b border-(--wrapper) pb-3">
-													<div>
-														<span className="mb-1 block text-[10px] font-semibold text-(--header) uppercase opacity-50">
-															ข้อมูลส่วนบุคคล (วันเกิด/เพศ/สัญชาติ)
-														</span>
-														<div className="text-sm">
-															<span className="mr-1 text-(--header) opacity-50">[DB: dob]</span>{" "}
-															<span className="font-medium">{row.dob || renderNull()}</span>
-														</div>
-														<div className="text-sm">
-															<span className="mr-1 text-(--header) opacity-50">[DB: gender]</span>{" "}
-															<span className="font-medium text-(--blueText)">
-																{row.gender || renderNull()}
-															</span>
-														</div>
-														<div className="text-sm">
-															<span className="mr-1 text-(--header) opacity-50">
-																[DB: nationality]
-															</span>{" "}
-															<span className="font-medium text-(--blueText)">
-																{row.nationality || renderNull()}
-															</span>
-														</div>
-													</div>
-													<div>
-														<span className="mb-1 block text-[10px] font-semibold text-(--header) uppercase opacity-50">
-															เอกสาร / รูปภาพ
-														</span>
-														<div className="text-sm">
-															<span className="mr-1 text-(--header) opacity-50">
-																[DB: national_id]
-															</span>{" "}
-															<span className="font-mono">{row.id_card || renderNull()}</span>
-														</div>
-														<div className="text-sm">
-															<span className="mr-1 text-(--header) opacity-50">
-																[DB: passport_id]
-															</span>{" "}
-															<span className="font-mono">{row.passport || renderNull()}</span>
-														</div>
-														<div className="mt-1 text-sm">
-															<span className="mb-2 block text-(--header) opacity-50">
-																[DB: photo_url]
-															</span>
-															{(
-																row.photo_url
-																&& (row.photo_url.startsWith("data:image")
-																	|| row.photo_url.startsWith("http"))
-															) ?
-																<img
-																	src={row.photo_url}
-																	alt="พรีวิวรูปโปรไฟล์"
-																	className="h-20 w-16 rounded-md border border-(--wrapper) object-cover shadow-sm"
-																/>
-															:	<span
-																	className="block truncate font-medium text-(--orangeText)"
-																	title={row.photo_url}
-																>
-																	{row.photo_url || renderNull()}
+														<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+															<div>
+																<span className="inline-block rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400 mr-1.5">
+																	DB: first_name_th
 																</span>
-															}
+																<span className="font-semibold text-(--header)">{row.first_name_th || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-blue-600 dark:text-blue-400 mr-1.5">
+																	DB: last_name_th
+																</span>
+																<span className="font-semibold text-(--header)">{row.last_name_th || renderNull()}</span>
+															</div>
+															{row.first_name_en && (
+																<div>
+																	<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-400 mr-1.5">
+																		DB: first_name_en
+																	</span>
+																	<span className="font-medium">{row.first_name_en}</span>
+																</div>
+															)}
+															{row.last_name_en && (
+																<div>
+																	<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-400 mr-1.5">
+																		DB: last_name_en
+																	</span>
+																	<span className="font-medium">{row.last_name_en}</span>
+																</div>
+															)}
 														</div>
 													</div>
-												</div>
 
-												<div className="mb-3 grid grid-cols-2 gap-4 border-b border-(--wrapper) pb-3">
-													<div className="rounded-md border border-(--wrapper) bg-(--container) p-2">
-														<span className="block text-xs font-semibold text-(--blueText)">
-															ที่อยู่ (หลังแยกคำ):
-														</span>
-														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">[DB: address_details]</span>{" "}
-															{row.address_details || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: sub_district]
-															</span>{" "}
-															{row.sub_district || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">[DB: district]</span>{" "}
-															{row.district || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">[DB: province]</span>{" "}
-															{row.province || renderNull()}
+													{/* Card 2: Personal Info & Photo */}
+													<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+														<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs space-y-2 text-sm">
+															<div className="text-xs font-bold text-(--blueText) uppercase tracking-wider mb-2">
+																📋 ข้อมูลส่วนตัว & เอกสาร
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: dob
+																</span>
+																<span className="font-medium">{row.dob || row.date_of_birth || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: gender
+																</span>
+																<span className="font-medium text-(--blueText)">{row.gender || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: nationality
+																</span>
+																<span className="font-medium text-blue-600 dark:text-blue-400">{row.nationality || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: national_id
+																</span>
+																<span className="font-mono text-xs">{row.id_card || row.national_id || renderNull()}</span>
+															</div>
+															<div>
+																<span className="inline-block rounded bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-semibold opacity-70 mr-1.5">
+																	DB: passport_id
+																</span>
+																<span className="font-mono text-xs">{row.passport || row.passport_id || renderNull()}</span>
+															</div>
 														</div>
-													</div>
-													<div className="rounded-md border border-(--wrapper) bg-(--container) p-2">
-														<span className="block text-xs font-semibold text-(--blueText)">
-															ข้อมูลการคดี / หมายจับ / สถานะ:
-														</span>
-														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">
-																[DB: case_id_count] จำนวนคดี:
-															</span>{" "}
-															<span className="font-semibold">{row.case_id_count || 0}</span>
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: warrant] หมายจับ:
-															</span>{" "}
-															<span className="font-semibold">{row.warrant || 0}</span>
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: is_victim] สถานะผู้เสียหาย:
-															</span>{" "}
-															{row.is_victim === "YES" ?
-																"เป็นผู้เสียหาย"
-															: row.is_victim === "NO" ?
-																"ไม่เป็นผู้เสียหาย"
-															:	"ไม่คัดกรองสถานะ"}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: responsible_agency] หน่วยงาน:
-															</span>{" "}
-															{row.responsible_agency || renderNull()}
-														</div>
-													</div>
-												</div>
 
-												<div className="mb-3 grid grid-cols-2 gap-4 border-b border-(--wrapper) pb-3">
-													<div className="rounded-md border border-(--wrapper) bg-(--container) p-2">
-														<span className="block text-xs font-semibold text-(--blueText)">
-															ข้อมูลสถานที่ทำงาน:
-														</span>
-														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">[DB: building] ตึก:</span>{" "}
-															{row.building || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: floor] ชั้น:
-															</span>{" "}
-															{row.floor || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">[DB: room] ห้อง:</span>{" "}
-															{row.room || renderNull()}
+														<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs flex flex-col items-center justify-center text-center">
+															<div className="text-xs font-bold text-(--blueText) uppercase tracking-wider mb-2 self-start">
+																🖼️ รูปถ่ายโปรไฟล์
+															</div>
+															{row.photo_url && (row.photo_url.startsWith("data:image") || row.photo_url.startsWith("http")) ? (
+																<div className="flex flex-col items-center gap-1.5">
+																	<img
+																		src={row.photo_url}
+																		alt="รูปโปรไฟล์"
+																		className="h-28 w-24 rounded-lg border border-(--wrapper) object-cover shadow-md"
+																	/>
+																	<span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">✓ มีรูปถ่าย</span>
+																</div>
+															) : (
+																<div className="flex h-28 w-24 items-center justify-center rounded-lg border border-dashed border-(--wrapper) bg-(--container) text-xs text-(--header) opacity-50">
+																	ไม่มีรูปภาพ
+																</div>
+															)}
 														</div>
 													</div>
-													<div className="rounded-md border border-(--wrapper) bg-(--container) p-2">
-														<span className="block text-xs font-semibold text-(--blueText)">
-															ข้อมูลหน้าที่และรายได้:
-														</span>
-														<div className="mt-1 text-sm text-(--header)">
-															<span className="mr-2 text-xs opacity-60">
-																[DB: job_type] ประเภทงาน:
-															</span>{" "}
-															{row.job_type || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: role] ทำหน้าที่:
-															</span>{" "}
-															{row.role || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: salary] เงินเดือน:
-															</span>{" "}
-															{row.salary || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: paid_by] รับเงินจาก:
-															</span>{" "}
-															{row.paid_by || renderNull()}
-															<br />
-															<span className="mr-2 text-xs opacity-60">
-																[DB: payment_method] ช่องทาง:
-															</span>{" "}
-															{row.payment_method || renderNull()}
-														</div>
-													</div>
-												</div>
 
-												<div className="mb-3 rounded-md border border-(--wrapper) bg-(--container) p-2">
-													<span className="block text-xs font-semibold text-(--blueText)">
-														ข้อมูลเพิ่มเติม:
-													</span>
-													<div className="mt-1 text-sm text-(--header)">
-														<span className="mr-2 text-xs opacity-60">[DB: note] หมายเหตุ:</span>{" "}
-														{row.note || renderNull()}
+													{/* Card 3: Address & Location */}
+													<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs space-y-2 text-sm">
+														<div className="text-xs font-bold text-(--blueText) uppercase tracking-wider mb-2">
+															📍 ที่อยู่ & ข้อมูลการตรวจพบ
+														</div>
+														<div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+															<div>
+																<span className="opacity-60 mr-1">[DB: address_details]:</span>
+																<span className="font-medium">{row.address_details || row.detected_location_details || renderNull()}</span>
+															</div>
+															<div>
+																<span className="opacity-60 mr-1">[DB: sub_district]:</span>
+																<span className="font-medium">{row.sub_district || row.detected_location_sub_district || renderNull()}</span>
+															</div>
+															<div>
+																<span className="opacity-60 mr-1">[DB: district]:</span>
+																<span className="font-medium">{row.district || row.detected_location_district || renderNull()}</span>
+															</div>
+															<div>
+																<span className="opacity-60 mr-1">[DB: province]:</span>
+																<span className="font-medium text-blue-600 dark:text-blue-400">{row.province || row.detected_location_province || renderNull()}</span>
+															</div>
+														</div>
+													</div>
+
+													{/* Card 4: Work & Case Info */}
+													<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+														<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs">
+															<div className="font-bold text-(--blueText) mb-1.5">🏢 ข้อมูลสถานที่ทำงาน & หน้าที่</div>
+															<div><span className="opacity-60 mr-1">[DB: building]:</span> {row.building || renderNull()}</div>
+															<div><span className="opacity-60 mr-1">[DB: job_type]:</span> {row.job_type || renderNull()}</div>
+															<div><span className="opacity-60 mr-1">[DB: role]:</span> {row.role || renderNull()}</div>
+															<div><span className="opacity-60 mr-1">[DB: salary]:</span> {row.salary || renderNull()}</div>
+														</div>
+														<div className="rounded-lg border border-(--wrapper) bg-(--button) p-3 shadow-xs">
+															<div className="font-bold text-(--blueText) mb-1.5">⚖️ ข้อมูลคดี & สถานะ</div>
+															<div><span className="opacity-60 mr-1">[DB: case_id_count]:</span> <span className="font-bold">{row.case_id_count || 0}</span></div>
+															<div><span className="opacity-60 mr-1">[DB: warrant]:</span> <span className="font-bold">{row.warrant || 0}</span></div>
+															<div><span className="opacity-60 mr-1">[DB: is_victim]:</span> {row.is_victim === "YES" ? "เป็นผู้เสียหาย" : row.is_victim === "NO" ? "ไม่เป็นผู้เสียหาย" : "ไม่คัดกรองสถานะ"}</div>
+														</div>
 													</div>
 												</div>
 											</td>
 											<td className="bg-(--button) p-4 align-top">
-												<pre className="sticky top-4 max-h-screen overflow-y-auto rounded-lg border border-(--wrapper) bg-(--container) p-3 font-mono text-xs whitespace-pre-wrap text-(--header) shadow-inner">
-													{JSON.stringify(row.raw_data_from_excel, null, 2)}
+												<pre className="sticky top-4 max-h-[550px] overflow-y-auto rounded-lg border border-(--wrapper) bg-(--container) p-3 font-mono text-xs whitespace-pre-wrap text-(--header) shadow-inner">
+													{JSON.stringify(formatRawExcelData(row.raw_data_from_excel), null, 2)}
 												</pre>
 											</td>
 										</tr>
