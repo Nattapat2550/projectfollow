@@ -14,7 +14,7 @@ export default function RepatriatedIDPageDetail({ detail }: { detail: Repatriate
 
 	return (
 		<div className="bg-background text-foreground min-h-screen p-6 transition-colors duration-200">
-			<div className="mx-auto mb-6 max-w-7xl">
+			<div className="mx-auto mb-6 max-w-[90%]">
 				{states.isEditing ?
 					<button
 						onClick={() => actions.setIsEditing(false)}
@@ -35,7 +35,7 @@ export default function RepatriatedIDPageDetail({ detail }: { detail: Repatriate
 
 			{states.isEditing ?
 				<RepatriatedIDPageEditForm detail={detail} />
-			:	<div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-8 lg:grid-cols-12">
+			:	<div className="mx-auto grid max-w-[90%] grid-cols-1 items-start gap-8 lg:grid-cols-12">
 					<div className="w-full lg:col-span-7 xl:col-span-8">
 						<RepatriatedIDPageCard data={states.initData} />
 					</div>

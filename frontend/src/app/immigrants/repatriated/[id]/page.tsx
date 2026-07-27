@@ -25,7 +25,7 @@ export default function RepatriatedIDPage() {
 	return detail.states.initData ?
 			<RepatriatedIDPageDetail detail={detail} />
 		:	detail.states.isFound === false && (
-				<div className="flex h-screen flex-col items-center justify-center gap-4">
+				<div className="flex h-screen flex-col w-full items-center justify-center gap-4">
 					<p className="text-xl font-bold text-red-500">ไม่พบข้อมูล ID: &quot;{id}&quot;</p>
 					<button className="rounded-md bg-slate-200 px-4 py-2 text-slate-800">
 						<a href={`/immigrants/repatriated`}>ย้อนกลับ</a>

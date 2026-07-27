@@ -166,21 +166,26 @@ export default function IllegalIDPageCard({ data }: { data: IllegalData | null }
 					</div>
 
 					{/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
-					<div className="mb-1 flex flex-1 flex-col">
-						<ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-						<IBox noTruncate className="h-full justify-start! overflow-hidden text-left">
-							<div className="flex w-full flex-col gap-y-1.5" style={{ fontSize: "0.95em" }}>
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
-									{data.screening_details || "-"}
-								</div>
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">หมายเหตุ:</span> {data.note || "-"}
-								</div>
-							</div>
-						</IBox>
-					</div>
-				</div>
+				<div className="mb-1 flex flex-1 flex-col min-h-0">
+    <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
+    {/* Replaced overflow-hidden with flex layout constraints */}
+    <IBox noTruncate className="h-full justify-start! flex flex-col text-left min-h-0">
+        <div 
+            className="flex w-full flex-col flex-1 gap-y-1.5 overflow-y-auto min-h-0 pr-1" 
+            style={{ fontSize: "0.95em" }}
+        >
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
+                {data.screening_details || "-"}
+            </div>
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">หมายเหตุ:</span>{" "}
+                {data.note || "-"}
+            </div>
+        </div>
+    </IBox>
+</div>
+</div>
 
 				{/* คอลัมน์ขวา (รูปภาพ ไว้ฝั่งขวา) */}
 				<div className="flex shrink-0 flex-col items-center" style={{ width: "30%" }}>

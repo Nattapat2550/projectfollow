@@ -171,50 +171,54 @@ export default function RepatriatedIDPageCard({ data }: { data: RepatriatedData 
 						</IBox>
 					</div>
 
-					{/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
-					<div className="mb-1 flex flex-1 flex-col">
-						<ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
-						<IBox noTruncate className="h-full justify-start! overflow-hidden text-left">
-							<div className="flex w-full flex-col gap-y-1.5" style={{ fontSize: "0.85em" }}>
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">อาชีพ:</span>{" "}
-									{data.job_type || "-"}
-									{data.role ? ` (${data.role})` : ""}
-								</div>
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">รายได้/เดือน:</span>{" "}
-									{data.salary || "-"}
-								</div>
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">ผู้จ่ายเงิน:</span>{" "}
-									{data.paid_by || "-"}
-									{data.payment_method ? ` (${data.payment_method})` : ""}
-								</div>
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">คดี/หมายจับ:</span>{" "}
-									{data.number_of_case || "0"} / {data.number_of_warrant || "0"}
-								</div>
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">หน่วยงาน:</span>{" "}
-									{data.responsible_agency || "-"}
-								</div>
-								{(data.is_victim === "YES" || data.is_victim === "NO") && (
-									<div className="wrap-break-word">
-										<span className="font-semibold text-[#022c22]">สถานะผู้เสียหาย:</span>{" "}
-										{data.is_victim === "YES" ? "เป็นผู้เสียหาย" : "ไม่เป็นผู้เสียหาย"}
-									</div>
-								)}
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
-									{data.screening_details || "-"}
-								</div>
-
-								<div className="wrap-break-word">
-									<span className="font-semibold text-[#022c22]">หมายเหตุ:</span> {data.note || "-"}
-								</div>
-							</div>
-						</IBox>
-					</div>
+				{/* แถว 5: ข้อมูลอื่นๆ ทั้งหมดจาก Structure.md */}
+<div className="mb-1 flex flex-1 flex-col min-h-0">
+    <ILabel>ข้อมูลเพิ่มเติม (Additional Info)</ILabel>
+    {/* Added min-h-0 and max-h constraint or fixed height */}
+    <IBox noTruncate className="justify-start! flex flex-col text-left flex-1 min-h-0">
+        <div 
+            className="flex w-full flex-col flex-1 gap-y-1.5 overflow-y-auto min-h-0 max-h-[250px] pr-1" 
+            style={{ fontSize: "0.85em" }}
+        >
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">อาชีพ:</span>{" "}
+                {data.job_type || "-"}
+                {data.role ? ` (${data.role})` : ""}
+            </div>
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">รายได้/เดือน:</span>{" "}
+                {data.salary || "-"}
+            </div>
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">ผู้จ่ายเงิน:</span>{" "}
+                {data.paid_by || "-"}
+                {data.payment_method ? ` (${data.payment_method})` : ""}
+            </div>
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">คดี/หมายจับ:</span>{" "}
+                {data.number_of_case || "0"} / {data.number_of_warrant || "0"}
+            </div>
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">หน่วยงาน:</span>{" "}
+                {data.responsible_agency || "-"}
+            </div>
+            {(data.is_victim === "YES" || data.is_victim === "NO") && (
+                <div className="break-words">
+                    <span className="font-semibold text-[#022c22]">สถานะผู้เสียหาย:</span>{" "}
+                    {data.is_victim === "YES" ? "เป็นผู้เสียหาย" : "ไม่เป็นผู้เสียหาย"}
+                </div>
+            )}
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">รายละเอียดคัดกรอง:</span>{" "}
+                {data.screening_details || "-"}
+            </div>
+            <div className="break-words">
+                <span className="font-semibold text-[#022c22]">หมายเหตุ:</span>{" "}
+                {data.note || "-"}
+            </div>
+        </div>
+    </IBox>
+</div>
 				</div>
 
 				{/* คอลัมน์ขวา (รูปภาพ ไว้ฝั่งขวา) */}
