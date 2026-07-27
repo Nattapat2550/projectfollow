@@ -87,7 +87,7 @@ export default function TopBar() {
 						priority
 					/>
 					<strong className="block truncate text-sm font-bold text-white sm:text-lg lg:text-xl">
-						ระบบติดตาม
+						ระบบติดตามผู้ลักลอบเข้าเมืองและถูกส่งกลับ
 					</strong>
 				</div>
 			</Link>
@@ -101,19 +101,6 @@ export default function TopBar() {
 					className="flex items-center gap-1 rounded-lg px-2 py-2 transition-colors hover:bg-white/10 sm:gap-2 sm:px-4"
 				>
 					<span className="hidden font-medium text-white md:inline">Dashboard</span>
-				</Link>
-
-				<Link href="/help" aria-label="ไปหน้าช่วยเหลือการใช้งาน">
-					<button className="flex items-center gap-1 rounded-lg px-2 py-2 transition-colors hover:bg-white/10 sm:gap-2 sm:px-4">
-						<Image
-							src="/window.svg"
-							alt="ไอคอนช่วยเหลือ"
-							width={24}
-							height={24}
-							className="h-5 w-5 shrink-0 sm:h-6 sm:w-6"
-						/>
-						<span className="hidden font-medium text-white md:inline">ช่วยเหลือ</span>
-					</button>
 				</Link>
 
 				{user ?
